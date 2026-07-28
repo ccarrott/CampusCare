@@ -22,22 +22,25 @@ export async function handleLogin(req, res) {
     }
 
     if (!user || user.Password !== password) {
-      return res.render('auth/login', { error: 'Invalid Student/Staff Number or password.' });
+      return res.render('auth/login', { error: 'Invalid ID Number or password.' });
     }
+
+    const fullName = `${user.FirstName || ''} ${user.LastName || ''}`.trim();
 
     req.session.user = {
       id: userType === 'student' ? user.StudentNumber : user.StaffNumber,
-      name: user.Name || (userType === 'student' ? `Student ${user.StudentNumber}` : `Nurse ${user.StaffNumber}`),
+      name: fullName || `User ${idNumber}`,
       role: userType
     };
 
     res.redirect('/');
   } catch (error) {
+    console.error('Login error:', error);
     res.render('auth/login', { error: error.message });
   }
 }
 
-// Process Public Student Registration Form
+// Process Student Registration Form (Strictly Students Online)
 export async function handleRegister(req, res) {
   const { studentNumber, firstName, lastName, address, medicalHistory, password } = req.body;
 
@@ -48,7 +51,7 @@ export async function handleRegister(req, res) {
       return res.render('auth/register', { error: 'An account with this Student Number already exists.' });
     }
 
-    // Register Student
+    // Register Student record in database
     await UserModel.createStudent({
       studentNumber,
       firstName,
@@ -60,6 +63,7 @@ export async function handleRegister(req, res) {
 
     res.redirect('/auth/login');
   } catch (error) {
+    console.error('Registration error:', error);
     res.render('auth/register', { error: 'Registration failed: ' + error.message });
   }
 }
