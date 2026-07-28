@@ -23,7 +23,7 @@ app.use(express.urlencoded({ extended: true }));
 // Secure Session Configuration
 app.use(
   session({
-    secret: process.env.SESSION_SECRET, // Strictly bound to .env for security
+    secret: process.env.SESSION_SEED, // Strictly bound to .env for security
     resave: false,
     saveUninitialized: false,
     cookie: { 
@@ -53,7 +53,7 @@ app.use('/auth', authRoutes);
 // ======================================================================================
 // STARTUP VERIFICATION & SERVER BOOT
 // ======================================================================================
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.APP_PORT;
 
 async function startServer() {
   try {
