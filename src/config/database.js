@@ -3,7 +3,7 @@ import mysql from 'mysql2/promise';
 import path from 'path';
 import fs from 'fs';
 
-const pool = mysql.createPool({
+export const pool = mysql.createPool({
   host: process.env.DB_HOST,
   port: Number(process.env.DB_PORT),
   user: process.env.DB_USER,
@@ -15,10 +15,8 @@ const pool = mysql.createPool({
   }
 });
 
-// 2. Function to run SQL queries
+// Function to run SQL queries
 export async function query(sql, params) {
   const [results] = await pool.execute(sql, params);
   return results;
 }
-
-export default pool;

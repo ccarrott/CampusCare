@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CampusCare Hub - Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f6f8; }
+    header { background: #0066cc; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+    header a { color: white; text-decoration: none; font-weight: bold; background: #cc3333; padding: 6px 12px; border-radius: 4px; }
+    .container { max-width: 800px; margin: 30px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .user-badge { background: #e0f0ff; color: #004085; padding: 10px; border-radius: 4px; margin-bottom: 20px; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+    .card { background: #fafafa; border: 1px solid #ddd; padding: 15px; border-radius: 6px; }
+    .card h3 { margin-top: 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <h2>CampusCare Hub</h2>
+    <a href="/auth/logout">Logout</a>
+  </header>
+
+  <div class="container">
+    <div class="user-badge">
+      Welcome back, <strong><%= user.name %></strong>! (Logged in as <em><%= user.role %></em> - ID: <%= user.id %>)
+    </div>
+
+    <h3>Main Menu</h3>
+    <div class="actions">
+      <% if (user.role === 'student') { %>
+        <div class="card">
+          <h3>Tier 1: Health Check</h3>
+          <p>Input symptoms & view recommended OTC medications.</p>
+          <a href="/symptoms">Log Symptoms</a>
+        </div>
+        <div class="card">
+          <h3>Tier 2: Book Consultation</h3>
+          <p>Schedule an in-person or MS Teams consultation with a nurse.</p>
+          <a href="/appointments/book">Book Appointment</a>
+        </div>
+      <% } else if (user.role === 'nurse') { %>
+        <div class="card">
+          <h3>Clinic Schedule</h3>
+          <p>Manage your availability and approve online appointments.</p>
+          <a href="/nurse/schedule">View Appointments</a>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</body>
+</html>
