@@ -1,0 +1,112 @@
+=== LIST OF TABLES ===
+[
+  'Admin',
+  'Appointment',
+  'Clinic',
+  'MedicalFacility',
+  'Medication',
+  'Nurse',
+  'Rating',
+  'Student',
+  'SymptomMedication',
+  'Symptoms'
+]
+
+=== TABLES, COLUMNS & TYPES ===
+[
+  {
+    table: 'Admin',
+    columns: [
+      { column: 'StaffNumber', type: 'varchar(20)' },
+      { column: 'Name', type: 'varchar(100)' }
+    ]
+  },
+  {
+    table: 'Appointment',
+    columns: [
+      { column: 'AppointmentID', type: 'varchar(50)' },
+      { column: 'AppointmentType', type: 'text' },
+      { column: 'Time', type: 'datetime' },
+      { column: 'TeamsID', type: 'varchar(250)' },
+      { column: 'StudentNumber', type: 'varchar(20)' },
+      { column: 'StaffNumber', type: 'varchar(20)' }
+    ]
+  },
+  {
+    table: 'Clinic',
+    columns: [
+      { column: 'RegNum', type: 'varchar(50)' },
+      { column: 'Name', type: 'varchar(50)' },
+      { column: 'Address', type: 'varchar(250)' },
+      { column: 'TelephoneNumber', type: 'varchar(13)' },
+      { column: 'Email', type: 'varchar(100)' }
+    ]
+  },
+  {
+    table: 'MedicalFacility',
+    columns: [
+      { column: 'FacilityID', type: 'varchar(50)' },
+      { column: 'Type', type: 'varchar(15)' },
+      { column: 'Address', type: 'varchar(250)' },
+      { column: 'PhoneNumber', type: 'varchar(13)' }
+    ]
+  },
+  {
+    table: 'Medication',
+    columns: [
+      { column: 'MedicationCode', type: 'varchar(50)' },
+      { column: 'Name', type: 'varchar(100)' },
+      { column: 'Description', type: 'text' },
+      { column: 'SymptomsTreated', type: 'varchar(300)' }
+    ]
+  },
+  {
+    table: 'Nurse',
+    columns: [
+      { column: 'StaffNumber', type: 'varchar(20)' },
+      { column: 'Address', type: 'varchar(250)' },
+      { column: 'PhoneNumber', type: 'varchar(13)' },
+      { column: 'FirstName', type: 'varchar(100)' },
+      { column: 'LastName', type: 'varchar(100)' }
+    ]
+  },
+  {
+    table: 'Rating',
+    columns: [
+      { column: 'RatingID', type: 'varchar(50)' },
+      { column: 'AppointmentID', type: 'varchar(50)' },
+      { column: 'Score', type: 'int' },
+      { column: 'RatingDescription', type: 'text' }
+    ]
+  },
+  {
+    table: 'Student',
+    columns: [
+      { column: 'StudentNumber', type: 'varchar(20)' },
+      { column: 'Address', type: 'varchar(250)' },
+      { column: 'MedicalHistory', type: 'text' },
+      { column: 'Email', type: 'varchar(100)' },
+      { column: 'FirstName', type: 'varchar(100)' },
+      { column: 'LastName', type: 'varchar(100)' },
+      { column: 'Password', type: 'varchar(100)' }
+    ]
+  },
+  {
+    table: 'SymptomMedication',
+    columns: [
+      { column: 'MedicationCode', type: 'varchar(50)' },
+      { column: 'Name', type: 'varchar(100)' }
+    ]
+  },
+  {
+    table: 'Symptoms',
+    columns: [
+      { column: 'Name', type: 'varchar(100)' },
+      { column: 'Description', type: 'text' },
+      { column: 'Type', type: 'text' },
+      { column: 'Tier', type: 'int' },
+      { column: 'Cause', type: 'text' },
+      { column: 'StudentNumber', type: 'varchar(20)' }
+    ]
+  }
+]

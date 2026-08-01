@@ -1,0 +1,58 @@
+<%- include('../partials/header', { title: 'Manage Nurses' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="container page-wrapper">
+  <%- include('../partials/alerts') %>
+
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="alert alert-success"><%= success %></div>
+  <% } %>
+
+  <header class="page-header">
+    <h1>Manage Nurses</h1>
+    <p class="subtitle">View, add, edit, or remove nurse staff accounts.</p>
+  </header>
+
+  <section class="content-card">
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+      <a href="/management/admin/nurses/add" class="btn btn-primary">+ Add Nurse</a>
+    </div>
+
+    <% if (nurses.length > 0) { %>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Staff No.</th>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th>Clinic</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% nurses.forEach(function(n) { %>
+            <tr>
+              <td><%= n.StaffNumber %></td>
+              <td><%= n.FirstName %> <%= n.LastName %></td>
+              <td><%= n.PhoneNumber || '—' %></td>
+              <td><%= n.Email || '—' %></td>
+              <td><%= n.ClinicID || '—' %></td>
+              <td>
+                <a href="/management/admin/nurses/<%= n.StaffNumber %>/edit" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">Edit</a>
+                <form action="/management/admin/nurses/<%= n.StaffNumber %>/delete" method="POST" style="display: inline;" onsubmit="return confirm('Delete nurse <%= n.FirstName %> <%= n.LastName %>? Cannot delete if they have appointments.');">
+                  <button type="submit" class="btn btn-danger" style="padding: 4px 10px; font-size: 0.75rem;">Delete</button>
+                </form>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <p class="text-muted text-center">No nurses registered.</p>
+    <% } %>
+  </section>
+
+</main>
+
+<%- include('../partials/footer') %>

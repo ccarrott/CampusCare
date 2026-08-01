@@ -1,0 +1,189 @@
+<%- include('../partials/header', { title: 'Health Trends' }) %>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<%- include('../partials/navbar') %>
+
+<main class="container page-wrapper">
+  <%- include('../partials/alerts') %>
+
+  <header class="page-header">
+    <h1>Campus Health Trends</h1>
+    <p class="subtitle">Aggregated health data across NMU campus zones. No individual student data is displayed.</p>
+    <% if (user.role === 'nurse' || user.role === 'admin') { %>
+      <div class="mt-2">
+        <a href="/trends/export-csv" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;">Export CSV</a>
+      </div>
+    <% } %>
+  </header>
+
+  <!-- Map Section -->
+  <section class="content-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <h2 style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">Campus Health Map</h2>
+      <select id="mapPeriodSelect" class="form-control" style="width: auto; min-width: 140px;">
+        <option value="7d">Past 7 days</option>
+        <option value="1m">Past month</option>
+        <option value="2m">Past 2 months</option>
+        <option value="6m">Past 6 months</option>
+        <option value="1y">Past year</option>
+      </select>
+    </div>
+    <p class="text-muted mb-2">Circle size and colour show symptom report density per zone.</p>
+    <div id="healthMap" style="height: 420px; border-radius: 8px; overflow: hidden;"></div>
+    <div class="map-legend mt-2">
+      <span class="legend-item"><span class="legend-swatch" style="background:#10b981;"></span> Normal (1-2)</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:#f59e0b;"></span> Elevated (3-4)</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:#ef4444;"></span> Outbreak (5+)</span>
+    </div>
+  </section>
+
+  <!-- Symptom Type Summary -->
+  <section class="content-card" id="categories">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <h2 style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">Symptoms by Category</h2>
+      <select id="piePeriodSelect" class="form-control" style="width: auto; min-width: 140px;" onchange="window.location.href='/trends?period='+this.value+'#categories'">
+        <option value="7d" <%= (typeof period !== 'undefined' && period === '7d') ? 'selected' : '' %>>Past 7 days</option>
+        <option value="1m" <%= (typeof period === 'undefined' || period === '1m') ? 'selected' : '' %>>Past month</option>
+        <option value="2m" <%= (typeof period !== 'undefined' && period === '2m') ? 'selected' : '' %>>Past 2 months</option>
+        <option value="6m" <%= (typeof period !== 'undefined' && period === '6m') ? 'selected' : '' %>>Past 6 months</option>
+        <option value="1y" <%= (typeof period !== 'undefined' && period === '1y') ? 'selected' : '' %>>Past year</option>
+      </select>
+    </div>
+    <% if (symptomsByType.length > 0) { %>
+      <div style="display: flex; align-items: center; gap: 24px; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 250px;">
+          <canvas id="symptomPieChart"></canvas>
+        </div>
+      </div>
+    <% } else { %>
+      <p class="text-muted">No data available.</p>
+    <% } %>
+  </section>
+
+  <!-- Top Conditions -->
+  <section class="content-card" id="conditions">
+    <h2>Top Reported Conditions</h2>
+    <% if (symptomAggregation.length > 0) { %>
+      <table class="data-table">
+        <thead>
+          <tr><th>Symptom</th><th>Type</th><th>Tier</th><th>Linked Meds</th></tr>
+        </thead>
+        <tbody>
+          <% symptomAggregation.forEach(function(row) { %>
+            <tr>
+              <td><%= row.SymptomName %></td>
+              <td><%= row.Type %></td>
+              <td>Tier <%= row.Tier %></td>
+              <td><%= row.MedicationCount %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <p class="text-muted">No condition data available.</p>
+    <% } %>
+  </section>
+
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+  // Initialize map centered on NMU South Campus
+  const map = L.map('healthMap', { zoomControl: false }).setView([-33.9855, 25.6600], 13);
+  L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 18
+  }).addTo(map);
+
+  let circles = [];
+
+  function loadMapData(period) {
+    // Clear existing circles
+    circles.forEach(c => map.removeLayer(c));
+    circles = [];
+
+    fetch('/trends/api/map-data?period=' + period)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.mapData) return;
+
+        data.mapData.forEach(zone => {
+          if (zone.totalReports === 0) return;
+
+          let colour = '#10b981';
+          if (zone.totalReports >= 5) colour = '#ef4444';
+          else if (zone.totalReports >= 3) colour = '#f59e0b';
+
+          const circleRadius = Math.min(150 + zone.totalReports * 40, 600);
+
+          const circle = L.circle([zone.lat, zone.lon], {
+            radius: circleRadius,
+            color: colour,
+            fillColor: colour,
+            fillOpacity: 0.4,
+            weight: 2
+          }).addTo(map);
+
+          let popupHTML = '<strong>' + zone.name + '</strong><br>';
+          popupHTML += 'Reports: <strong>' + zone.totalReports + '</strong><br>';
+          if (zone.topSymptoms.length > 0) {
+            popupHTML += '<br><em>Top symptoms:</em><br>';
+            zone.topSymptoms.forEach(s => {
+              popupHTML += '• ' + s.name + ' (' + s.count + ')<br>';
+            });
+          }
+          circle.bindPopup(popupHTML);
+          circles.push(circle);
+        });
+      })
+      .catch(err => console.error('Map data load error:', err));
+  }
+
+  // Initial load — use page period
+  const pagePeriod = '<%= typeof period !== "undefined" ? period : "1m" %>';
+  document.getElementById('mapPeriodSelect').value = pagePeriod;
+  loadMapData(pagePeriod);
+
+  // Period dropdown change
+  document.getElementById('mapPeriodSelect').addEventListener('change', function() {
+    loadMapData(this.value);
+  });
+})();
+
+// Pie Chart: Symptoms by Category
+(function() {
+  const canvas = document.getElementById('symptomPieChart');
+  if (!canvas) return;
+
+  const labels = [<% symptomsByType.forEach(function(r, i) { %>'<%= r.Type %>'<%= i < symptomsByType.length - 1 ? ',' : '' %><% }); %>];
+  const data = [<% symptomsByType.forEach(function(r, i) { %><%= r.Count %><%= i < symptomsByType.length - 1 ? ',' : '' %><% }); %>];
+  const colours = ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+
+  new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: colours.slice(0, labels.length),
+        borderWidth: 2,
+        borderColor: getComputedStyle(document.documentElement).getPropertyValue('--surface-white').trim() || '#fff'
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: { padding: 16, font: { size: 13 }, boxWidth: 16 }
+        }
+      }
+    }
+  });
+})();
+</script>
+
+<%- include('../partials/footer') %>

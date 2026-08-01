@@ -1,0 +1,151 @@
+<%- include('../partials/header', { title: 'Admin Reports' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="container page-wrapper">
+  <%- include('../partials/alerts') %>
+
+  <header class="page-header">
+    <h1>Operational Reports</h1>
+    <p class="subtitle">System-wide analytics and performance metrics.</p>
+    <div class="mt-2">
+      <a href="/management/admin/reports/export-csv" class="action-btn action-btn-confirm">Export CSV</a>
+      <button onclick="window.print()" class="action-btn action-btn-teams">Print Report</button>
+    </div>
+  </header>
+
+  <% if (metrics) { %>
+
+    <!-- Key Metrics Cards -->
+    <div class="dashboard-grid" id="metrics">
+      <section class="content-card text-center">
+        <h2>Total Students</h2>
+        <p class="metric-value"><%= metrics.TotalStudents %></p>
+      </section>
+
+      <section class="content-card text-center">
+        <h2>Total Appointments</h2>
+        <p class="metric-value"><%= metrics.TotalAppointments %></p>
+      </section>
+
+      <section class="content-card text-center">
+        <h2>Total Nurses</h2>
+        <p class="metric-value"><%= metrics.TotalNurses %></p>
+      </section>
+
+      <section class="content-card text-center">
+        <h2>Avg. Nurse Rating</h2>
+        <p class="metric-value"><%= metrics.AverageNurseRating ? Number(metrics.AverageNurseRating).toFixed(1) : 'N/A' %> / 5</p>
+      </section>
+    </div>
+
+    <!-- Appointments by Type -->
+    <section class="content-card mt-3" id="appointments">
+      <h2>Appointments by Type</h2>
+      <% if (appointmentsByType.length > 0) { %>
+        <table class="data-table">
+          <thead>
+            <tr><th>Type</th><th>Count</th></tr>
+          </thead>
+          <tbody>
+            <% appointmentsByType.forEach(function(row) { %>
+              <tr><td><%= row.AppointmentType %></td><td><%= row.Count %></td></tr>
+            <% }); %>
+          </tbody>
+        </table>
+      <% } else { %>
+        <p class="text-muted">No appointment data available.</p>
+      <% } %>
+    </section>
+
+    <!-- Daily Appointments Chart -->
+    <section class="content-card mt-3">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h2 style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">Appointments Over Time</h2>
+        <select id="periodSelect" class="form-control" style="width: auto; min-width: 140px;" onchange="window.location.href='/management/admin/reports?period='+this.value">
+          <option value="7d" <%= (typeof period !== 'undefined' && period === '7d') ? 'selected' : '' %>>Past 7 days</option>
+          <option value="1m" <%= (typeof period === 'undefined' || period === '1m') ? 'selected' : '' %>>Past month</option>
+          <option value="2m" <%= (typeof period !== 'undefined' && period === '2m') ? 'selected' : '' %>>Past 2 months</option>
+          <option value="6m" <%= (typeof period !== 'undefined' && period === '6m') ? 'selected' : '' %>>Past 6 months</option>
+          <option value="1y" <%= (typeof period !== 'undefined' && period === '1y') ? 'selected' : '' %>>Past year</option>
+        </select>
+      </div>
+      <canvas id="dailyChart" style="max-height: 300px;"></canvas>
+    </section>
+
+    <!-- Ratings Overview -->
+    <section class="content-card mt-3" id="ratings">
+      <h2>Nurse Ratings</h2>
+      <% if (ratings.length > 0) { %>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Nurse</th>
+              <th>Score</th>
+              <th>Feedback</th>
+              <th>Appointment</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% ratings.forEach(function(r) { %>
+              <tr>
+                <td><%= r.NurseFirstName %> <%= r.NurseLastName %></td>
+                <td><%= r.Score %> / 5</td>
+                <td><%= r.RatingDescription || 'No comments' %></td>
+                <td><%= r.AppointmentID %></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      <% } else { %>
+        <p class="text-muted">No ratings submitted yet.</p>
+      <% } %>
+    </section>
+
+  <% } else { %>
+    <section class="content-card">
+      <p class="text-muted text-center">Report data unavailable.</p>
+    </section>
+  <% } %>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+  const canvas = document.getElementById('dailyChart');
+  if (!canvas) return;
+
+  const rawData = <%- dailyAppointments %>;
+  const labels = rawData.map(r => new Date(r.day).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' }));
+  const data = rawData.map(r => r.count);
+
+  new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Appointments',
+        data: data,
+        borderColor: '#0ea5e9',
+        backgroundColor: 'rgba(14, 165, 233, 0.1)',
+        borderWidth: 2,
+        tension: 0.4,
+        pointRadius: 4,
+        pointBackgroundColor: '#0ea5e9',
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+      },
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+})();
+</script>
+
+<%- include('../partials/footer') %>

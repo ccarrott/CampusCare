@@ -35,17 +35,62 @@ export async function findNurseById(staffNumber) {
   return results[0];
 }
 
-export async function createNurse({ staffNumber, firstName, lastName, address, phoneNumber, password }) {
+// ============================================================================
+// STUDENT PROFILE OPERATIONS
+// ============================================================================
+
+export async function findAdminById(staffNumber) {
+  const sql = 'SELECT * FROM Admin WHERE StaffNumber = ?';
+  const results = await query(sql, [staffNumber]);
+  return results[0];
+}
+
+export async function updateStudentProfile(studentNumber, { address, medicalHistory }) {
+  const sql = 'UPDATE Student SET Address = ?, MedicalHistory = ? WHERE StudentNumber = ?';
+  return await query(sql, [address, medicalHistory, studentNumber]);
+}
+
+export async function deleteStudentAccount(studentNumber) {
+  const sql = 'DELETE FROM Student WHERE StudentNumber = ?';
+  return await query(sql, [studentNumber]);
+}
+
+
+// ============================================================================
+// PASSWORD RESET OPERATIONS
+// ============================================================================
+
+export async function createPasswordResetToken({ userId, userType, token, expiresAt }) {
+  const id = 'RST-' + Date.now();
   const sql = `
-    INSERT INTO Nurse (StaffNumber, FirstName, LastName, Address, PhoneNumber, Password)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO PasswordResetToken (TokenID, UserID, UserType, Token, ExpiresAt, Used)
+    VALUES (?, ?, ?, ?, ?, 0)
   `;
-  return await query(sql, [
-    staffNumber,
-    firstName,
-    lastName,
-    address || '',
-    phoneNumber || '',
-    password
-  ]);
+  return await query(sql, [id, userId, userType, token, expiresAt]);
+}
+
+export async function findValidResetToken(token) {
+  const sql = `
+    SELECT * FROM PasswordResetToken
+    WHERE Token = ? AND Used = 0 AND ExpiresAt > NOW()
+  `;
+  const results = await query(sql, [token]);
+  return results[0];
+}
+
+export async function markTokenUsed(token) {
+  const sql = 'UPDATE PasswordResetToken SET Used = 1 WHERE Token = ?';
+  return await query(sql, [token]);
+}
+
+export async function updatePassword(userId, userType, hashedPassword) {
+  let sql;
+  if (userType === 'student') {
+    sql = 'UPDATE Student SET Password = ? WHERE StudentNumber = ?';
+  } else if (userType === 'nurse') {
+    sql = 'UPDATE Nurse SET Password = ? WHERE StaffNumber = ?';
+  } else if (userType === 'admin') {
+    sql = 'UPDATE Admin SET Password = ? WHERE StaffNumber = ?';
+  }
+  return await query(sql, [hashedPassword, userId]);
 }

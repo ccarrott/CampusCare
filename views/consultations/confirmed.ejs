@@ -1,0 +1,36 @@
+<%- include('../partials/header', { title: 'Booking Confirmed' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="container page-wrapper">
+
+  <div class="alert alert-success">
+    <strong>Appointment booked successfully!</strong>
+  </div>
+
+  <header class="page-header">
+    <h1>Booking Confirmed</h1>
+    <p class="subtitle">Your consultation has been scheduled.</p>
+  </header>
+
+  <section class="content-card">
+    <h2>Appointment Details</h2>
+    <ul class="profile-details">
+      <li><span class="detail-label">Type</span><span class="detail-value"><%= appointment.AppointmentType %></span></li>
+      <li><span class="detail-label">Nurse</span><span class="detail-value"><%= appointment.NurseFirstName %> <%= appointment.NurseLastName %></span></li>
+      <li><span class="detail-label">Date & Time</span><span class="detail-value"><%= new Date(appointment.Time).toLocaleString('en-ZA', { dateStyle: 'full', timeStyle: 'short' }) %></span></li>
+      <% if (appointment.AppointmentType === 'Online') { %>
+        <li><span class="detail-label">Teams Link</span><span class="detail-value">Your nurse will share the meeting link once confirmed.</span></li>
+      <% } %>
+      <li><span class="detail-label">Status</span><span class="detail-value">Pending (awaiting nurse confirmation)</span></li>
+    </ul>
+  </section>
+
+  <div class="profile-actions mt-3">
+    <a href="/consultations/my-appointments" class="btn btn-primary">View All Appointments</a>
+    <a href="/consultations/book" class="btn btn-secondary">Book Another</a>
+    <a href="/" class="btn btn-secondary">Back to Dashboard</a>
+  </div>
+
+</main>
+
+<%- include('../partials/footer') %>

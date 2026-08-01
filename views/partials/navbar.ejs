@@ -1,0 +1,142 @@
+<!-- Sidebar Navigation -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">
+      <span class="logo-text">CC</span>
+    </div>
+    <h2 class="sidebar-brand">CampusCare</h2>
+  </div>
+
+  <nav class="sidebar-nav">
+    <% if (typeof user !== 'undefined' && user) { %>
+
+      <% if (user.role === 'student') { %>
+        <a href="/" class="sidebar-link">
+          <span class="sidebar-icon">&#127968;</span>
+          <span class="sidebar-label">Home</span>
+        </a>
+        <a href="/profile" class="sidebar-link">
+          <span class="sidebar-icon">&#128100;</span>
+          <span class="sidebar-label">Profile</span>
+        </a>
+        <a href="/symptoms" class="sidebar-link">
+          <span class="sidebar-icon">&#129657;</span>
+          <span class="sidebar-label">Symptom Checker</span>
+        </a>
+        <a href="/symptoms/history" class="sidebar-link">
+          <span class="sidebar-icon">&#128196;</span>
+          <span class="sidebar-label">Symptom History</span>
+        </a>
+        <a href="/consultations/book" class="sidebar-link">
+          <span class="sidebar-icon">&#128197;</span>
+          <span class="sidebar-label">Book Consultation</span>
+        </a>
+        <a href="/consultations/my-appointments" class="sidebar-link">
+          <span class="sidebar-icon">&#128203;</span>
+          <span class="sidebar-label">My Appointments</span>
+        </a>
+        <a href="/trends" class="sidebar-link">
+          <span class="sidebar-icon">&#128200;</span>
+          <span class="sidebar-label">Health Trends</span>
+        </a>
+      <% } else if (user.role === 'nurse') { %>
+        <a href="/" class="sidebar-link">
+          <span class="sidebar-icon">&#127968;</span>
+          <span class="sidebar-label">Home</span>
+        </a>
+        <a href="/management/nurse/dashboard" class="sidebar-link">
+          <span class="sidebar-icon">&#128203;</span>
+          <span class="sidebar-label">Nurse Dashboard</span>
+        </a>
+        <a href="/management/nurse/availability" class="sidebar-link">
+          <span class="sidebar-icon">&#128197;</span>
+          <span class="sidebar-label">Availability</span>
+        </a>
+        <a href="/trends" class="sidebar-link">
+          <span class="sidebar-icon">&#128200;</span>
+          <span class="sidebar-label">Health Trends</span>
+        </a>
+        <a href="/profile" class="sidebar-link">
+          <span class="sidebar-icon">&#128100;</span>
+          <span class="sidebar-label">Profile</span>
+        </a>
+      <% } else if (user.role === 'admin') { %>
+        <a href="/" class="sidebar-link">
+          <span class="sidebar-icon">&#127968;</span>
+          <span class="sidebar-label">Home</span>
+        </a>
+        <a href="/management/admin/reports" class="sidebar-link sidebar-expandable" data-target="reports-sub">
+          <span class="sidebar-icon">&#128202;</span>
+          <span class="sidebar-label">Reports</span>
+          <button class="sidebar-arrow-btn" data-target="reports-sub" onclick="event.preventDefault();event.stopPropagation();">&#9656;</button>
+        </a>
+        <div class="sidebar-submenu" id="reports-sub">
+          <a href="/management/admin/reports#metrics" class="sidebar-link sidebar-sublink">Overview</a>
+          <a href="/management/admin/reports#appointments" class="sidebar-link sidebar-sublink">Appointments</a>
+          <a href="/management/admin/reports#ratings" class="sidebar-link sidebar-sublink">Ratings</a>
+        </div>
+        <a href="/management/admin/students" class="sidebar-link">
+          <span class="sidebar-icon">&#128101;</span>
+          <span class="sidebar-label">Manage Students</span>
+        </a>
+        <a href="/management/admin/nurses" class="sidebar-link">
+          <span class="sidebar-icon">&#129658;</span>
+          <span class="sidebar-label">Manage Nurses</span>
+        </a>
+        <a href="/trends" class="sidebar-link sidebar-expandable" data-target="trends-sub">
+          <span class="sidebar-icon">&#128200;</span>
+          <span class="sidebar-label">Health Trends</span>
+          <button class="sidebar-arrow-btn" data-target="trends-sub" onclick="event.preventDefault();event.stopPropagation();">&#9656;</button>
+        </a>
+        <div class="sidebar-submenu" id="trends-sub">
+          <a href="/trends#healthMap" class="sidebar-link sidebar-sublink">Map</a>
+          <a href="/trends#categories" class="sidebar-link sidebar-sublink">By Category</a>
+          <a href="/trends#conditions" class="sidebar-link sidebar-sublink">Top Conditions</a>
+        </div>
+      <% } %>
+
+      <div class="sidebar-spacer"></div>
+
+      <a href="/auth/logout" class="sidebar-link sidebar-logout">
+        <span class="sidebar-icon">&#128682;</span>
+        <span class="sidebar-label">Logout</span>
+      </a>
+
+    <% } else { %>
+      <a href="/auth/login" class="sidebar-link">
+        <span class="sidebar-icon">&#128274;</span>
+        <span class="sidebar-label">Login</span>
+      </a>
+      <a href="/auth/register" class="sidebar-link">
+        <span class="sidebar-icon">&#128221;</span>
+        <span class="sidebar-label">Register</span>
+      </a>
+    <% } %>
+  </nav>
+</aside>
+
+<!-- Top Bar -->
+<header class="topbar" id="topbar">
+  <div class="topbar-left">
+    <% if (typeof user !== 'undefined' && user) { %>
+      <span class="topbar-welcome" id="greetingText"
+        data-firstname="<%= user.firstName || '' %>"
+        data-lastname="<%= user.lastName || '' %>"
+        data-role="<%= user.role %>"
+        data-name="<%= user.name %>">
+      </span>
+    <% } %>
+  </div>
+  <div class="topbar-right">
+    <% if (typeof user !== 'undefined' && user) { %>
+      <span class="topbar-role"><%= user.role.charAt(0).toUpperCase() + user.role.slice(1) %></span>
+    <% } %>
+  </div>
+</header>
+
+<!-- Main Content Wrapper (closed in footer.ejs) -->
+<div class="mobile-backdrop" id="mobileBackdrop"></div>
+<button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu">
+  <span></span><span></span><span></span>
+</button>
+<div class="main-content">

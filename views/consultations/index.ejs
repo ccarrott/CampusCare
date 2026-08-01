@@ -1,0 +1,107 @@
+<%- include('../partials/header', { title: 'My Appointments' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="container page-wrapper">
+  <%- include('../partials/alerts') %>
+
+  <header class="page-header">
+    <h1>My Appointments</h1>
+    <p class="subtitle">View, manage, and rate your consultations.</p>
+  </header>
+
+  <% if (appointments.length > 0) { %>
+
+    <section class="content-card">
+      <h2>Appointment History</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Nurse</th>
+            <th>Date & Time</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% appointments.forEach(function(apt) { %>
+            <tr>
+              <td><%= apt.AppointmentType %></td>
+              <td><%= apt.NurseFirstName %> <%= apt.NurseLastName %></td>
+              <td><%= new Date(apt.Time).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }) %></td>
+              <td>
+                <% const status = apt.Status || 'Pending'; %>
+                <span class="status-badge status-<%= status.toLowerCase() %>"><%= status %></span>
+              </td>
+              <td>
+                <div class="action-btns">
+                  <% if (apt.AppointmentType === 'Online' && apt.TeamsID) { %>
+                    <a href="<%= apt.TeamsID %>" target="_blank" class="action-btn action-btn-join">Join</a>
+                  <% } else if (apt.AppointmentType === 'Online' && !apt.TeamsID) { %>
+                    <span class="action-btn" style="background:#475569;color:#94a3b8;cursor:default;">Pending</span>
+                  <% } %>
+                  <% if (status === 'Pending' || status === 'Confirmed') { %>
+                    <form action="/consultations/cancel" method="POST" style="display:inline;" onsubmit="return confirm('Cancel this appointment?');">
+                      <input type="hidden" name="appointmentId" value="<%= apt.AppointmentID %>">
+                      <button type="submit" class="action-btn action-btn-cancel">Cancel</button>
+                    </form>
+                  <% } %>
+                  <% if (status === 'Completed' && !(ratedIds || []).includes(apt.AppointmentID)) { %>
+                    <a href="#ratingForm" class="action-btn action-btn-rate">Rate</a>
+                  <% } %>
+                </div>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Rating Form (only for Completed) -->
+    <% const completedApts = appointments.filter(a => (a.Status || 'Pending') === 'Completed' && !(ratedIds || []).includes(a.AppointmentID)); %>
+    <% if (completedApts.length > 0) { %>
+      <section class="content-card" id="ratingForm">
+        <h2>Rate a Consultation</h2>
+        <form action="/consultations/rate" method="POST">
+          <div class="form-group">
+            <label for="appointmentId">Select Completed Appointment</label>
+            <select id="appointmentId" name="appointmentId" class="form-control" required>
+              <option value="" disabled selected>-- Select --</option>
+              <% completedApts.forEach(function(apt) { %>
+                <option value="<%= apt.AppointmentID %>"><%= apt.NurseFirstName %> <%= apt.NurseLastName %> — <%= new Date(apt.Time).toLocaleDateString('en-ZA') %></option>
+              <% }); %>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="score">Score (1-5)</label>
+            <select id="score" name="score" class="form-control" required>
+              <option value="" disabled selected>-- Rate --</option>
+              <option value="1">1 - Poor</option>
+              <option value="2">2 - Fair</option>
+              <option value="3">3 - Good</option>
+              <option value="4">4 - Very Good</option>
+              <option value="5">5 - Excellent</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="ratingDescription">Comments (Optional)</label>
+            <textarea id="ratingDescription" name="ratingDescription" class="form-control" rows="2" placeholder="Share your experience..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-success">Submit Rating</button>
+        </form>
+      </section>
+    <% } %>
+
+  <% } else { %>
+    <section class="content-card">
+      <div class="empty-state">
+        <div class="empty-state-icon">&#128197;</div>
+        <p class="empty-state-text">You have no appointments yet. Book your first consultation to get started.</p>
+        <a href="/consultations/book" class="btn btn-primary">Book Your First Appointment</a>
+      </div>
+    </section>
+  <% } %>
+
+</main>
+
+<%- include('../partials/footer') %>

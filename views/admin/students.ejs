@@ -1,0 +1,60 @@
+<%- include('../partials/header', { title: 'Manage Students' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="container page-wrapper">
+  <%- include('../partials/alerts') %>
+
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="alert alert-success"><%= success %></div>
+  <% } %>
+
+  <header class="page-header">
+    <h1>Manage Students</h1>
+    <p class="subtitle">View, add, edit, or remove student accounts.</p>
+  </header>
+
+  <section class="content-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <form action="/management/admin/students" method="GET" style="display: flex; gap: 8px;">
+        <input type="text" name="search" class="form-control" placeholder="Search by name or ID..." value="<%= search %>" style="width: 250px;">
+        <button type="submit" class="btn btn-secondary" style="padding: 8px 14px;">Search</button>
+      </form>
+      <a href="/management/admin/students/add" class="btn btn-primary">+ Add Student</a>
+    </div>
+
+    <% if (students.length > 0) { %>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Student No.</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Address</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% students.forEach(function(s) { %>
+            <tr>
+              <td><%= s.StudentNumber %></td>
+              <td><%= s.FirstName %> <%= s.LastName %></td>
+              <td><%= s.Email || '—' %></td>
+              <td><%= s.Address || '—' %></td>
+              <td>
+                <a href="/management/admin/students/<%= s.StudentNumber %>/edit" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">Edit</a>
+                <form action="/management/admin/students/<%= s.StudentNumber %>/delete" method="POST" style="display: inline;" onsubmit="return confirm('Delete student <%= s.FirstName %> <%= s.LastName %>? This cannot be undone.');">
+                  <button type="submit" class="btn btn-danger" style="padding: 4px 10px; font-size: 0.75rem;">Delete</button>
+                </form>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <p class="text-muted text-center">No students found.</p>
+    <% } %>
+  </section>
+
+</main>
+
+<%- include('../partials/footer') %>

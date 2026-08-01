@@ -1,0 +1,83 @@
+<%- include('../partials/header', { title: isEdit ? 'Edit Nurse' : 'Add Nurse' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="container page-wrapper">
+  <%- include('../partials/alerts') %>
+
+  <header class="page-header">
+    <h1><%= isEdit ? 'Edit Nurse' : 'Add New Nurse' %></h1>
+    <p class="subtitle"><%= isEdit ? 'Update nurse staff details.' : 'Register a new nurse to the system.' %></p>
+  </header>
+
+  <section class="content-card" style="max-width: 600px;">
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div class="alert alert-danger"><%= error %></div>
+    <% } %>
+
+    <form action="<%= isEdit ? '/management/admin/nurses/' + nurse.StaffNumber + '/update' : '/management/admin/nurses/add' %>" method="POST">
+      <div class="form-group">
+        <label for="staffNumber">Staff Number</label>
+        <input type="text" id="staffNumber" name="staffNumber" class="form-control"
+          value="<%= nurse ? nurse.StaffNumber || nurse.staffNumber || '' : '' %>"
+          <%= isEdit ? 'readonly' : 'required' %> placeholder="e.g. NUR004">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="firstName">First Name</label>
+          <input type="text" id="firstName" name="firstName" class="form-control" required
+            value="<%= nurse ? nurse.FirstName || nurse.firstName || '' : '' %>">
+        </div>
+        <div class="form-group">
+          <label for="lastName">Last Name</label>
+          <input type="text" id="lastName" name="lastName" class="form-control" required
+            value="<%= nurse ? nurse.LastName || nurse.lastName || '' : '' %>">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" class="form-control"
+            value="<%= nurse ? nurse.Email || nurse.email || '' : '' %>" placeholder="name@mandela.ac.za">
+        </div>
+        <div class="form-group">
+          <label for="phoneNumber">Phone Number</label>
+          <input type="tel" id="phoneNumber" name="phoneNumber" class="form-control"
+            value="<%= nurse ? nurse.PhoneNumber || nurse.phoneNumber || '' : '' %>" placeholder="0821234567">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="address">Address</label>
+        <input type="text" id="address" name="address" class="form-control"
+          value="<%= nurse ? nurse.Address || nurse.address || '' : '' %>" placeholder="12 Marine Drive, Summerstrand">
+      </div>
+
+      <div class="form-group">
+        <label for="clinicId">Assigned Clinic</label>
+        <select id="clinicId" name="clinicId" class="form-control">
+          <option value="">-- No assignment --</option>
+          <% clinics.forEach(function(c) { %>
+            <option value="<%= c.RegNum %>" <%= (nurse && (nurse.ClinicID || nurse.clinicId) === c.RegNum) ? 'selected' : '' %>><%= c.Name %></option>
+          <% }); %>
+        </select>
+      </div>
+
+      <% if (!isEdit) { %>
+        <div class="form-group">
+          <label for="password">Password (min 6 characters)</label>
+          <input type="password" id="password" name="password" class="form-control" required minlength="6">
+        </div>
+      <% } %>
+
+      <div class="profile-actions">
+        <button type="submit" class="btn btn-primary"><%= isEdit ? 'Save Changes' : 'Add Nurse' %></button>
+        <a href="/management/admin/nurses" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </section>
+
+</main>
+
+<%- include('../partials/footer') %>

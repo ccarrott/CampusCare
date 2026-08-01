@@ -1,0 +1,46 @@
+<%- include('../partials/header', { title: 'Patient History' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="container page-wrapper">
+  <%- include('../partials/alerts') %>
+
+  <header class="page-header">
+    <h1>Patient Health History</h1>
+    <p class="subtitle"><%= patient.FirstName %> <%= patient.LastName %> (<%= patient.StudentNumber %>)</p>
+  </header>
+
+  <section class="content-card">
+    <h2>Medical Profile</h2>
+    <ul class="profile-details">
+      <li><span class="detail-label">Medical History</span><span class="detail-value"><%= patient.MedicalHistory || 'None on file' %></span></li>
+      <li><span class="detail-label">Address</span><span class="detail-value"><%= patient.Address || 'Not provided' %></span></li>
+    </ul>
+  </section>
+
+  <section class="content-card">
+    <h2>Symptom Log (<%= logs.length %> entries)</h2>
+    <% if (logs.length > 0) { %>
+      <table class="data-table">
+        <thead><tr><th>Date</th><th>Symptom</th><th>Severity</th></tr></thead>
+        <tbody>
+          <% logs.forEach(function(log) { %>
+            <tr>
+              <td><%= new Date(log.LogDate).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' }) %></td>
+              <td><%= log.SymptomName %></td>
+              <td><span class="severity-badge severity-<%= log.Severity.toLowerCase() %>"><%= log.Severity %></span></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <p class="text-muted">No symptom checks recorded for this patient.</p>
+    <% } %>
+  </section>
+
+  <div class="mt-2">
+    <a href="/management/nurse/dashboard" class="btn btn-secondary">Back to Dashboard</a>
+  </div>
+
+</main>
+
+<%- include('../partials/footer') %>

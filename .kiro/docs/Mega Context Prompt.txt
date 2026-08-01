@@ -1,0 +1,393 @@
+﻿The Comprehensive Engineering & Architectural Specification: CampusCare Hub System Context
+Section 1: Executive Summary & System Philosophy
+CampusCare Hub is an enterprise-grade, web-based healthcare management platform designed specifically to mitigate university clinic congestion and modernize student health services through a structured Three-Tier Healthcare Strategy. Built on a Model-View-Controller (MVC) architectural pattern using modern ES Modules, Express.js, MySQL, and EJS templating, the system establishes a clear separation of concerns, strict database security guarantees, and granular Role-Based Access Control (RBAC).
+
+
+
+
+
+
+                      +---------------------------------------+
+                     |         CampusCare Hub Platform       |
+                     +---------------------------------------+
+                                         |
+         +-------------------------------+-------------------------------+
+         |                               |                               |
+         v                               v                               v
++-------------------+           +-------------------+           +-------------------+
+|  TIER 1 CARE      |           |  TIER 2 CARE      |           |  TIER 3 CARE      |
+| Self-Care & OTC   |           | Nurse Consults    |           | Escalation &      |
+| Symptom Check &   |  =======> | In-Person & Online|  =======> | Admin Metrics &   |
+| Health Trends Map |           | MS Teams Meetings |           | Nurse Availability|
++-------------------+           +-------------------+           +-------------------+
+
+The Three-Tier Healthcare Strategy
+1. Tier 1 (Automated Support & Self-Care): Focuses on initial triage. Students self-report symptoms through an intelligent lookup system, receive over-the-counter (OTC) medication guidance mapped to campus distribution facilities, and view anonymized regional health trend maps to track campus outbreaks.
+2. Tier 2 (Nurse Consultations): Facilitates direct clinical care. When self-care is insufficient or symptoms indicate moderate severity, students can schedule 15-minute physical appointments at local clinics or online consultations integrated with Microsoft Teams meeting links. Post-consultation feedback mechanisms allow students to submit numerical ratings and qualitative performance reviews.
+3. Tier 3 (Clinical Escalation & System Administration): Manages administrative oversight and acute care. Nurses control daily shift schedules, manage real-time patient progress, approve online video sessions, and escalate complex cases. System administrators gain real-time visibility through aggregate reporting metrics to optimize healthcare operations.
+Section 2: Core Technical Stack & Architectural Guidelines
+1. Technology Infrastructure
+* Runtime Environment: Node.js (v18+) configured with native ES Module syntax ("type": "module" declared within package.json).
+* Application Framework: Express.js (v4.x) serving as the HTTP routing engine.
+* Templating & Presentation Engine: EJS (Embedded JavaScript Templates) utilizing reusable header/footer layouts, partials, and standard HTML5/CSS3 components.
+* Persistence Layer: MySQL 8.0+ managed via the mysql2/promise asynchronous driver. Database connections are sustained through a centralized, continuous pool configuration located at src/config/database.js.
+* Session Management & Security: express-session configured with httpOnly: true, resave: false, saveUninitialized: false, and dynamic secret keys to prevent cookie manipulation and session hijacking.
+2. Model-View-Controller (MVC) Directory Layout
+The codebase strictly adheres to standard MVC separation of concerns across src/:
+
+
+
+
+
+
+Plaintext
+src/
+├── config/
+│   └── database.js           # Asynchronous mysql2 connection pool
+├── controllers/              # Business logic, request validation, session handling
+│   ├── adminController.js
+│   ├── appointmentController.js
+│   ├── authController.js
+│   ├── nurseController.js
+│   ├── profileController.js
+│   ├── ratingController.js
+│   ├── symptomController.js
+│   └── trendController.js
+├── middlewares/              # RBAC & authentication guards
+│   ├── authMiddleware.js     # requireAuth, requireStudent, requireNurse, requireAdmin
+├── models/                   # Asynchronous Data Access Objects (DAO) with parameterized SQL
+│   ├── adminReportModel.js
+│   ├── appointmentModel.js
+│   ├── availabilityModel.js
+│   ├── nurseManagementModel.js
+│   ├── ratingModel.js
+│   ├── symptomModel.js
+│   ├── trendModel.js
+│   └── userModel.js
+├── routes/                   # Route-to-controller declarations
+│   ├── adminRoutes.js
+│   ├── authRoutes.js
+│   ├── consultationRoutes.js
+│   ├── profileRoutes.js
+│   ├── symptomRoutes.js
+│   └── trendRoutes.js
+└── views/                    # EJS views grouped by domain
+   ├── admin/
+   ├── auth/
+   ├── consultations/
+   ├── nurse/
+   ├── profile/
+   ├── student/
+   └── trends/
+
+3. Security Requirements
+* SQL Injection Prevention: Direct string concatenation within SQL statements is strictly prohibited. Every model function must execute queries using parameterized positional placeholders (?) passed alongside sanitized data arrays.
+* Cross-Site Scripting (XSS): Inputs collected via POST/PUT actions must undergo server-side validation and sanitization before processing or DB insertion. HTML output rendered in EJS views must use standard escaping (<%= %>).
+* Role-Based Access Control (RBAC): All protected routes must invoke explicit middleware guards prior to processing requests:
+   * requireAuth: Verifies active session presence (req.session.user).
+   * requireStudent: Enforces active student session (role === 'student').
+   * requireNurse: Enforces nurse permissions (role === 'nurse').
+   * requireAdmin: Enforces administrative permissions (role === 'admin').
+Section 3: Data Dictionary & Database Schema Alignment
+The database schema forms the relational backend for CampusCare Hub. Every DAO model function maps directly to these primary keys, foreign keys, and fields:
+
+
+
+
+
+
+  +-------------------+             +---------------------+             +--------------------+
+ |      Student      |             |     Appointment     |             |       Nurse        |
+ +-------------------+             +---------------------+             +--------------------+
+ | PK  StudentNumber | <---+       | PK  AppointmentID   |       +---> | PK  StaffNumber    |
+ |     FirstName     |     |       |     AppointmentType |       |     |     FirstName      |
+ |     LastName      |     +-----  |     Time            |       |     |     LastName       |
+ |     Address       |             |     TeamsID         |       |     | FK  ClinicID       |
+ |     MedicalHistory|             |     Status          |       |     |     Password       |
+ |     Password      |             | FK  StudentNumber   | -----+      +--------------------+
+ +-------------------+             | FK  StaffNumber     | -------+              ^
+           ^                       +---------------------+        |              |
+           |                                  ^                   |              v
+           |                                  |                   v     +--------------------+
+           |                       +---------------------+        |     |       Clinic       |
+           |                       |       Rating        |        |     +--------------------+
+           |                       +---------------------+        |     | PK  ClinicID       |
+           |                       | PK  RatingID        |        |     |     Name           |
+           |                       |     Score           |        |     |     Location       |
+           +---------------------- |     RatingDescription|       |     +--------------------+
+                                   | FK  AppointmentID   |        |
+                                   | FK  StudentNumber   |        |
+                                   +---------------------+        |
+                                                                  |
+ +-------------------+             +---------------------+        |     +--------------------+
+ |     Symptoms      |             |  SymptomMedication  |        |     |   MedicalFacility  |
+ +-------------------+             +---------------------+        |     +--------------------+
+ | PK  SymptomCode   | <---------  | FK  SymptomCode     |        +---> | PK  FacilityID     |
+ |     Name          |             | FK  MedicationCode  | ---+         |     Name           |
+ |     Description   |             +---------------------+    |         |     Location       |
+ |     Type          |                                        |         +--------------------+
+ |     Tier          |                                        v                   ^
+ |     Cause         |                     +---------------------+                |
+ +-------------------+                     |     Medication      |                |
+                                           +---------------------+                |
+                                           | PK  MedicationCode  |                |
+                                           |     Name            |                |
+                                           |     Description     |                |
+                                           |     SymptomsTreated |                |
+                                           |     ExpiryDate      |                |
+                                           | FK  FacilityID      | ---------------+
+                                           +---------------------+
+
+Table Specifications
+1. Student
+* StudentNumber (VARCHAR(50), Primary Key): Unique university student identification string.
+* FirstName (VARCHAR(100)): Student given name.
+* LastName (VARCHAR(100)): Student surname.
+* Address (TEXT): Residential address or campus hostel identifier.
+* MedicalHistory (TEXT): Encrypted or structured text of pre-existing conditions and allergies.
+* Password (VARCHAR(255)): Password digest.
+2. Nurse
+* StaffNumber (VARCHAR(50), Primary Key): Unique clinical staff member ID.
+* FirstName (VARCHAR(100)): Staff given name.
+* LastName (VARCHAR(100)): Staff surname.
+* ClinicID (INT, Foreign Key $\rightarrow$ Clinic.ClinicID): Assigned primary clinic location.
+* Password (VARCHAR(255)): Password digest.
+3. Admin
+* AdminID (VARCHAR(50), Primary Key): Unique system administrator identifier.
+* FirstName (VARCHAR(100)): Administrator given name.
+* LastName (VARCHAR(100)): Administrator surname.
+* Password (VARCHAR(255)): Password digest.
+4. Symptoms
+* SymptomCode (VARCHAR(50), Primary Key): Standardized symptom classification code (e.g., SYM-FVR-01).
+* Name (VARCHAR(100)): Human-readable symptom name (e.g., "High Fever").
+* Description (TEXT): Detailed clinical description and indicators.
+* Type (VARCHAR(50)): Category (e.g., "Respiratory", "Gastrointestinal", "Neurological").
+* Tier (INT): Severity classification level (1 = Self-care, 2 = Clinical consult, 3 = Urgent hospital care).
+* Cause (TEXT): General medical triggers or potential underlying pathogens.
+5. Medication
+* MedicationCode (VARCHAR(50), Primary Key): Standard pharmaceutical identifier code.
+* Name (VARCHAR(100)): Brand or generic medication name (e.g., "Paracetamol 500mg").
+* Description (TEXT): Usage instructions, dosage guidelines, and drug warnings.
+* SymptomsTreated (TEXT): Summary of target conditions.
+* ExpiryDate (DATE): Inventory expiration tracking date.
+* FacilityID (INT, Foreign Key $\rightarrow$ MedicalFacility.FacilityID): Dispensing inventory location.
+6. SymptomMedication
+* SymptomCode (VARCHAR(50), Foreign Key $\rightarrow$ Symptoms.SymptomCode): Associated symptom.
+* MedicationCode (VARCHAR(50), Foreign Key $\rightarrow$ Medication.MedicationCode): Associated OTC drug.
+* Composite Primary Key: (SymptomCode, MedicationCode).
+7. Appointment
+* AppointmentID (INT, Auto-Increment Primary Key): Unique consultation record.
+* AppointmentType (VARCHAR(50)): Delivery format (Physical or Online).
+* Time (DATETIME): Scheduled consultation timestamp.
+* TeamsID (VARCHAR(255)): Microsoft Teams join URL or meeting identifier (populated for online sessions).
+* Status (VARCHAR(50)): State machine tracking (Pending, Confirmed, Completed, Cancelled).
+* StudentNumber (VARCHAR(50), Foreign Key $\rightarrow$ Student.StudentNumber): Patient reference.
+* StaffNumber (VARCHAR(50), Foreign Key $\rightarrow$ Nurse.StaffNumber): Clinical staff reference.
+8. Rating
+* RatingID (INT, Auto-Increment Primary Key): Feedback entry identifier.
+* Score (INT): Numerical score (Scale 1 through 5).
+* RatingDescription (TEXT): Qualitative student feedback narrative.
+* AppointmentID (INT, Foreign Key $\rightarrow$ Appointment.AppointmentID): Associated completed visit.
+* StudentNumber (VARCHAR(50), Foreign Key $\rightarrow$ Student.StudentNumber): Reviewer reference.
+9. Clinic & MedicalFacility
+* ClinicID / FacilityID (INT, Primary Key): Primary physical location references.
+* Name (VARCHAR(100)): Facility title (e.g., "Main Campus Student Clinic").
+* Location (VARCHAR(255)): Physical geographic coordinates or campus address.
+Section 4: Governance & Spec-Driven Development Framework
+To manage development without triggering AI context degradation or codebase drift, the team utilizes Spec-Driven Development (SDD) organized under the .kiro/ root structure.
+
+
+
+
+
+
+Plaintext
+.kiro/
+├── steering/
+│   ├── tech.md             # Stack rules, MVC policies, DB schema constraints
+│   └── product.md          # Business domain rules, 3-tier matrix, team mapping
+└── specs/
+   ├── 01-auth-profiles/   # Tarisai Rusike (C100, E100-E400)
+   ├── 02-symptom-checker/ # Vhuthuhawe Nekhavhambe (A100-A300)
+   ├── 03-health-trends/   # Vhuthuhawe Nekhavhambe (A400)
+   ├── 04-consultations/   # Bridgette Magampa (B100-B400)
+   └── 05-admin-nurse-management/ # Seth Whitfield (C200-C400, D100-D400)
+
+Each spec folder isolates technical intent into three standardized documents:
+* requirements.md: User stories, functional acceptance criteria, security mandates, and validation rules.
+* design.md: Architectural breakdown outlining model function signatures, controller methods, rendering views, and HTTP route definitions.
+* tasks.md: An exhaustive checkbox implementation sequence guiding feature creation from model layer up through UI layout and validation testing.
+Section 5: Team Member Workstreams & Subsystem Specifications
+Module 01: Authentication, Profiles, and System Access
+* Assigned Team Member: Tarisai Rusike
+* Use Cases Addressed: C100, E100, E200, E300, E400
+* Target Domain: User onboarding, credential authentication, session tracking, profile customization, and account destruction.
+Functional Requirements (requirements.md)
+1. Student Registration (C100): Prospective students must register using their unique StudentNumber, FirstName, LastName, physical Address, pre-existing MedicalHistory, and password. Duplicate student numbers must be caught server-side and trigger a user-friendly error response.
+2. Multi-Role Authentication (E100/E400): The system must provide a unified or role-selectable login portal. Users select their identity context (student, nurse, admin), submit primary key credentials (StudentNumber, StaffNumber, or AdminID) alongside their password, and upon validation, receive a server-signed session (req.session.user).
+3. Profile Access & Editing (E300/E400): Authenticated students must be able to view their profile attributes and update dynamic information (Address, MedicalHistory). Core primary identifiers (StudentNumber) remain read-only.
+4. Account Destruction (E200): Authenticated students can request account deletion. The controller must remove the record from the Student table, destroy the active session context, and redirect to the public home page.
+Design Specification (design.md)
+* Model Layer (src/models/userModel.js):
+   * findStudentById(studentNumber): Runs SELECT * FROM Student WHERE StudentNumber = ?
+   * findNurseById(staffNumber): Runs SELECT * FROM Nurse WHERE StaffNumber = ?
+   * findAdminById(adminId): Runs SELECT * FROM Admin WHERE AdminID = ?
+   * createStudent(data): Runs INSERT INTO Student (StudentNumber, FirstName, LastName, Address, MedicalHistory, Password) VALUES (?, ?, ?, ?, ?, ?)
+   * updateStudentProfile(studentNumber, { address, medicalHistory }): Runs UPDATE Student SET Address = ?, MedicalHistory = ? WHERE StudentNumber = ?
+   * deleteStudentAccount(studentNumber): Runs DELETE FROM Student WHERE StudentNumber = ?
+* Controller Layer (src/controllers/authController.js & profileController.js):
+   * showLoginForm: Renders views/auth/login.ejs.
+   * handleLogin: Extracts role and credentials, calls targeted user model, matches password digest, sets req.session.user, and routes to dashboard.
+   * showRegisterForm: Renders views/auth/register.ejs.
+   * handleRegister: Validates input length/format, verifies non-existence via findStudentById, invokes createStudent, and redirects to login.
+   * handleLogout: Invokes req.session.destroy() and clears session cookie.
+   * showProfile: Pulls ID from active session, queries student details, renders views/profile/view.ejs.
+   * updateProfile: Validates updated text strings, invokes updateStudentProfile, updates session values, and redirects.
+   * deleteAccount: Executes deleteStudentAccount, destroys session, and returns redirect response.
+* Route Configuration (src/routes/authRoutes.js & profileRoutes.js):
+   * GET /auth/login
+   * POST /auth/login
+   * GET /auth/register
+   * POST /auth/register
+   * POST /auth/logout
+   * GET /profile (Secured via requireAuth)
+   * POST /profile/update (Secured via requireStudent)
+   * POST /profile/delete (Secured via requireStudent)
+Module 02: Symptom Checker & OTC Recommendations
+* Assigned Team Member: Vhuthuhawe Nekhavhambe
+* Use Cases Addressed: A100, A200, A300
+* Target Domain: Automated symptom catalog browsing, multi-factor symptom evaluation, Over-The-Counter (OTC) drug matching, distribution facility mapping, and Tier 2 clinical escalation triggers.
+Functional Requirements (requirements.md)
+1. Symptom Catalog Browsing (A100): Students must be able to view and filter the master list of tracked symptoms (Symptoms table) organized alphabetically or by body system Type.
+2. Symptom Input & Tier 1 Evaluation (A200): Students select observed symptoms and indicate current severity level (e.g., Low, Moderate, High). The controller processes these selections against symptom tier classifications (Tier).
+3. OTC Medication Guidance (A300): The system performs join queries against SymptomMedication, Medication, and MedicalFacility tables to output recommended OTC treatments, dosage instructions, expiration safeguards, and physical campus pickup locations.
+4. Clinical Warning Guards: If evaluated symptom tiers return $\ge 2$ or severity is classified as "High", the recommendation view MUST highlight a prominent warning message prompting the student to immediately schedule a Tier 2 physical or online consultation.
+Design Specification (design.md)
+* Model Layer (src/models/symptomModel.js):
+   * getAllSymptoms(): Runs SELECT * FROM Symptoms ORDER BY Name ASC
+   * getSymptomByCode(symptomCode): Runs SELECT * FROM Symptoms WHERE SymptomCode = ?
+   * getMedicationsForSymptom(symptomCode): Executes relational query:
+SQL
+SELECT m.MedicationCode, m.Name AS MedicationName, m.Description, 
+      m.SymptomsTreated, m.ExpiryDate, mf.Name AS FacilityName
+FROM Medication m
+INNER JOIN SymptomMedication sm ON m.MedicationCode = sm.MedicationCode
+LEFT JOIN MedicalFacility mf ON m.FacilityID = mf.FacilityID
+WHERE sm.SymptomCode = ?;
+
+   * Controller Layer (src/controllers/symptomController.js):
+   * renderSymptomForm: Calls getAllSymptoms() and renders views/student/symptom-form.ejs.
+   * processSymptomCheck:
+   1. Extracts symptomCode and user-submitted severity rating from req.body.
+   2. Queries detailed metadata via getSymptomByCode.
+   3. Fetches drug recommendations via getMedicationsForSymptom.
+   4. Evaluates tier logic (if (symptom.Tier >= 2 || severity === 'High') { escalate = true }).
+   5. Renders views/student/recommendations.ejs passing symptom detail objects, drug lists, and escalation flags.
+   * Route Configuration (src/routes/symptomRoutes.js):
+   * GET /symptoms (Secured via requireStudent)
+   * POST /symptoms/evaluate (Secured via requireStudent)
+Module 03: Regional Health Trend Mapping
+   * Assigned Team Member: Vhuthuhawe Nekhavhambe
+   * Use Cases Addressed: A400
+   * Target Domain: Aggregated health analytics, campus symptom distribution tracking, and privacy-preserving outbreak alerts.
+Functional Requirements (requirements.md)
+   1. Aggregated Trend Dashboard (A400): Students, nurses, and admins can view high-level summaries of logged symptoms across different campus zones and facilities.
+   2. Anonymization & Privacy Guard: Aggregate summaries must count symptom frequencies and medication requests without exposing personal student IDs (StudentNumber), maintaining compliance with university privacy standards.
+Design Specification (design.md)
+   * Model Layer (src/models/trendModel.js):
+   * getSymptomAggregation(): Executes grouping query:
+SQL
+SELECT s.Name AS SymptomName, s.Type, COUNT(sm.MedicationCode) AS LogCount
+FROM Symptoms s
+LEFT JOIN SymptomMedication sm ON s.SymptomCode = sm.SymptomCode
+GROUP BY s.SymptomCode, s.Name, s.Type
+ORDER BY LogCount DESC;
+
+   * getFacilityDistribution(): Aggregates medication stock allocations and pickup volume across all MedicalFacility rows.
+      * Controller Layer (src/controllers/trendController.js):
+      * renderTrendsDashboard: Executes aggregate model calls in parallel, compiles summary metrics, and renders views/trends/dashboard.ejs.
+      * Route Configuration (src/routes/trendRoutes.js):
+      * GET /trends (Secured via requireAuth)
+Module 04: Consultations & Performance Reviews
+      * Assigned Team Member: Bridgette Magampa
+      * Use Cases Addressed: B100, B200, B300, B400
+      * Target Domain: In-person booking, online Microsoft Teams meeting creation, consultation tracking, and post-visit nurse evaluation.
+Functional Requirements (requirements.md)
+      1. In-Person Booking (B100): Students can schedule physical 15-minute consultations by selecting an available nurse (StaffNumber), target time, and clinic facility.
+      2. Online MS Teams Consultations (B200): Students can choose online consultations. The backend automatically generates or binds a unique Microsoft Teams meeting reference (TeamsID) to the resulting Appointment record.
+      3. Appointment Tracking (B300): Students can view their complete appointment history, filtering between Pending, Confirmed, Completed, or Cancelled states.
+      4. Nurse Performance Reviews (B400): After an appointment reaches Status = 'Completed', the student can submit a rating consisting of a numerical Score (1 through 5) and a text RatingDescription. Reviews cannot be submitted for incomplete or cancelled visits.
+Design Specification (design.md)
+      * Model Layer (src/models/appointmentModel.js & ratingModel.js):
+      * getAvailableNurses(): Runs SELECT StaffNumber, FirstName, LastName, ClinicID FROM Nurse
+      * createAppointment({ appointmentType, time, teamsId, studentNumber, staffNumber }): Runs:
+SQL
+INSERT INTO Appointment (AppointmentType, Time, TeamsID, Status, StudentNumber, StaffNumber)
+VALUES (?, ?, ?, 'Pending', ?, ?);
+
+      * getAppointmentsByStudent(studentNumber): Fetches appointment entries joined with Nurse details.
+      * createRating({ score, ratingDescription, appointmentId, studentNumber }): Runs:
+SQL
+INSERT INTO Rating (Score, RatingDescription, AppointmentID, StudentNumber)
+VALUES (?, ?, ?, ?);
+
+         * Controller Layer (src/controllers/appointmentController.js & ratingController.js):
+         * showBookingForm: Fetches clinic nurses and renders views/consultations/book.ejs.
+         * handleBooking: Validates slot conflicts, checks appointment type (Physical vs Online), generates unique TeamsID string if online, inserts Appointment row, and redirects to appointment list.
+         * showStudentAppointments: Reads req.session.user.id, queries student appointment history, and renders views/consultations/index.ejs.
+         * handleRatingSubmission: Asserts appointment existence and completion status, inserts review payload into Rating, and reloads history view.
+         * Route Configuration (src/routes/consultationRoutes.js):
+         * GET /consultations/book (Secured via requireStudent)
+         * POST /consultations/book (Secured via requireStudent)
+         * GET /consultations/my-appointments (Secured via requireStudent)
+         * POST /consultations/rate (Secured via requireStudent)
+Module 05: Nurse Availability, Clinical Escalation, & Admin Dashboards
+         * Assigned Team Member: Seth Whitfield
+         * Use Cases Addressed: C200, C300, C400, D100, D200, D300, D400
+         * Target Domain: Nurse shift and schedule management, appointment lifecycle state transitions, patient care tier advancement, online link verification, and system-wide operational reporting.
+Functional Requirements (requirements.md)
+         1. Nurse Schedule Oversight (D100): Authenticated nurses can view their daily timeline of assigned student appointments across physical and online channels.
+         2. Appointment State Updates (C400): Nurses can update appointment statuses (Pending $\rightarrow$ Confirmed $\rightarrow$ Completed or Cancelled).
+         3. Clinical Tier Escalation (D400): If a student's condition requires advanced intervention during a consultation, the nurse can mark the patient record for Tier 2/3 clinical escalation.
+         4. Online Link Verification (C300): Nurses and admins can verify, update, or replace TeamsID URLs for online video consultations.
+         5. Admin Operational Reporting (D200): Administrators can generate system-wide operational summaries capturing patient volume, total consultations completed, nurse workload distribution, and average student satisfaction ratings.
+Design Specification (design.md)
+         * Model Layer (src/models/nurseManagementModel.js & adminReportModel.js):
+         * getAppointmentsForNurse(staffNumber): Fetches appointments joined with Student metadata.
+         * updateAppointmentStatus(appointmentId, status): Runs UPDATE Appointment SET Status = ? WHERE AppointmentID = ?
+         * updateTeamsLink(appointmentId, teamsId): Runs UPDATE Appointment SET TeamsID = ? WHERE AppointmentID = ?
+         * getOperationalReportData(): Executes system analytics query:
+SQL
+SELECT 
+ (SELECT COUNT(*) FROM Student) AS TotalStudents,
+ (SELECT COUNT(*) FROM Appointment) AS TotalAppointments,
+ (SELECT COUNT(*) FROM Appointment WHERE Status = 'Completed') AS CompletedAppointments,
+ (SELECT AVG(Score) FROM Rating) AS AverageNurseRating;
+
+            * Controller Layer (src/controllers/nurseController.js & adminController.js):
+            * showNurseDashboard: Pulls staff ID from session, fetches upcoming schedule, and renders views/nurse/dashboard.ejs.
+            * changeAppointmentStatus: Validates status state changes, updates DB via model, and refreshes dashboard.
+            * showAdminReport: Ensures role === 'admin', pulls aggregate reporting datasets, and renders views/admin/reports.ejs.
+            * Route Configuration (src/routes/managementRoutes.js):
+            * GET /nurse/dashboard (Secured via requireNurse)
+            * POST /nurse/appointment/status (Secured via requireNurse)
+            * POST /nurse/appointment/update-link (Secured via requireNurse)
+            * GET /admin/reports (Secured via requireAdmin)
+Section 6: Operations & Deployment Runbook
+1. Local Development Initialization
+To initiate the CampusCare Hub application locally in a development environment:
+            1. Provision a local MySQL database instance matching the schema structure.
+            2. Configure environment variables (.env) for DB connection parameters (DB_HOST, DB_USER, DB_PASS, DB_NAME, SESSION_SECRET).
+            3. Execute database seed scripts:
+Bash
+npm run db
+
+            4. Start the Node.js server engine:
+Bash
+npm start
+
+2. Error Handling & Exception Flow Standards
+To guarantee enterprise reliability and prevent system crashes:
+               * All asynchronous controller code must wrap DAO calls within try/catch blocks.
+               * Database failures or connection pool dropouts must be caught gracefully, logging internal details to server logs while presenting clean, non-technical error alerts to users.
+               * Unhandled exception stack traces must never be exposed within rendered HTML responses in production environments.

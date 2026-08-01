@@ -1,0 +1,182 @@
+<%- include('../partials/header', { title: 'Manage Availability' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="container page-wrapper">
+  <%- include('../partials/alerts') %>
+
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="alert alert-success"><%= success %></div>
+  <% } %>
+
+  <% if (typeof conflicts !== 'undefined' && conflicts && conflicts.length > 0) { %>
+    <div class="alert alert-warning">
+      <strong>Scheduling Conflicts:</strong>
+      <ul style="margin-top: 8px; padding-left: 20px;">
+        <% conflicts.forEach(function(c) { %>
+          <li><strong><%= c.student %></strong> — <%= c.day %> at <%= c.slot %> (ID: <%= c.appointmentId %>)</li>
+        <% }); %>
+      </ul>
+    </div>
+  <% } %>
+
+  <header class="page-header">
+    <h1>Manage Availability</h1>
+    <p class="subtitle">Drag to mark slots unavailable. Gold cells are booked appointments (locked). Click column headers to toggle a full day.</p>
+  </header>
+
+  <section class="content-card">
+    <form action="/management/nurse/availability" method="POST" id="availForm">
+      <div class="availability-actions mb-2">
+        <button type="button" class="btn btn-secondary" id="markAllAvailable" style="padding: 6px 12px; font-size: 0.8rem;">Mark All Available</button>
+        <button type="button" class="btn btn-secondary" id="markAllUnavailable" style="padding: 6px 12px; font-size: 0.8rem;">Mark All Unavailable</button>
+        <span class="availability-legend">
+          <span class="legend-item"><span class="legend-swatch swatch-available"></span> Available</span>
+          <span class="legend-item"><span class="legend-swatch swatch-unavailable"></span> Unavailable</span>
+          <span class="legend-item"><span class="legend-swatch swatch-booked"></span> Booked (locked)</span>
+        </span>
+      </div>
+
+      <div class="availability-grid-wrapper">
+        <table class="availability-grid" id="availGrid">
+          <thead>
+            <tr>
+              <th class="time-col">Session</th>
+              <% weekDays.forEach(function(wd) { %>
+                <th class="day-header" data-day="<%= wd.key %>" style="cursor: pointer;" title="Toggle all <%= wd.dayName %>">
+                  <div class="day-name"><%= wd.dayName %></div>
+                  <div class="day-date">(<%= wd.date.slice(5).replace('-', '/') %>)</div>
+                </th>
+              <% }); %>
+            </tr>
+          </thead>
+          <tbody>
+            <% timeSlots.forEach(function(slot) { %>
+              <tr>
+                <td class="time-col time-slot-label"><%= slot.label %></td>
+                <% weekDays.forEach(function(wd) { %>
+                  <% const status = (grid[wd.key] && grid[wd.key][slot.label]) || 'Available'; %>
+                  <% const key = 'slot_' + wd.key + '_' + slot.label; %>
+                  <td class="slot-cell slot-available"
+                      data-key="<%= key %>"
+                      data-day="<%= wd.key %>"
+                      data-start="<%= slot.start %>"
+                      data-status="<%= status %>">
+                    <input type="hidden" name="<%= key %>" value="<%= status %>">
+                  </td>
+                <% }); %>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-3" style="text-align: center;">
+        <button type="submit" class="btn btn-primary">Save Availability</button>
+      </div>
+    </form>
+  </section>
+
+</main>
+
+<script>
+(function() {
+  // Parse booked slots from server
+  const bookedSlots = <%- bookedSlots %>;
+  const grid = document.getElementById('availGrid');
+  let isDragging = false;
+  let dragStatus = 'Unavailable';
+
+  // Mark booked cells on load
+  function applyBookedState() {
+    grid.querySelectorAll('.slot-cell').forEach(function(cell) {
+      const day = cell.dataset.day;
+      const startTime = cell.dataset.start;
+
+      // Check if this slot is booked
+      const dayBookings = bookedSlots[day] || [];
+      const booking = dayBookings.find(function(b) {
+        // Match if the booking time falls within this slot's range
+        // Slot start is data-start (e.g., "14:00"), slot is 15 min long
+        const slotStart = startTime.split(':');
+        const slotH = parseInt(slotStart[0]);
+        const slotM = parseInt(slotStart[1]);
+        const slotStartMins = slotH * 60 + slotM;
+        const slotEndMins = slotStartMins + 15;
+
+        const bookTime = b.time.split(':');
+        const bookH = parseInt(bookTime[0]);
+        const bookM = parseInt(bookTime[1]);
+        const bookMins = bookH * 60 + bookM;
+
+        return bookMins >= slotStartMins && bookMins <= slotEndMins;
+      });
+
+      if (booking) {
+        cell.classList.remove('slot-available', 'slot-unavailable');
+        cell.classList.add('slot-booked');
+        cell.dataset.locked = 'true';
+        cell.title = 'Booked: ' + booking.student + ' (' + booking.id + ')';
+      } else {
+        // Apply stored status
+        const status = cell.dataset.status;
+        cell.classList.remove('slot-available', 'slot-unavailable', 'slot-booked');
+        cell.classList.add(status === 'Unavailable' ? 'slot-unavailable' : 'slot-available');
+      }
+    });
+  }
+
+  applyBookedState();
+
+  function setCellStatus(cell, status) {
+    if (cell.dataset.locked === 'true') return; // booked cells are untouchable
+    const input = cell.querySelector('input[type="hidden"]');
+    if (!input) return;
+    input.value = status;
+    cell.classList.remove('slot-available', 'slot-unavailable');
+    cell.classList.add(status === 'Available' ? 'slot-available' : 'slot-unavailable');
+  }
+
+  // Drag to paint
+  grid.addEventListener('mousedown', function(e) {
+    const cell = e.target.closest('.slot-cell');
+    if (!cell || cell.dataset.locked === 'true') return;
+    e.preventDefault();
+    isDragging = true;
+    const input = cell.querySelector('input[type="hidden"]');
+    dragStatus = input.value === 'Available' ? 'Unavailable' : 'Available';
+    setCellStatus(cell, dragStatus);
+  });
+
+  grid.addEventListener('mouseover', function(e) {
+    if (!isDragging) return;
+    const cell = e.target.closest('.slot-cell');
+    if (!cell || cell.dataset.locked === 'true') return;
+    setCellStatus(cell, dragStatus);
+  });
+
+  document.addEventListener('mouseup', function() { isDragging = false; });
+  grid.addEventListener('selectstart', function(e) { if (isDragging) e.preventDefault(); });
+
+  // Column header toggle (skips booked)
+  document.querySelectorAll('.day-header').forEach(function(header) {
+    header.addEventListener('click', function() {
+      const day = this.dataset.day;
+      const cells = grid.querySelectorAll('.slot-cell[data-day="' + day + '"]:not([data-locked="true"])');
+      let availCount = 0;
+      cells.forEach(function(c) { if (c.querySelector('input').value === 'Available') availCount++; });
+      const newStatus = availCount > cells.length / 2 ? 'Unavailable' : 'Available';
+      cells.forEach(function(c) { setCellStatus(c, newStatus); });
+    });
+  });
+
+  // Mark All buttons (skip booked)
+  document.getElementById('markAllAvailable').addEventListener('click', function() {
+    grid.querySelectorAll('.slot-cell:not([data-locked="true"])').forEach(function(c) { setCellStatus(c, 'Available'); });
+  });
+  document.getElementById('markAllUnavailable').addEventListener('click', function() {
+    grid.querySelectorAll('.slot-cell:not([data-locked="true"])').forEach(function(c) { setCellStatus(c, 'Unavailable'); });
+  });
+})();
+</script>
+
+<%- include('../partials/footer') %>

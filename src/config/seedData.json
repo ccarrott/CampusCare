@@ -1,0 +1,638 @@
+{
+  "Clinic": [
+    {
+      "RegNum": "CLN001",
+      "Name": "NMU South Campus Clinic",
+      "Address": "University Way, South Campus, Summerstrand",
+      "TelephoneNumber": "0415041111",
+      "Email": "clinic@mandela.ac.za"
+    },
+    {
+      "RegNum": "CLN002",
+      "Name": "NMU North Campus Health Centre",
+      "Address": "2nd Avenue, North Campus, Summerstrand",
+      "TelephoneNumber": "0415042222",
+      "Email": "northclinic@mandela.ac.za"
+    }
+  ],
+  "MedicalFacility": [
+    {
+      "FacilityID": "FAC001",
+      "Type": "Dispensary",
+      "Name": "South Campus Dispensary",
+      "Address": "Clinic Building, University Way, Summerstrand",
+      "PhoneNumber": "0415041112",
+      "ClinicID": "CLN001"
+    },
+    {
+      "FacilityID": "FAC002",
+      "Type": "Pharmacy",
+      "Name": "Student Centre Pharmacy",
+      "Address": "Student Centre, South Campus, Summerstrand",
+      "PhoneNumber": "0415041113",
+      "ClinicID": "CLN001"
+    }
+  ],
+  "Admin": [
+    {
+      "StaffNumber": "ADM001",
+      "Name": "System Administrator",
+      "Password": "admin123"
+    },
+    {
+      "StaffNumber": "ADM002",
+      "Name": "Clinic Operations Manager",
+      "Password": "admin123"
+    }
+  ],
+  "Nurse": [
+    {
+      "StaffNumber": "NUR001",
+      "Address": "12 Marine Drive, Summerstrand",
+      "PhoneNumber": "0821234567",
+      "FirstName": "Sarah",
+      "LastName": "Jenkins",
+      "Password": "nurse123",
+      "Email": "sarah.jenkins@mandela.ac.za",
+      "ClinicID": "CLN001"
+    },
+    {
+      "StaffNumber": "NUR002",
+      "Address": "7 Admiralty Way, Summerstrand",
+      "PhoneNumber": "0839876543",
+      "FirstName": "David",
+      "LastName": "Khumalo",
+      "Password": "nurse123",
+      "Email": "david.khumalo@mandela.ac.za",
+      "ClinicID": "CLN001"
+    },
+    {
+      "StaffNumber": "NUR003",
+      "Address": "45 Buffelsfontein Road, Newton Park",
+      "PhoneNumber": "0841112233",
+      "FirstName": "Thandiwe",
+      "LastName": "Nkosi",
+      "Password": "nurse123",
+      "Email": "thandiwe.nkosi@mandela.ac.za",
+      "ClinicID": "CLN002"
+    }
+  ],
+  "Student": [
+    {
+      "StudentNumber": "s227921577",
+      "Address": "Lena Allen Res, NMU South Campus, Summerstrand",
+      "MedicalHistory": "Asthma, Penicillin Allergy",
+      "Email": "s227921577@mandela.ac.za",
+      "FirstName": "Seth",
+      "LastName": "Whitfield",
+      "Password": "password123"
+    },
+    {
+      "StudentNumber": "s226205096",
+      "Address": "Xanadu Res, NMU South Campus, Summerstrand",
+      "MedicalHistory": "No known allergies",
+      "Email": "s226205096@mandela.ac.za",
+      "FirstName": "Tarisai",
+      "LastName": "Rusike",
+      "Password": "password123"
+    },
+    {
+      "StudentNumber": "s227582012",
+      "Address": "14 Hoff Street, Summerstrand",
+      "MedicalHistory": "Mild Migraines",
+      "Email": "s227582012@mandela.ac.za",
+      "FirstName": "Vhuthuhawe",
+      "LastName": "Nekhavhambe",
+      "Password": "password123"
+    },
+    {
+      "StudentNumber": "s228124603",
+      "Address": "42 Ring Road, Newton Park",
+      "MedicalHistory": "No known allergies",
+      "Email": "s228124603@mandela.ac.za",
+      "FirstName": "Bridget",
+      "LastName": "Magampa",
+      "Password": "password123"
+    },
+    {
+      "StudentNumber": "s229001001",
+      "Address": "Founders Res, NMU South Campus, Summerstrand",
+      "MedicalHistory": "None",
+      "Email": "s229001001@mandela.ac.za",
+      "FirstName": "Liam",
+      "LastName": "van der Merwe",
+      "Password": "password123"
+    },
+    {
+      "StudentNumber": "s229001002",
+      "Address": "3rd Avenue, Summerstrand",
+      "MedicalHistory": "Seasonal allergies",
+      "Email": "s229001002@mandela.ac.za",
+      "FirstName": "Naledi",
+      "LastName": "Mokoena",
+      "Password": "password123"
+    },
+    {
+      "StudentNumber": "s229001003",
+      "Address": "6th Avenue, Summerstrand",
+      "MedicalHistory": "None",
+      "Email": "s229001003@mandela.ac.za",
+      "FirstName": "Jason",
+      "LastName": "Pieterse",
+      "Password": "password123"
+    },
+    {
+      "StudentNumber": "s229001004",
+      "Address": "Beach Road, Summerstrand",
+      "MedicalHistory": "Lactose intolerance",
+      "Email": "s229001004@mandela.ac.za",
+      "FirstName": "Amahle",
+      "LastName": "Dlamini",
+      "Password": "password123"
+    },
+    {
+      "StudentNumber": "s229001005",
+      "Address": "Lena Allen Res, NMU South Campus, Summerstrand",
+      "MedicalHistory": "None",
+      "Email": "s229001005@mandela.ac.za",
+      "FirstName": "Ruan",
+      "LastName": "Botha",
+      "Password": "password123"
+    },
+    {
+      "StudentNumber": "s229001006",
+      "Address": "Marine Drive, Summerstrand",
+      "MedicalHistory": "Mild asthma",
+      "Email": "s229001006@mandela.ac.za",
+      "FirstName": "Zintle",
+      "LastName": "Mthembu",
+      "Password": "password123"
+    },
+    {
+      "StudentNumber": "s229001007",
+      "Address": "15 Mount Road, Central",
+      "MedicalHistory": "None",
+      "Email": "s229001007@mandela.ac.za",
+      "FirstName": "Kyle",
+      "LastName": "Adams",
+      "Password": "password123"
+    },
+    {
+      "StudentNumber": "s229001008",
+      "Address": "8 Albany Road, Central",
+      "MedicalHistory": "None",
+      "Email": "s229001008@mandela.ac.za",
+      "FirstName": "Thandeka",
+      "LastName": "Zulu",
+      "Password": "password123"
+    },
+    {
+      "StudentNumber": "s229001009",
+      "Address": "23 Buffelsfontein Road, Newton Park",
+      "MedicalHistory": "Eczema",
+      "Email": "s229001009@mandela.ac.za",
+      "FirstName": "Marco",
+      "LastName": "Ferreira",
+      "Password": "password123"
+    },
+    {
+      "StudentNumber": "s229001010",
+      "Address": "Ring Road, Newton Park",
+      "MedicalHistory": "None",
+      "Email": "s229001010@mandela.ac.za",
+      "FirstName": "Lesedi",
+      "LastName": "Molefe",
+      "Password": "password123"
+    },
+    {
+      "StudentNumber": "s229001011",
+      "Address": "12 Heugh Road, Walmer",
+      "MedicalHistory": "None",
+      "Email": "s229001011@mandela.ac.za",
+      "FirstName": "Amy",
+      "LastName": "Smith",
+      "Password": "password123"
+    },
+    {
+      "StudentNumber": "s229001012",
+      "Address": "5 Circular Drive, Lorraine",
+      "MedicalHistory": "None",
+      "Email": "s229001012@mandela.ac.za",
+      "FirstName": "Sipho",
+      "LastName": "Ndlovu",
+      "Password": "password123"
+    },
+    {
+      "StudentNumber": "s229001013",
+      "Address": "Xanadu Res, NMU South Campus, Summerstrand",
+      "MedicalHistory": "Iron deficiency",
+      "Email": "s229001013@mandela.ac.za",
+      "FirstName": "Chloe",
+      "LastName": "van Niekerk",
+      "Password": "password123"
+    },
+    {
+      "StudentNumber": "s229001014",
+      "Address": "34 Main Road, Walmer",
+      "MedicalHistory": "None",
+      "Email": "s229001014@mandela.ac.za",
+      "FirstName": "Thabo",
+      "LastName": "Mahlangu",
+      "Password": "password123"
+    },
+    {
+      "StudentNumber": "s229001015",
+      "Address": "Mount Road, Central",
+      "MedicalHistory": "Anxiety history",
+      "Email": "s229001015@mandela.ac.za",
+      "FirstName": "Danielle",
+      "LastName": "Jordaan",
+      "Password": "password123"
+    }
+  ],
+  "Symptoms": [
+    {
+      "Name": "Fever & Chills",
+      "Description": "Body temperature above 38°C with shivering and sweating",
+      "Type": "Systemic",
+      "Tier": 1,
+      "Cause": "Viral infection, seasonal flu, or common cold",
+      "StudentNumber": "s227921577"
+    },
+    {
+      "Name": "Fatigue & Weakness",
+      "Description": "Persistent tiredness unrelieved by sleep, difficulty concentrating",
+      "Type": "Systemic",
+      "Tier": 1,
+      "Cause": "Sleep deprivation, academic burnout, iron deficiency",
+      "StudentNumber": "s226205096"
+    },
+    {
+      "Name": "Body Aches & Muscle Pain",
+      "Description": "Generalised soreness in limbs, joints, and back",
+      "Type": "Systemic",
+      "Tier": 1,
+      "Cause": "Overexertion, flu onset, physical strain",
+      "StudentNumber": "s227582012"
+    },
+    {
+      "Name": "Nausea & Loss of Appetite",
+      "Description": "Feeling of sickness in the stomach with reduced desire to eat",
+      "Type": "Gastrointestinal",
+      "Tier": 1,
+      "Cause": "Food poisoning, anxiety, gastritis",
+      "StudentNumber": "s228124603"
+    },
+    {
+      "Name": "Acute Headache",
+      "Description": "Throbbing or pressure pain in the forehead or temples",
+      "Type": "Neurological",
+      "Tier": 1,
+      "Cause": "Dehydration, screen fatigue, tension, caffeine withdrawal",
+      "StudentNumber": "s227582012"
+    },
+    {
+      "Name": "Sore Throat",
+      "Description": "Pain or scratchiness when swallowing, inflamed throat",
+      "Type": "Respiratory",
+      "Tier": 1,
+      "Cause": "Viral pharyngitis, tonsillitis, dry winter air",
+      "StudentNumber": "s227921577"
+    },
+    {
+      "Name": "Blocked Nose & Sinus Congestion",
+      "Description": "Nasal stuffiness with facial pressure around cheeks and forehead",
+      "Type": "Respiratory",
+      "Tier": 1,
+      "Cause": "Common cold, seasonal allergies, sinusitis",
+      "StudentNumber": "s226205096"
+    },
+    {
+      "Name": "Skin Rash & Irritation",
+      "Description": "Red, itchy patches on skin, possibly with swelling or bumps",
+      "Type": "Dermatological",
+      "Tier": 1,
+      "Cause": "Allergic reaction, eczema, contact dermatitis",
+      "StudentNumber": "s228124603"
+    },
+    {
+      "Name": "Stomach Cramps & Bloating",
+      "Description": "Sharp or dull abdominal pain with distended feeling",
+      "Type": "Gastrointestinal",
+      "Tier": 1,
+      "Cause": "Indigestion, menstrual cramps, gas, spicy food",
+      "StudentNumber": "s227921577"
+    },
+    {
+      "Name": "Insomnia & Sleep Difficulty",
+      "Description": "Inability to fall asleep or stay asleep for 3+ nights",
+      "Type": "Mental Health",
+      "Tier": 1,
+      "Cause": "Exam stress, caffeine, screen time before bed",
+      "StudentNumber": "s227582012"
+    },
+    {
+      "Name": "Mild Allergic Reaction",
+      "Description": "Sneezing, watery eyes, itchy nose without breathing difficulty",
+      "Type": "Systemic",
+      "Tier": 1,
+      "Cause": "Pollen, dust, pet dander, seasonal change",
+      "StudentNumber": "s226205096"
+    },
+    {
+      "Name": "Severe Persistent Cough",
+      "Description": "Dry or productive cough lasting more than 5 days",
+      "Type": "Respiratory",
+      "Tier": 2,
+      "Cause": "Bronchitis, post-nasal drip, lower respiratory infection",
+      "StudentNumber": "s226205096"
+    },
+    {
+      "Name": "Migraine with Aura",
+      "Description": "Intense one-sided headache with visual disturbances and nausea",
+      "Type": "Neurological",
+      "Tier": 2,
+      "Cause": "Stress triggers, hormonal changes, bright lights",
+      "StudentNumber": "s227582012"
+    },
+    {
+      "Name": "Dizziness & Lightheadedness",
+      "Description": "Feeling faint or unsteady, room spinning sensation",
+      "Type": "Neurological",
+      "Tier": 2,
+      "Cause": "Low blood pressure, dehydration, anaemia, skipped meals",
+      "StudentNumber": "s228124603"
+    },
+    {
+      "Name": "Diarrhoea (>2 days)",
+      "Description": "Frequent loose or watery stools for more than 48 hours",
+      "Type": "Gastrointestinal",
+      "Tier": 2,
+      "Cause": "Gastroenteritis, contaminated food or water, bacterial infection",
+      "StudentNumber": "s227921577"
+    },
+    {
+      "Name": "Repeated Vomiting",
+      "Description": "Vomiting more than 3 times in 24 hours with inability to keep fluids down",
+      "Type": "Gastrointestinal",
+      "Tier": 2,
+      "Cause": "Food poisoning, norovirus, alcohol excess",
+      "StudentNumber": "s226205096"
+    },
+    {
+      "Name": "Anxiety & Panic Episodes",
+      "Description": "Racing heartbeat, shallow breathing, overwhelming worry or dread",
+      "Type": "Mental Health",
+      "Tier": 2,
+      "Cause": "Academic pressure, social anxiety, exam periods",
+      "StudentNumber": "s228124603"
+    },
+    {
+      "Name": "Persistent Low Mood (>2 weeks)",
+      "Description": "Ongoing sadness, loss of interest in activities, social withdrawal",
+      "Type": "Mental Health",
+      "Tier": 2,
+      "Cause": "Possible depression, grief, adjustment disorder",
+      "StudentNumber": "s227582012"
+    },
+    {
+      "Name": "Shortness of Breath",
+      "Description": "Difficulty breathing, chest tightness, unable to take full breath",
+      "Type": "Respiratory",
+      "Tier": 3,
+      "Cause": "Asthma attack, pneumonia, severe allergic reaction",
+      "StudentNumber": "s228124603"
+    },
+    {
+      "Name": "Chest Pain & Palpitations",
+      "Description": "Sharp or crushing chest pain with irregular heartbeat sensations",
+      "Type": "Systemic",
+      "Tier": 3,
+      "Cause": "Panic attack, cardiac concern, severe dehydration",
+      "StudentNumber": "s227921577"
+    }
+  ],
+  "Medication": [
+    {
+      "MedicationCode": "MED001",
+      "Name": "Panado 500mg (Paracetamol)",
+      "Description": "Over-the-counter analgesic and antipyretic.",
+      "SymptomsTreated": "Fever, Headache, Body Aches, Sore Throat",
+      "FacilityID": "FAC001",
+      "ExpiryDate": "2027-08-30",
+      "StockQuantity": 500
+    },
+    {
+      "MedicationCode": "MED002",
+      "Name": "Nurofen 400mg (Ibuprofen)",
+      "Description": "Over-the-counter anti-inflammatory pain reliever.",
+      "SymptomsTreated": "Headache, Body Aches, Cramps, Migraine",
+      "FacilityID": "FAC002",
+      "ExpiryDate": "2027-05-15",
+      "StockQuantity": 300
+    },
+    {
+      "MedicationCode": "MED003",
+      "Name": "Benylin Wet Cough Syrup",
+      "Description": "Over-the-counter expectorant for productive cough.",
+      "SymptomsTreated": "Persistent Cough",
+      "FacilityID": "FAC001",
+      "ExpiryDate": "2027-02-01",
+      "StockQuantity": 80
+    },
+    {
+      "MedicationCode": "MED004",
+      "Name": "Ventolin Inhaler (Salbutamol)",
+      "Description": "Prescription bronchodilator inhaler.",
+      "SymptomsTreated": "Shortness of Breath, Asthma",
+      "FacilityID": "FAC002",
+      "ExpiryDate": "2027-11-20",
+      "StockQuantity": 25
+    },
+    {
+      "MedicationCode": "MED005",
+      "Name": "Strepsils Throat Lozenges",
+      "Description": "Over-the-counter antiseptic throat lozenges.",
+      "SymptomsTreated": "Sore Throat",
+      "FacilityID": "FAC001",
+      "ExpiryDate": "2027-09-10",
+      "StockQuantity": 200
+    },
+    {
+      "MedicationCode": "MED006",
+      "Name": "Allergex (Chlorpheniramine 4mg)",
+      "Description": "Over-the-counter antihistamine. May cause drowsiness.",
+      "SymptomsTreated": "Allergies, Rash, Congestion, Sneezing",
+      "FacilityID": "FAC002",
+      "ExpiryDate": "2027-07-25",
+      "StockQuantity": 150
+    },
+    {
+      "MedicationCode": "MED007",
+      "Name": "Rehidrat (Oral Rehydration Salts)",
+      "Description": "Oral rehydration solution for fluid replacement.",
+      "SymptomsTreated": "Diarrhoea, Vomiting, Dehydration, Dizziness",
+      "FacilityID": "FAC001",
+      "ExpiryDate": "2028-01-15",
+      "StockQuantity": 100
+    },
+    {
+      "MedicationCode": "MED008",
+      "Name": "Gaviscon Antacid Liquid",
+      "Description": "Over-the-counter antacid for stomach acid relief.",
+      "SymptomsTreated": "Stomach Cramps, Nausea, Heartburn",
+      "FacilityID": "FAC001",
+      "ExpiryDate": "2027-04-30",
+      "StockQuantity": 60
+    },
+    {
+      "MedicationCode": "MED009",
+      "Name": "Iliadin Nasal Spray (Oxymetazoline)",
+      "Description": "Over-the-counter nasal decongestant spray.",
+      "SymptomsTreated": "Blocked Nose, Sinus Congestion",
+      "FacilityID": "FAC002",
+      "ExpiryDate": "2027-06-01",
+      "StockQuantity": 45
+    },
+    {
+      "MedicationCode": "MED010",
+      "Name": "Calamine Lotion",
+      "Description": "Topical soothing lotion for skin irritation.",
+      "SymptomsTreated": "Skin Rash, Itching, Irritation",
+      "FacilityID": "FAC001",
+      "ExpiryDate": "2027-12-01",
+      "StockQuantity": 40
+    },
+    {
+      "MedicationCode": "MED011",
+      "Name": "Imodium (Loperamide 2mg)",
+      "Description": "Over-the-counter anti-diarrhoeal.",
+      "SymptomsTreated": "Diarrhoea",
+      "FacilityID": "FAC002",
+      "ExpiryDate": "2027-10-15",
+      "StockQuantity": 70
+    },
+    {
+      "MedicationCode": "MED012",
+      "Name": "Valoid (Cyclizine 50mg)",
+      "Description": "Anti-nausea and anti-emetic medication.",
+      "SymptomsTreated": "Nausea, Vomiting, Dizziness",
+      "FacilityID": "FAC001",
+      "ExpiryDate": "2027-03-20",
+      "StockQuantity": 55
+    },
+    {
+      "MedicationCode": "MED013",
+      "Name": "Voltaren Emulgel (Diclofenac)",
+      "Description": "Topical anti-inflammatory gel for muscle and joint pain.",
+      "SymptomsTreated": "Body Aches, Muscle Pain, Joint Pain",
+      "FacilityID": "FAC002",
+      "ExpiryDate": "2027-08-01",
+      "StockQuantity": 35
+    },
+    {
+      "MedicationCode": "MED014",
+      "Name": "Imigran 50mg (Sumatriptan)",
+      "Description": "Migraine-specific pain relief medication.",
+      "SymptomsTreated": "Migraine",
+      "FacilityID": "FAC002",
+      "ExpiryDate": "2027-07-10",
+      "StockQuantity": 20
+    },
+    {
+      "MedicationCode": "MED015",
+      "Name": "Rescue Remedy (Bach Flower)",
+      "Description": "Natural remedy for acute stress and anxiety relief.",
+      "SymptomsTreated": "Anxiety, Panic, Insomnia, Stress",
+      "FacilityID": "FAC001",
+      "ExpiryDate": "2028-03-01",
+      "StockQuantity": 30
+    }
+  ],
+  "SymptomMedication": [
+    { "MedicationCode": "MED001", "Name": "Fever & Chills" },
+    { "MedicationCode": "MED001", "Name": "Acute Headache" },
+    { "MedicationCode": "MED001", "Name": "Body Aches & Muscle Pain" },
+    { "MedicationCode": "MED001", "Name": "Sore Throat" },
+    { "MedicationCode": "MED002", "Name": "Acute Headache" },
+    { "MedicationCode": "MED002", "Name": "Body Aches & Muscle Pain" },
+    { "MedicationCode": "MED002", "Name": "Stomach Cramps & Bloating" },
+    { "MedicationCode": "MED002", "Name": "Migraine with Aura" },
+    { "MedicationCode": "MED003", "Name": "Severe Persistent Cough" },
+    { "MedicationCode": "MED004", "Name": "Shortness of Breath" },
+    { "MedicationCode": "MED005", "Name": "Sore Throat" },
+    { "MedicationCode": "MED006", "Name": "Mild Allergic Reaction" },
+    { "MedicationCode": "MED006", "Name": "Skin Rash & Irritation" },
+    { "MedicationCode": "MED006", "Name": "Blocked Nose & Sinus Congestion" },
+    { "MedicationCode": "MED007", "Name": "Diarrhoea (>2 days)" },
+    { "MedicationCode": "MED007", "Name": "Repeated Vomiting" },
+    { "MedicationCode": "MED007", "Name": "Dizziness & Lightheadedness" },
+    { "MedicationCode": "MED008", "Name": "Stomach Cramps & Bloating" },
+    { "MedicationCode": "MED008", "Name": "Nausea & Loss of Appetite" },
+    { "MedicationCode": "MED009", "Name": "Blocked Nose & Sinus Congestion" },
+    { "MedicationCode": "MED010", "Name": "Skin Rash & Irritation" },
+    { "MedicationCode": "MED011", "Name": "Diarrhoea (>2 days)" },
+    { "MedicationCode": "MED012", "Name": "Nausea & Loss of Appetite" },
+    { "MedicationCode": "MED012", "Name": "Repeated Vomiting" },
+    { "MedicationCode": "MED012", "Name": "Dizziness & Lightheadedness" },
+    { "MedicationCode": "MED013", "Name": "Body Aches & Muscle Pain" },
+    { "MedicationCode": "MED013", "Name": "Fatigue & Weakness" },
+    { "MedicationCode": "MED014", "Name": "Migraine with Aura" },
+    { "MedicationCode": "MED015", "Name": "Anxiety & Panic Episodes" },
+    { "MedicationCode": "MED015", "Name": "Insomnia & Sleep Difficulty" }
+  ],
+  "Appointment": [
+    {
+      "AppointmentID": "APT001",
+      "AppointmentType": "Physical",
+      "Time": "2026-08-05 10:00:00",
+      "TeamsID": null,
+      "StudentNumber": "s227921577",
+      "StaffNumber": "NUR001",
+      "Status": "Completed"
+    },
+    {
+      "AppointmentID": "APT002",
+      "AppointmentType": "Online",
+      "Time": "2026-08-06 14:15:00",
+      "TeamsID": "https://teams.microsoft.com/l/meetup-join/test-appointment-002",
+      "StudentNumber": "s226205096",
+      "StaffNumber": "NUR002",
+      "Status": "Confirmed"
+    },
+    {
+      "AppointmentID": "APT003",
+      "AppointmentType": "Physical",
+      "Time": "2026-08-10 11:30:00",
+      "TeamsID": null,
+      "StudentNumber": "s227582012",
+      "StaffNumber": "NUR001",
+      "Status": "Pending"
+    },
+    {
+      "AppointmentID": "APT004",
+      "AppointmentType": "Online",
+      "Time": "2026-08-12 09:00:00",
+      "TeamsID": "https://teams.microsoft.com/l/meetup-join/test-appointment-004",
+      "StudentNumber": "s228124603",
+      "StaffNumber": "NUR003",
+      "Status": "Pending"
+    }
+  ],
+  "Rating": [
+    {
+      "RatingID": "RAT001",
+      "AppointmentID": "APT001",
+      "Score": 5,
+      "RatingDescription": "Prompt physical consultation. Nurse Jenkins was thorough and provided great care.",
+      "StudentNumber": "s227921577"
+    },
+    {
+      "RatingID": "RAT002",
+      "AppointmentID": "APT002",
+      "Score": 4,
+      "RatingDescription": "Online Teams video call connected smoothly. Received clear medical guidance.",
+      "StudentNumber": "s226205096"
+    }
+  ]
+}

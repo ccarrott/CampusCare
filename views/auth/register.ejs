@@ -1,65 +1,50 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>CampusCare Hub - Student Registration</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 40px; background-color: #f4f6f8; }
-    .card { max-width: 450px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    .form-group { margin-bottom: 12px; }
-    .row { display: flex; gap: 10px; }
-    .row .form-group { flex: 1; }
-    label { display: block; margin-bottom: 4px; font-weight: bold; font-size: 14px; }
-    input, textarea { width: 100%; padding: 8px; box-sizing: border-box; }
-    button { width: 100%; padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; margin-top: 10px; }
-    .error { color: red; margin-bottom: 15px; }
-    .link { text-align: center; margin-top: 15px; display: block; font-size: 14px; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h2>Student Registration</h2>
+<%- include('../partials/auth-header', { title: 'Register' }) %>
 
-    <% if (error) { %>
-      <div class="error"><%= error %></div>
-    <% } %>
+    <div class="auth-card">
+      <h2 class="auth-title">Student Registration</h2>
 
-    <form action="/auth/register" method="POST">
-      <div class="form-group">
-        <label for="studentNumber">Student Number:</label>
-        <input type="text" id="studentNumber" name="studentNumber" required placeholder="e.g. 226205096">
-      </div>
+      <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert alert-danger"><%= error %></div>
+      <% } %>
 
-      <div class="row">
+      <form action="/auth/register" method="POST">
         <div class="form-group">
-          <label for="firstName">First Name:</label>
-          <input type="text" id="firstName" name="firstName" required placeholder="e.g. John">
+          <label for="studentNumber">Student Number</label>
+          <input type="text" id="studentNumber" name="studentNumber" class="form-control" required placeholder="e.g. s226205096">
         </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="firstName">First Name</label>
+            <input type="text" id="firstName" name="firstName" class="form-control" required placeholder="John">
+          </div>
+          <div class="form-group">
+            <label for="lastName">Last Name</label>
+            <input type="text" id="lastName" name="lastName" class="form-control" required placeholder="Doe">
+          </div>
+        </div>
+
         <div class="form-group">
-          <label for="lastName">Last Name:</label>
-          <input type="text" id="lastName" name="lastName" required placeholder="e.g. Doe">
+          <label for="address">Address / Residence</label>
+          <input type="text" id="address" name="address" class="form-control" placeholder="e.g. Campus Residence Block A Room 12">
         </div>
+
+        <div class="form-group">
+          <label for="medicalHistory">Medical History (Optional)</label>
+          <textarea id="medicalHistory" name="medicalHistory" class="form-control" rows="2" placeholder="e.g. Asthma, Penicillin allergy"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password (min 6 characters)</label>
+          <input type="password" id="password" name="password" class="form-control" required minlength="6" autocomplete="new-password">
+        </div>
+
+        <button type="submit" class="btn btn-success btn-block">Create Account</button>
+      </form>
+
+      <div class="auth-links">
+        <a href="/auth/login">Already have an account? Sign in</a>
       </div>
+    </div>
 
-      <div class="form-group">
-        <label for="address">Address / Residence:</label>
-        <input type="text" id="address" name="address" placeholder="e.g. Campus Residence Room 12">
-      </div>
-
-      <div class="form-group">
-        <label for="medicalHistory">Medical History (Optional):</label>
-        <textarea id="medicalHistory" name="medicalHistory" rows="2" placeholder="e.g. Asthma, Penicillin allergy"></textarea>
-      </div>
-
-      <div class="form-group">
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
-      </div>
-
-      <button type="submit">Register Account</button>
-    </form>
-
-    <a href="/auth/login" class="link">Already registered? Sign in here</a>
-  </div>
-</body>
-</html>
+<%- include('../partials/auth-footer') %>

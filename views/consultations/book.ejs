@@ -1,0 +1,189 @@
+<%- include('../partials/header', { title: 'Book Consultation' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="container page-wrapper">
+  <%- include('../partials/alerts') %>
+
+  <header class="page-header">
+    <h1>Book a Consultation</h1>
+    <p class="subtitle">Select a nurse, then click an available (green) slot to book your 15-minute session.</p>
+  </header>
+
+  <section class="content-card">
+    <h2>1. Choose Consultation Type & Nurse</h2>
+    <form action="/consultations/book" method="POST" id="bookingForm">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="appointmentType">Consultation Type</label>
+          <select id="appointmentType" name="appointmentType" class="form-control" required>
+            <option value="" disabled selected>-- Select type --</option>
+            <option value="Physical">Physical (In-Person)</option>
+            <option value="Online">Online (Microsoft Teams)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="staffNumber">Select Nurse</label>
+          <select id="staffNumber" name="staffNumber" class="form-control" required>
+            <option value="" disabled selected>-- Select a nurse --</option>
+            <% nurses.forEach(function(nurse) { %>
+              <option value="<%= nurse.StaffNumber %>"><%= nurse.FirstName %> <%= nurse.LastName %></option>
+            <% }); %>
+          </select>
+        </div>
+      </div>
+
+      <!-- Hidden field for combined datetime -->
+      <input type="hidden" name="time" id="selectedTime">
+
+      <!-- Slot Grid (loaded via AJAX after nurse selection) -->
+      <div id="gridContainer" style="display: none;">
+        <h2 class="mt-3">2. Select a Time Slot</h2>
+        <p class="text-muted mb-2">Select an available slot below.</p>
+        <div class="availability-legend mb-2">
+          <span class="legend-item"><span class="legend-swatch swatch-available"></span> Available</span>
+          <span class="legend-item"><span class="legend-swatch swatch-unavailable"></span> Unavailable / Booked</span>
+          <span class="legend-item"><span class="legend-swatch" style="background-color: var(--accent-cyan); border-color: var(--primary-navy);"></span> Your Selection</span>
+        </div>
+        <div class="availability-grid-wrapper">
+          <table class="availability-grid" id="bookingGrid">
+            <thead><tr id="gridHeader"></tr></thead>
+            <tbody id="gridBody"></tbody>
+          </table>
+        </div>
+        <div id="selectedSlotInfo" class="mt-2" style="display: none;">
+          <div class="alert alert-success">
+            Selected: <strong id="selectedSlotText"></strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-3">
+        <button type="submit" class="btn btn-primary" id="submitBtn" disabled>Book Appointment</button>
+      </div>
+    </form>
+  </section>
+
+</main>
+
+<script>
+(function() {
+  const staffSelect = document.getElementById('staffNumber');
+  const gridContainer = document.getElementById('gridContainer');
+  const gridHeader = document.getElementById('gridHeader');
+  const gridBody = document.getElementById('gridBody');
+  const selectedTimeInput = document.getElementById('selectedTime');
+  const selectedSlotInfo = document.getElementById('selectedSlotInfo');
+  const selectedSlotText = document.getElementById('selectedSlotText');
+  const submitBtn = document.getElementById('submitBtn');
+  let currentSelection = null;
+
+  staffSelect.addEventListener('change', loadNurseGrid);
+
+  async function loadNurseGrid() {
+    const staffNumber = staffSelect.value;
+    if (!staffNumber) return;
+
+    gridContainer.style.display = 'none';
+    selectedSlotInfo.style.display = 'none';
+    submitBtn.disabled = true;
+    selectedTimeInput.value = '';
+    currentSelection = null;
+
+    // Show loading spinner
+    gridBody.innerHTML = '';
+    gridHeader.innerHTML = '';
+    gridContainer.style.display = 'block';
+    gridBody.innerHTML = '<tr><td colspan="6"><div class="loading-spinner"></div></td></tr>';
+
+    try {
+      const resp = await fetch('/consultations/api/nurse-grid/' + staffNumber);
+      const data = await resp.json();
+
+      if (data.error) {
+        alert(data.error);
+        return;
+      }
+
+      renderGrid(data);
+      gridContainer.style.display = 'block';
+    } catch (err) {
+      alert('Failed to load nurse availability.');
+    }
+  }
+
+  function renderGrid(data) {
+    const { grid, weekDays, timeSlots, bookedSlots } = data;
+
+    // Header
+    gridHeader.innerHTML = '<th class="time-col">Session</th>';
+    weekDays.forEach(function(wd) {
+      gridHeader.innerHTML += '<th><div class="day-name">' + wd.dayName + '</div><div class="day-date">(' + wd.date.slice(5).replace('-', '/') + ')</div></th>';
+    });
+
+    // Body
+    gridBody.innerHTML = '';
+    timeSlots.forEach(function(slot) {
+      const row = document.createElement('tr');
+      row.innerHTML = '<td class="time-col time-slot-label">' + slot.label + '</td>';
+
+      weekDays.forEach(function(wd) {
+        const status = (grid[wd.key] && grid[wd.key][slot.label]) || 'Available';
+        const startTime = slot.start;
+        const isBooked = bookedSlots[wd.key] && bookedSlots[wd.key].some(function(bookedTime) {
+          // Check if booked time falls within this slot (slot.start to slot.start + 15 min)
+          const slotParts = slot.start.split(':');
+          const slotMins = parseInt(slotParts[0]) * 60 + parseInt(slotParts[1]);
+          const bookParts = bookedTime.split(':');
+          const bookMins = parseInt(bookParts[0]) * 60 + parseInt(bookParts[1]);
+          return bookMins >= slotMins && bookMins <= slotMins + 15;
+        });
+
+        const td = document.createElement('td');
+        td.className = 'slot-cell';
+
+        if (status === 'Unavailable' || isBooked) {
+          td.classList.add('slot-unavailable');
+          td.title = isBooked ? 'Already booked' : 'Nurse unavailable';
+        } else {
+          td.classList.add('slot-available');
+          td.classList.add('slot-bookable');
+          td.title = 'Click to select: ' + wd.dayName + ' ' + slot.label;
+          td.dataset.date = wd.date;
+          td.dataset.time = startTime;
+          td.dataset.label = wd.dayName + ' ' + slot.label;
+
+          td.addEventListener('click', function() {
+            selectSlot(this);
+          });
+        }
+
+        row.appendChild(td);
+      });
+
+      gridBody.appendChild(row);
+    });
+  }
+
+  function selectSlot(cell) {
+    // Deselect previous
+    if (currentSelection) {
+      currentSelection.classList.remove('slot-selected');
+    }
+
+    // Select new
+    cell.classList.add('slot-selected');
+    currentSelection = cell;
+
+    const dateStr = cell.dataset.date;
+    const timeStr = cell.dataset.time;
+    const label = cell.dataset.label;
+
+    selectedTimeInput.value = dateStr + ' ' + timeStr + ':00';
+    selectedSlotText.textContent = label;
+    selectedSlotInfo.style.display = 'block';
+    submitBtn.disabled = false;
+  }
+})();
+</script>
+
+<%- include('../partials/footer') %>

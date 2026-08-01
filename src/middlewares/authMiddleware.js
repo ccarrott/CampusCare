@@ -22,3 +22,11 @@ export function requireNurse(req, res, next) {
   }
   res.status(403).send('Access Denied: Nurse account required.');
 }
+
+// Middleware to restrict access strictly to admins
+export function requireAdmin(req, res, next) {
+  if (req.session && req.session.user && req.session.user.role === 'admin') {
+    return next();
+  }
+  res.status(403).send('Access Denied: Admin account required.');
+}

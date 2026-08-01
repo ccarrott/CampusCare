@@ -1,0 +1,145 @@
+<%- include('../partials/header', { title: 'Nurse Dashboard' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="container page-wrapper">
+  <%- include('../partials/alerts') %>
+
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="alert alert-success"><%= success %></div>
+  <% } %>
+
+  <header class="page-header">
+    <h1>Clinical Dashboard</h1>
+    <p class="subtitle">Manage patient appointments, update status, and record consultation notes.</p>
+  </header>
+
+  <% if (appointments.length > 0) { %>
+
+    <section class="content-card">
+      <h2>Your Schedule (<%= appointments.length %> appointments)</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Patient</th>
+            <th>Type</th>
+            <th>Date & Time</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% appointments.forEach(function(apt) { %>
+            <% const status = apt.Status || 'Pending'; %>
+            <tr>
+              <td><%= apt.StudentFirstName %> <%= apt.StudentLastName %>
+                <a href="/management/nurse/patient/<%= apt.StudentNumber %>/history" style="font-size:0.7rem; margin-left:4px;" title="View patient symptom history">&#128196;</a>
+              </td>
+              <td><%= apt.AppointmentType %></td>
+              <td><%= new Date(apt.Time).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }) %></td>
+              <td><span class="status-badge status-<%= status.toLowerCase() %>"><%= status %></span></td>
+              <td>
+                <div class="action-btns">
+                  <% if (status === 'Pending') { %>
+                    <form action="/management/nurse/appointment/status" method="POST" style="display:inline;">
+                      <input type="hidden" name="appointmentId" value="<%= apt.AppointmentID %>">
+                      <input type="hidden" name="status" value="Confirmed">
+                      <button type="submit" class="action-btn action-btn-confirm">Confirm</button>
+                    </form>
+                  <% } %>
+                  <% if (status === 'Confirmed') { %>
+                    <form action="/management/nurse/appointment/status" method="POST" style="display:inline;">
+                      <input type="hidden" name="appointmentId" value="<%= apt.AppointmentID %>">
+                      <input type="hidden" name="status" value="Completed">
+                      <button type="submit" class="action-btn action-btn-complete">Complete</button>
+                    </form>
+                  <% } %>
+                  <% if (status !== 'Cancelled' && status !== 'Completed') { %>
+                    <form action="/management/nurse/appointment/status" method="POST" style="display:inline;" onsubmit="return confirm('Cancel this appointment?');">
+                      <input type="hidden" name="appointmentId" value="<%= apt.AppointmentID %>">
+                      <input type="hidden" name="status" value="Cancelled">
+                      <button type="submit" class="action-btn action-btn-cancel">Cancel</button>
+                    </form>
+                  <% } %>
+                  <% if (apt.AppointmentType === 'Online' && apt.TeamsID) { %>
+                    <a href="<%= apt.TeamsID %>" target="_blank" class="action-btn action-btn-teams">Join</a>
+                  <% } else if (apt.AppointmentType === 'Online' && !apt.TeamsID) { %>
+                    <button type="button" class="action-btn action-btn-teams" onclick="promptTeamsLink('<%= apt.AppointmentID %>')">Link</button>
+                  <% } %>
+                </div>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Consultation Notes -->
+    <section class="content-card">
+      <h2>Consultation Notes</h2>
+      <form action="/management/nurse/appointment/notes" method="POST">
+        <div class="form-group">
+          <label for="appointmentId">Select Appointment</label>
+          <select id="appointmentId" name="appointmentId" class="form-control" required>
+            <option value="" disabled selected>-- Select --</option>
+            <% appointments.forEach(function(apt) { %>
+              <option value="<%= apt.AppointmentID %>"><%= apt.StudentFirstName %> <%= apt.StudentLastName %> — <%= new Date(apt.Time).toLocaleDateString('en-ZA') %> (<%= apt.Status || 'Pending' %>)</option>
+            <% }); %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="notes">Notes</label>
+          <textarea id="notes" name="notes" class="form-control" rows="3" placeholder="Record consultation findings, recommendations, follow-up actions..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Save Notes</button>
+      </form>
+    </section>
+
+    <!-- Teams Link Management -->
+    <% const onlineApts = appointments.filter(a => a.AppointmentType === 'Online'); %>
+    <% if (onlineApts.length > 0) { %>
+      <section class="content-card">
+        <h2>Update MS Teams Link</h2>
+        <form action="/management/nurse/update-teams-link" method="POST">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="teamsAptId">Appointment</label>
+              <select id="teamsAptId" name="appointmentId" class="form-control" required>
+                <option value="" disabled selected>-- Select --</option>
+                <% onlineApts.forEach(function(apt) { %>
+                  <option value="<%= apt.AppointmentID %>"><%= apt.StudentFirstName %> <%= apt.StudentLastName %></option>
+                <% }); %>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="teamsId">Teams URL</label>
+              <input type="url" id="teamsId" name="teamsId" class="form-control" placeholder="https://teams.microsoft.com/..." required>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-secondary">Update Link</button>
+        </form>
+      </section>
+    <% } %>
+
+  <% } else { %>
+    <section class="content-card">
+      <p class="text-muted text-center">No appointments scheduled.</p>
+    </section>
+  <% } %>
+
+</main>
+
+<script>
+function promptTeamsLink(appointmentId) {
+  const link = prompt('Paste the Microsoft Teams meeting link:');
+  if (link && link.trim()) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/management/nurse/update-teams-link';
+    form.innerHTML = '<input type="hidden" name="appointmentId" value="' + appointmentId + '"><input type="hidden" name="teamsId" value="' + link.trim() + '">';
+    document.body.appendChild(form);
+    form.submit();
+  }
+}
+</script>
+
+<%- include('../partials/footer') %>

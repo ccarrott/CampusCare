@@ -4,20 +4,35 @@ import {
   getRegisterPage,
   handleLogin,
   handleRegister,
-  handleLogout
+  handleLogout,
+  showForgotPasswordForm,
+  handleForgotPassword,
+  showResetPasswordForm,
+  handleResetPassword
 } from '../controllers/authController.js';
 
 const router = Router();
 
-// GET routes (Display forms)
+// Login
 router.get('/login', getLoginPage);
-router.get('/register', getRegisterPage);
-
-// POST routes (Process submitted form data)
 router.post('/login', handleLogin);
+
+// Register
+router.get('/register', getRegisterPage);
 router.post('/register', handleRegister);
 
-// Logout route
+// Logout
 router.get('/logout', handleLogout);
+
+// Session refresh (keeps session alive)
+router.get('/refresh-session', (req, res) => { res.sendStatus(200); });
+
+// Forgot Password
+router.get('/forgot-password', showForgotPasswordForm);
+router.post('/forgot-password', handleForgotPassword);
+
+// Reset Password
+router.get('/reset-password/:token', showResetPasswordForm);
+router.post('/reset-password/:token', handleResetPassword);
 
 export default router;

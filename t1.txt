@@ -1,0 +1,2 @@
+[Database] MySQL connection pool verified successfully.
+[Server] CampusCare Hub running live at http://localhost:3000

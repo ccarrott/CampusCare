@@ -1,0 +1,36 @@
+CampusCare/
+├── public/                     # Static frontend assets (CSS, client JS, images)
+│   ├── css/
+│   │   ├── style.css           # Global master styles
+│   │   └── component-name.css
+│   └── js/                     # Frontend client-side scripts
+├── views/                      # HTML / Templating engine pages (e.g., EJS, Handlebars, or static HTML)
+│   ├── partials/               # Shared UI (header, navbar, footer)
+│   ├── auth/                   # Login / Register pages (E100, C100)
+│   ├── student/                # Student-facing views (A200, B100, B200)
+│   ├── nurse/                  # Nurse/Clinic views (D100, C300, C400)
+│   └── admin/                  # Admin views (D200, A100)
+├── src/
+│   ├── config/
+│   │   └── database.js         # Existing MySQL connection pool
+│   ├── models/                 # Database queries / Data Access Object (DAO)
+│   │   ├── userModel.js        # User & Profile queries
+│   │   ├── appointmentModel.js # Appointment & Scheduling queries
+│   │   ├── symptomModel.js     # Symptoms & Medication queries
+│   │   └── reportModel.js      # Analytics & Reports queries
+│   ├── controllers/            # Request handlers / Business logic
+│   │   ├── authController.js   # Logic for login/register
+│   │   ├── appointmentController.js
+│   │   ├── symptomController.js
+│   │   └── adminController.js
+│   ├── routes/                 # Express route definitions
+│   │   ├── authRoutes.js
+│   │   ├── appointmentRoutes.js
+│   │   ├── symptomRoutes.js
+│   │   └── adminRoutes.js
+│   ├── middlewares/            # Auth checks, session handling, input validation
+│   │   └── authMiddleware.js   # e.g., requireLogin, requireNurse
+│   └── app.js                  # Main Express application entry point
+├── .env
+├── package.json
+└── README.md

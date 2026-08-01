@@ -1,0 +1,84 @@
+<%- include('../partials/header', { title: 'My Profile' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="container page-wrapper">
+  <%- include('../partials/alerts') %>
+
+  <header class="page-header">
+    <h1>My Profile</h1>
+    <p class="subtitle">View your personal account information.</p>
+  </header>
+
+  <% if (profile) { %>
+
+    <!-- Profile Details Card -->
+    <section class="content-card">
+      <h2>Account Details</h2>
+      <ul class="profile-details">
+        <% if (user.role === 'student') { %>
+          <li><span class="detail-label">Student Number</span><span class="detail-value"><%= profile.StudentNumber %></span></li>
+          <li><span class="detail-label">First Name</span><span class="detail-value"><%= profile.FirstName %></span></li>
+          <li><span class="detail-label">Last Name</span><span class="detail-value"><%= profile.LastName %></span></li>
+          <li><span class="detail-label">Email</span><span class="detail-value"><%= profile.Email || 'Not set' %></span></li>
+          <li><span class="detail-label">Address</span><span class="detail-value"><%= profile.Address || 'Not provided' %></span></li>
+          <li><span class="detail-label">Medical History</span><span class="detail-value"><%= profile.MedicalHistory || 'None on file' %></span></li>
+        <% } else if (user.role === 'nurse') { %>
+          <li><span class="detail-label">Staff Number</span><span class="detail-value"><%= profile.StaffNumber %></span></li>
+          <li><span class="detail-label">First Name</span><span class="detail-value"><%= profile.FirstName %></span></li>
+          <li><span class="detail-label">Last Name</span><span class="detail-value"><%= profile.LastName %></span></li>
+          <li><span class="detail-label">Email</span><span class="detail-value"><%= profile.Email || 'Not set' %></span></li>
+          <li><span class="detail-label">Phone</span><span class="detail-value"><%= profile.PhoneNumber || 'Not set' %></span></li>
+          <li><span class="detail-label">Address</span><span class="detail-value"><%= profile.Address || 'Not provided' %></span></li>
+          <li><span class="detail-label">Clinic</span><span class="detail-value"><%= profile.ClinicID || 'Not assigned' %></span></li>
+        <% } else if (user.role === 'admin') { %>
+          <li><span class="detail-label">Staff Number</span><span class="detail-value"><%= profile.StaffNumber %></span></li>
+          <li><span class="detail-label">Name</span><span class="detail-value"><%= profile.Name %></span></li>
+          <li><span class="detail-label">Email</span><span class="detail-value"><%= profile.Email || 'Not set' %></span></li>
+          <li><span class="detail-label">Role</span><span class="detail-value">Administrator</span></li>
+        <% } %>
+      </ul>
+    </section>
+
+    <% if (user.role === 'student') { %>
+      <section class="content-card">
+        <h2>Account Actions</h2>
+        <div class="profile-actions">
+          <a href="/profile/edit" class="btn btn-primary">Edit Profile</a>
+          <form action="/profile/delete" method="POST" style="display: inline-block;" onsubmit="return confirm('Permanently delete your account? This cannot be undone.');">
+            <button type="submit" class="btn btn-danger">Delete Account</button>
+          </form>
+        </div>
+      </section>
+    <% } %>
+
+    <!-- Password Change (all roles) -->
+    <section class="content-card">
+      <h2>Change Password</h2>
+      <form action="/profile/change-password" method="POST">
+        <div class="form-group">
+          <label for="currentPassword">Current Password</label>
+          <input type="password" id="currentPassword" name="currentPassword" class="form-control" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="newPassword">New Password (min 6 chars)</label>
+            <input type="password" id="newPassword" name="newPassword" class="form-control" required minlength="6">
+          </div>
+          <div class="form-group">
+            <label for="confirmPassword">Confirm New Password</label>
+            <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" required minlength="6">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Update Password</button>
+      </form>
+    </section>
+
+  <% } else { %>
+    <section class="content-card">
+      <p class="text-muted text-center">No profile data available.</p>
+    </section>
+  <% } %>
+
+</main>
+
+<%- include('../partials/footer') %>

@@ -1,5 +1,5 @@
 // ======================================================================================
-// CAMPUSCARE HUB - CENTRAL APPLICATION ENTRY POINT (src/app.js)
+// CAMPUSCARE - CENTRAL APPLICATION ENTRY POINT (src/app.js)
 // ======================================================================================
 import express from 'express';
 import session from 'express-session';
@@ -8,6 +8,11 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { query } from './config/database.js';
 import authRoutes from './routes/authRoutes.js';
+import profileRoutes from './routes/profileRoutes.js';
+import symptomRoutes from './routes/symptomRoutes.js';
+import trendRoutes from './routes/trendRoutes.js';
+import consultationRoutes from './routes/consultationRoutes.js';
+import managementRoutes from './routes/managementRoutes.js';
 import { requireAuth } from './middlewares/authMiddleware.js';
 
 // Setup cross-platform directory paths for ES Modules
@@ -50,6 +55,21 @@ app.get('/', requireAuth, (req, res) => {
 // Mount modular Auth routes
 app.use('/auth', authRoutes);
 
+// Mount Profile routes
+app.use('/profile', profileRoutes);
+
+// Mount Symptom Checker routes
+app.use('/symptoms', symptomRoutes);
+
+// Mount Health Trends routes
+app.use('/trends', trendRoutes);
+
+// Mount Consultations routes
+app.use('/consultations', consultationRoutes);
+
+// Mount Nurse & Admin Management routes
+app.use('/management', managementRoutes);
+
 // ======================================================================================
 // STARTUP VERIFICATION & SERVER BOOT
 // ======================================================================================
@@ -62,7 +82,7 @@ async function startServer() {
     console.log('[Database] MySQL connection pool verified successfully.');
 
     app.listen(PORT, () => {
-      console.log(`[Server] CampusCare Hub running live at http://localhost:${PORT}`);
+      console.log(`[Server] CampusCare running live at http://localhost:${PORT}`);
     });
   } catch (error) {
     console.error('[Server Fatal Error] Unable to establish database connection:', error.message);
