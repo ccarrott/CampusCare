@@ -39,13 +39,11 @@ document.querySelectorAll('.sidebar-arrow-btn').forEach(function(btn) {
 
 // Time-aware greeting
 (function() {
-  const el = document.getElementById('greetingText');
+  const el = document.getElementById('dashboardGreeting');
   if (!el) return;
 
   const firstName = el.dataset.firstname;
-  const lastName = el.dataset.lastname;
   const role = el.dataset.role;
-  const fullName = el.dataset.name;
   const hour = new Date().getHours();
 
   let greeting;

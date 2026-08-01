@@ -5,7 +5,12 @@
   <%- include('./partials/alerts') %>
 
   <header class="page-header">
-    <h1>Welcome back, <%= user.name %></h1>
+    <h1 id="dashboardGreeting"
+      data-firstname="<%= user.firstName || '' %>"
+      data-lastname="<%= user.lastName || '' %>"
+      data-role="<%= user.role %>"
+      data-name="<%= user.name %>">
+    </h1>
     <p class="subtitle">Your CampusCare dashboard — quick access to all health services.</p>
   </header>
 

@@ -118,14 +118,6 @@
 <!-- Top Bar -->
 <header class="topbar" id="topbar">
   <div class="topbar-left">
-    <% if (typeof user !== 'undefined' && user) { %>
-      <span class="topbar-welcome" id="greetingText"
-        data-firstname="<%= user.firstName || '' %>"
-        data-lastname="<%= user.lastName || '' %>"
-        data-role="<%= user.role %>"
-        data-name="<%= user.name %>">
-      </span>
-    <% } %>
   </div>
   <div class="topbar-right">
     <% if (typeof user !== 'undefined' && user) { %>
