@@ -139,77 +139,6 @@ CampusCare/
 
 ---
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- MySQL 8.0 (local or cloud — e.g. Aiven, PlanetScale, Railway)
-- npm
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/your-username/CampusCare.git
-cd CampusCare
-
-# Install dependencies
-npm install
-
-# Configure environment
-cp .env.example .env
-# Edit .env with your database credentials
-```
-
-### Environment Variables
-
-```env
-DB_HOST=your-mysql-host
-DB_USER=your-mysql-user
-DB_PASS=your-mysql-password
-DB_NAME=campuscare
-DB_PORT=3306
-APP_PORT=3000
-SESSION_SEED=your-secret-session-key
-```
-
-### Database Setup
-
-```bash
-# Run schema migrations (creates all tables + columns)
-node src/config/migrate.js
-
-# Seed base data (students, nurses, symptoms, medications, zones)
-node src/config/seed.js
-
-# Seed campus zones and student mappings
-node src/config/seed-zones.js
-
-# Seed nurse availability grid (405 records)
-node src/config/seed-availability.js
-
-# (Optional) Populate showcase data for demo dashboards
-node src/config/seed-showcase.js
-```
-
-### Run
-
-```bash
-node src/app.js
-# → [Server] CampusCare running live at http://localhost:3000
-```
-
-### Demo Accounts
-
-| Role | ID | Password |
-|------|----|----------|
-| Student | s227921577 | password123 |
-| Nurse | NUR001 | nurse123 |
-| Admin | ADM001 | admin123 |
-
----
-
 ## Database Schema
 
 The platform uses **12 tables** with full relational integrity:
@@ -256,7 +185,7 @@ The platform uses **12 tables** with full relational integrity:
 
 ## License
 
-This project was developed as part of the WRRI314 / WRRI614 module at **Nelson Mandela University**.
+This project was developed as part of the WRRV302 module at **Nelson Mandela University**.
 
 ---
 
