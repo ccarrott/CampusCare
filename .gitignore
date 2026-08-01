@@ -1,3 +1,10 @@
-.env
 node_modules/
+.env
 *.pem
+*.log
+t1.txt
+t2.txt
+test_out.txt
+
+# Kiro
+# .kiro/
