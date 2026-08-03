@@ -6,13 +6,15 @@
 
   <header class="page-header">
     <h1>Book a Consultation</h1>
-    <p class="subtitle">Select a nurse, then click an available (green) slot to book your 15-minute session.</p>
+    <p class="subtitle">Follow the steps below to schedule your 15-minute consultation session.</p>
   </header>
 
   <section class="content-card">
-    <h2>1. Choose Consultation Type & Nurse</h2>
     <form action="/consultations/book" method="POST" id="bookingForm">
-      <div class="form-row">
+
+      <!-- Step 1: Consultation Type -->
+      <div class="booking-step" id="step1">
+        <h2>1. Choose Consultation Type</h2>
         <div class="form-group">
           <label for="appointmentType">Consultation Type</label>
           <select id="appointmentType" name="appointmentType" class="form-control" required>
@@ -21,8 +23,30 @@
             <option value="Online">Online (Microsoft Teams)</option>
           </select>
         </div>
+      </div>
+
+      <!-- Step 2a: Campus (only for Physical) -->
+      <div class="booking-step" id="stepCampus" style="display: none;">
+        <h2>2. Select Your Campus</h2>
         <div class="form-group">
-          <label for="staffNumber">Select Nurse</label>
+          <label for="campus">Nelson Mandela University Campus</label>
+          <select id="campus" name="campus" class="form-control">
+            <option value="" disabled selected>-- Select campus --</option>
+            <option value="South">South Campus</option>
+            <option value="North">North Campus</option>
+            <option value="Second Avenue">Second Avenue Campus</option>
+            <option value="Missionvale">Missionvale Campus</option>
+            <option value="Bird Street">Bird Street Campus</option>
+            <option value="George">George Campus</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Step: Select Nurse -->
+      <div class="booking-step" id="stepNurse" style="display: none;">
+        <h2 id="stepNurseTitle">2. Select a Nurse</h2>
+        <div class="form-group">
+          <label for="staffNumber">Available Nurses</label>
           <select id="staffNumber" name="staffNumber" class="form-control" required>
             <option value="" disabled selected>-- Select a nurse --</option>
             <% nurses.forEach(function(nurse) { %>
@@ -35,10 +59,10 @@
       <!-- Hidden field for combined datetime -->
       <input type="hidden" name="time" id="selectedTime">
 
-      <!-- Slot Grid (loaded via AJAX after nurse selection) -->
-      <div id="gridContainer" style="display: none;">
-        <h2 class="mt-3">2. Select a Time Slot</h2>
-        <p class="text-muted mb-2">Select an available slot below.</p>
+      <!-- Step: Time Slot Grid -->
+      <div class="booking-step" id="stepSlot" style="display: none;">
+        <h2 id="stepSlotTitle">3. Select a Time Slot</h2>
+        <p class="text-muted mb-2">Click an available (green) slot to select your 15-minute session.</p>
         <div class="availability-legend mb-2">
           <span class="legend-item"><span class="legend-swatch swatch-available"></span> Available</span>
           <span class="legend-item"><span class="legend-swatch swatch-unavailable"></span> Unavailable / Booked</span>
@@ -57,7 +81,30 @@
         </div>
       </div>
 
-      <div class="mt-3">
+      <!-- Step: Preferred Language (only for Online) -->
+      <div class="booking-step" id="stepLanguage" style="display: none;">
+        <h2 id="stepLanguageTitle">4. Preferred Language for Teams Meeting</h2>
+        <div class="form-group">
+          <label for="preferredLanguage">Select your preferred language</label>
+          <select id="preferredLanguage" name="preferredLanguage" class="form-control">
+            <option value="" disabled selected>-- Select language --</option>
+            <option value="English">English</option>
+            <option value="Afrikaans">Afrikaans</option>
+            <option value="isiZulu">isiZulu</option>
+            <option value="isiXhosa">isiXhosa</option>
+            <option value="Sesotho">Sesotho</option>
+            <option value="Setswana">Setswana</option>
+            <option value="Sepedi">Sepedi</option>
+            <option value="Tshivenda">Tshivenda</option>
+            <option value="Xitsonga">Xitsonga</option>
+            <option value="siSwati">siSwati</option>
+            <option value="isiNdebele">isiNdebele</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <div class="mt-3" id="submitSection" style="display: none;">
         <button type="submit" class="btn btn-primary" id="submitBtn" disabled>Book Appointment</button>
       </div>
     </form>
@@ -67,32 +114,113 @@
 
 <script>
 (function() {
+  const appointmentTypeSelect = document.getElementById('appointmentType');
+  const campusSelect = document.getElementById('campus');
   const staffSelect = document.getElementById('staffNumber');
-  const gridContainer = document.getElementById('gridContainer');
+  const languageSelect = document.getElementById('preferredLanguage');
   const gridHeader = document.getElementById('gridHeader');
   const gridBody = document.getElementById('gridBody');
   const selectedTimeInput = document.getElementById('selectedTime');
   const selectedSlotInfo = document.getElementById('selectedSlotInfo');
   const selectedSlotText = document.getElementById('selectedSlotText');
   const submitBtn = document.getElementById('submitBtn');
-  let currentSelection = null;
 
+  const stepCampus = document.getElementById('stepCampus');
+  const stepNurse = document.getElementById('stepNurse');
+  const stepSlot = document.getElementById('stepSlot');
+  const stepLanguage = document.getElementById('stepLanguage');
+  const submitSection = document.getElementById('submitSection');
+
+  let currentSelection = null;
+  let isPhysical = false;
+
+  function updateStepTitles() {
+    if (isPhysical) {
+      document.getElementById('stepNurseTitle').textContent = '3. Select a Nurse';
+      document.getElementById('stepSlotTitle').textContent = '4. Select a Time Slot';
+    } else {
+      document.getElementById('stepNurseTitle').textContent = '2. Select a Nurse';
+      document.getElementById('stepSlotTitle').textContent = '3. Select a Time Slot';
+      document.getElementById('stepLanguageTitle').textContent = '4. Preferred Language for Teams Meeting';
+    }
+  }
+
+  function hideFromStep(step) {
+    if (step <= 2) {
+      stepCampus.style.display = 'none';
+      stepNurse.style.display = 'none';
+    }
+    if (step <= 3) {
+      stepSlot.style.display = 'none';
+      gridBody.innerHTML = '';
+      gridHeader.innerHTML = '';
+      selectedSlotInfo.style.display = 'none';
+      selectedTimeInput.value = '';
+      currentSelection = null;
+    }
+    stepLanguage.style.display = 'none';
+    submitSection.style.display = 'none';
+    submitBtn.disabled = true;
+  }
+
+  // Step 1: Consultation type
+  appointmentTypeSelect.addEventListener('change', function() {
+    isPhysical = (this.value === 'Physical');
+    hideFromStep(2);
+    staffSelect.value = '';
+
+    if (isPhysical) {
+      stepCampus.style.display = 'block';
+      campusSelect.setAttribute('required', 'required');
+      languageSelect.removeAttribute('required');
+    } else {
+      stepCampus.style.display = 'none';
+      campusSelect.removeAttribute('required');
+      campusSelect.value = '';
+      languageSelect.setAttribute('required', 'required');
+      // For Online, go straight to nurse
+      stepNurse.style.display = 'block';
+    }
+    updateStepTitles();
+  });
+
+  // Step 2a: Campus selected (Physical only)
+  campusSelect.addEventListener('change', function() {
+    if (this.value) {
+      stepNurse.style.display = 'block';
+      // Reset downstream
+      staffSelect.value = '';
+      stepSlot.style.display = 'none';
+      submitSection.style.display = 'none';
+      submitBtn.disabled = true;
+    }
+  });
+
+  // Step: Nurse selected -> load grid
   staffSelect.addEventListener('change', loadNurseGrid);
+
+  // Step: Language selected (Online) -> enable submit
+  languageSelect.addEventListener('change', function() {
+    if (this.value && selectedTimeInput.value) {
+      submitBtn.disabled = false;
+    }
+  });
 
   async function loadNurseGrid() {
     const staffNumber = staffSelect.value;
     if (!staffNumber) return;
 
-    gridContainer.style.display = 'none';
+    // Reset downstream
     selectedSlotInfo.style.display = 'none';
     submitBtn.disabled = true;
     selectedTimeInput.value = '';
     currentSelection = null;
+    stepLanguage.style.display = 'none';
+    submitSection.style.display = 'none';
 
-    // Show loading spinner
     gridBody.innerHTML = '';
     gridHeader.innerHTML = '';
-    gridContainer.style.display = 'block';
+    stepSlot.style.display = 'block';
     gridBody.innerHTML = '<tr><td colspan="6"><div class="loading-spinner"></div></td></tr>';
 
     try {
@@ -103,9 +231,7 @@
         alert(data.error);
         return;
       }
-
       renderGrid(data);
-      gridContainer.style.display = 'block';
     } catch (err) {
       alert('Failed to load nurse availability.');
     }
@@ -114,13 +240,11 @@
   function renderGrid(data) {
     const { grid, weekDays, timeSlots, bookedSlots } = data;
 
-    // Header
     gridHeader.innerHTML = '<th class="time-col">Session</th>';
     weekDays.forEach(function(wd) {
       gridHeader.innerHTML += '<th><div class="day-name">' + wd.dayName + '</div><div class="day-date">(' + wd.date.slice(5).replace('-', '/') + ')</div></th>';
     });
 
-    // Body
     gridBody.innerHTML = '';
     timeSlots.forEach(function(slot) {
       const row = document.createElement('tr');
@@ -130,7 +254,6 @@
         const status = (grid[wd.key] && grid[wd.key][slot.label]) || 'Available';
         const startTime = slot.start;
         const isBooked = bookedSlots[wd.key] && bookedSlots[wd.key].some(function(bookedTime) {
-          // Check if booked time falls within this slot (slot.start to slot.start + 15 min)
           const slotParts = slot.start.split(':');
           const slotMins = parseInt(slotParts[0]) * 60 + parseInt(slotParts[1]);
           const bookParts = bookedTime.split(':');
@@ -165,12 +288,10 @@
   }
 
   function selectSlot(cell) {
-    // Deselect previous
     if (currentSelection) {
       currentSelection.classList.remove('slot-selected');
     }
 
-    // Select new
     cell.classList.add('slot-selected');
     currentSelection = cell;
 
@@ -181,7 +302,22 @@
     selectedTimeInput.value = dateStr + ' ' + timeStr + ':00';
     selectedSlotText.textContent = label;
     selectedSlotInfo.style.display = 'block';
-    submitBtn.disabled = false;
+
+    // Show next step based on type
+    submitSection.style.display = 'block';
+
+    if (!isPhysical) {
+      // Online: show language step, submit disabled until language chosen
+      stepLanguage.style.display = 'block';
+      if (languageSelect.value) {
+        submitBtn.disabled = false;
+      } else {
+        submitBtn.disabled = true;
+      }
+    } else {
+      // Physical: ready to submit
+      submitBtn.disabled = false;
+    }
   }
 })();
 </script>

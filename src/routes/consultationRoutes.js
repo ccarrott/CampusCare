@@ -3,6 +3,7 @@ import { requireStudent, requireAuth } from '../middlewares/authMiddleware.js';
 import { showBookingForm, handleBooking, showStudentAppointments, getNurseGridAPI, handleCancelAppointment, handleRescheduleAppointment } from '../controllers/appointmentController.js';
 import { handleRatingSubmission } from '../controllers/ratingController.js';
 import { getUpcomingAppointmentsAPI } from '../controllers/notificationController.js';
+import { showReviewPage, handleReviewSubmission, showStudentReviews } from '../controllers/nurseReviewController.js';
 
 const router = Router();
 
@@ -34,6 +35,15 @@ router.get('/confirmed/:id', requireStudent, async (req, res) => {
 
 // POST /consultations/rate - Submit appointment rating
 router.post('/rate', requireStudent, handleRatingSubmission);
+
+// GET /consultations/review/:id - Show review page after booking
+router.get('/review/:id', requireStudent, showReviewPage);
+
+// POST /consultations/review - Submit nurse review
+router.post('/review', requireStudent, handleReviewSubmission);
+
+// GET /consultations/nurse-reviews - View all student's nurse reviews
+router.get('/nurse-reviews', requireStudent, showStudentReviews);
 
 // POST /consultations/cancel - Cancel an appointment
 router.post('/cancel', requireStudent, handleCancelAppointment);
