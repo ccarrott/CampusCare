@@ -166,3 +166,40 @@ Full-stack university health platform built across 16 development phases.
   - Uses `APT-SHOW-`, `RAT-SHOW-`, `SH-` prefixes for easy identification
 - Renamed "CampusCare Hub" → "CampusCare" across all source files
 - Fixed sidebar logo animation (smooth transition both directions)
+
+## Phase 19: Booking Flow Revamp & Nurse Reviews
+
+### Booking Form Redesign (`views/consultations/book.ejs`)
+- Stepped booking flow with progressive disclosure
+- Step 1: Choose consultation type (Physical / Online)
+- Physical path: Step 2 = Select NMU campus (South, North, Second Avenue, Missionvale, Bird Street, George), Step 3 = Select nurse, Step 4 = Select time slot
+- Online path: Step 2 = Select nurse, Step 3 = Select time slot, Step 4 = Choose preferred language for Teams meeting (all 11 SA official languages)
+- Submit button only enables when all required steps are completed
+- Campus dropdown hidden for Online; language dropdown hidden for Physical
+
+### Controller & Model Updates
+- `appointmentController.js`: `handleBooking` now extracts `campus` and `preferredLanguage`, validates conditionally (campus required for Physical, language required for Online), redirects to review page after booking
+- `appointmentModel.js`: `createAppointment` now inserts `Campus` and `PreferredLanguage` columns (8 fields total)
+
+### Nurse Review System (new feature)
+- **New table**: `NurseReviews` (ReviewID PK, AppointmentID, StudentNumber, StaffNumber, Rating, ReviewText, CreatedAt)
+- **New model**: `src/models/nurseReviewModel.js` — createNurseReview, getReviewsByNurse, getReviewsByStudent, hasReviewedAppointment
+- **New controller**: `src/controllers/nurseReviewController.js` — showReviewPage, handleReviewSubmission, showStudentReviews
+- **New views**:
+  - `views/consultations/review.ejs` — post-booking review prompt with star rating (1–5) and text area; shows appointment summary with campus/language info
+  - `views/consultations/nurse-reviews.ejs` — list of all reviews submitted by the student
+- **Routes added** to `consultationRoutes.js`:
+  - `GET /consultations/review/:id` — review page after booking
+  - `POST /consultations/review` — submit nurse review
+  - `GET /consultations/nurse-reviews` — view all student's past reviews
+
+### Navigation
+- Added "Review Nurse" link in student sidebar (after My Appointments)
+
+### Database Migrations (`src/config/migrate.js`)
+- `ALTER TABLE Appointment ADD COLUMN Campus varchar(50) NULL`
+- `ALTER TABLE Appointment ADD COLUMN PreferredLanguage varchar(50) NULL`
+- `CREATE TABLE IF NOT EXISTS NurseReviews (ReviewID, AppointmentID, StudentNumber, StaffNumber, Rating, ReviewText, CreatedAt)`
+
+### Post-deploy Steps
+- Run `node src/config/migrate.js` to apply schema changes

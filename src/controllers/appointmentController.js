@@ -90,7 +90,7 @@ export async function getNurseGridAPI(req, res) {
  */
 export async function handleBooking(req, res) {
   try {
-    const { appointmentType, staffNumber, time } = req.body;
+    const { appointmentType, staffNumber, time, campus, preferredLanguage } = req.body;
     const studentNumber = req.session.user.id;
 
     if (!appointmentType || !staffNumber || !time) {
@@ -99,6 +99,26 @@ export async function handleBooking(req, res) {
         user: req.session.user,
         nurses,
         error: 'All fields are required to book an appointment.'
+      });
+    }
+
+    // If Physical, campus is required
+    if (appointmentType === 'Physical' && !campus) {
+      const nurses = await AppointmentModel.getAvailableNurses();
+      return res.status(400).render('consultations/book', {
+        user: req.session.user,
+        nurses,
+        error: 'Please select a campus for in-person consultations.'
+      });
+    }
+
+    // If Online, preferred language is required
+    if (appointmentType === 'Online' && !preferredLanguage) {
+      const nurses = await AppointmentModel.getAvailableNurses();
+      return res.status(400).render('consultations/book', {
+        user: req.session.user,
+        nurses,
+        error: 'Please select your preferred language for the Teams meeting.'
       });
     }
 
@@ -140,10 +160,13 @@ export async function handleBooking(req, res) {
       time,
       teamsId,
       studentNumber,
-      staffNumber
+      staffNumber,
+      campus: appointmentType === 'Physical' ? campus : null,
+      preferredLanguage: appointmentType === 'Online' ? preferredLanguage : null
     });
 
-    res.redirect('/consultations/confirmed/' + appointmentId);
+    // Redirect to the review page so student can leave a nurse review
+    res.redirect('/consultations/review/' + appointmentId);
   } catch (error) {
     console.error('Booking error:', error);
     const nurses = await AppointmentModel.getAvailableNurses();

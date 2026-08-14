@@ -82,6 +82,26 @@ const migrations = [
       LogDate datetime DEFAULT CURRENT_TIMESTAMP,
       Notes text NULL
     )`
+  },
+  {
+    name: 'Add Campus to Appointment',
+    sql: `ALTER TABLE Appointment ADD COLUMN Campus varchar(50) NULL`
+  },
+  {
+    name: 'Add PreferredLanguage to Appointment',
+    sql: `ALTER TABLE Appointment ADD COLUMN PreferredLanguage varchar(50) NULL`
+  },
+  {
+    name: 'Create NurseReviews table',
+    sql: `CREATE TABLE IF NOT EXISTS NurseReviews (
+      ReviewID varchar(50) PRIMARY KEY,
+      AppointmentID varchar(50) NOT NULL,
+      StudentNumber varchar(20) NOT NULL,
+      StaffNumber varchar(20) NOT NULL,
+      Rating int NOT NULL,
+      ReviewText text NOT NULL,
+      CreatedAt datetime DEFAULT CURRENT_TIMESTAMP
+    )`
   }
 ];
 

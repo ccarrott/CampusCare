@@ -1,0 +1,45 @@
+<%- include('../partials/header', { title: 'My Nurse Reviews' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="container page-wrapper">
+  <%- include('../partials/alerts') %>
+
+  <header class="page-header">
+    <h1>My Nurse Reviews</h1>
+    <p class="subtitle">Reviews you have submitted for nurses after consultations.</p>
+  </header>
+
+  <% if (reviews.length === 0) { %>
+    <section class="content-card">
+      <p class="text-muted">You have not submitted any nurse reviews yet.</p>
+      <a href="/consultations/book" class="btn btn-primary">Book a Consultation</a>
+    </section>
+  <% } else { %>
+    <% reviews.forEach(function(review) { %>
+      <section class="content-card mb-3">
+        <div class="form-row" style="justify-content: space-between; align-items: center;">
+          <div>
+            <h3 style="margin: 0;">Nurse: <%= review.NurseFirstName %> <%= review.NurseLastName %></h3>
+            <p class="text-muted" style="margin: 0.25rem 0 0 0;">Appointment: <%= review.AppointmentID %></p>
+          </div>
+          <div>
+            <span style="font-size: 1.25rem; color: #f5a623;">
+              <% for (let i = 1; i <= 5; i++) { %>
+                <% if (i <= review.Rating) { %>&#9733;<% } else { %>&#9734;<% } %>
+              <% } %>
+            </span>
+            <span class="text-muted">(<%= review.Rating %>/5)</span>
+          </div>
+        </div>
+        <hr style="border-color: var(--border-color); margin: 0.75rem 0;">
+        <p><%= review.ReviewText %></p>
+        <% if (review.CreatedAt) { %>
+          <p class="text-muted" style="font-size: 0.85rem;">Submitted: <%= new Date(review.CreatedAt).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }) %></p>
+        <% } %>
+      </section>
+    <% }); %>
+  <% } %>
+
+</main>
+
+<%- include('../partials/footer') %>

@@ -15,12 +15,12 @@ export async function getAvailableNurses() {
 /**
  * Creates a new appointment record.
  */
-export async function createAppointment({ appointmentId, appointmentType, time, teamsId, studentNumber, staffNumber }) {
+export async function createAppointment({ appointmentId, appointmentType, time, teamsId, studentNumber, staffNumber, campus, preferredLanguage }) {
   const sql = `
-    INSERT INTO Appointment (AppointmentID, AppointmentType, Time, TeamsID, StudentNumber, StaffNumber)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO Appointment (AppointmentID, AppointmentType, Time, TeamsID, StudentNumber, StaffNumber, Campus, PreferredLanguage)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
-  return await query(sql, [appointmentId, appointmentType, time, teamsId || null, studentNumber, staffNumber]);
+  return await query(sql, [appointmentId, appointmentType, time, teamsId || null, studentNumber, staffNumber, campus || null, preferredLanguage || null]);
 }
 
 /**
