@@ -46,21 +46,29 @@ CampusCare implements a **Three-Tier Healthcare Strategy** that triages student 
 - Personal symptom history timeline
 - Interactive campus health map (Leaflet.js + OpenStreetMap)
 - Appointment booking with real-time nurse availability grid
+- Nurse profile card shown during booking (bio, experience, verified reviews)
 - Cancel and reschedule consultations
-- Rate completed consultations (1–5 stars with comments)
+- Rate completed consultations via star rating modal
+- Review nurses (one per nurse, admin-moderated before public display)
+- "Meet Our Staff" page with nurse profiles and approved anonymous reviews
 - Browser notifications (24h, 1h, and start-time reminders)
 - Session timeout warnings with one-click refresh
+- Auto-expire past appointments (stale bookings cleaned automatically)
 
 ### For Nurses
 - Clinical dashboard with full appointment lifecycle management
+- Personal rating summary (average score from consultations)
 - Drag-to-paint weekly availability grid (27 slots per day)
-- Patient symptom history viewer
+- Patient symptom history viewer (IDOR-protected)
 - Consultation notes documentation
 - MS Teams link management for online appointments
 - Appointment status flow: Pending → Confirmed → Completed
+- Bio editor (public profile with character limit + years of experience)
 
 ### For Administrators
 - Operational reports with Chart.js visualisations
+- Nurse review moderation queue (approve/reject before public display)
+- Per-nurse feedback overview (averages + counts)
 - Full CRUD management for student and nurse accounts
 - CSV export for appointments and health trend data
 - Print-friendly report layouts
@@ -71,9 +79,13 @@ CampusCare implements a **Three-Tier Healthcare Strategy** that triages student 
 - Forgot/reset password with token-based links
 - Dark mode (system preference detection + manual toggle)
 - Responsive mobile layout with drawer sidebar
+- CSRF protection on all form submissions (session-based tokens)
 - Role-based access control on every endpoint
+- IDOR ownership validation on sensitive resources
 - XSS sanitisation and parameterised SQL queries throughout
 - bcrypt password hashing (10 salt rounds)
+- Security headers (nosniff, X-Frame-Options, Referrer-Policy)
+- Atomic transaction-based booking (prevents race condition double-bookings)
 
 ---
 
@@ -101,10 +113,11 @@ Runtime        Node.js 18+ (ES Modules)
 Framework      Express.js 4.x
 View Engine    EJS with layout partials
 Database       MySQL 8.0 (mysql2/promise, connection pooling)
-Auth           bcrypt + express-session (httpOnly, 1hr expiry)
+Auth           bcrypt + express-session (httpOnly, sameSite, 1hr expiry)
+Security       CSRF tokens, ownership middleware, security headers
 Maps           Leaflet.js 1.9 + OpenStreetMap tiles
 Charts         Chart.js 4.4 (doughnut + line)
-Architecture   MVC (Models → Controllers → Routes → Views)
+Architecture   Domain-based modules (routes + controller + model per feature)
 ```
 
 ---
@@ -117,22 +130,34 @@ CampusCare/
 │   ├── css/style.css          # Design system (CSS variables, dark mode, responsive)
 │   └── js/                    # Client-side: sidebar, darkmode, notifications, session
 ├── src/
-│   ├── app.js                 # Express entry point
-│   ├── config/                # Database pool, migrations, seeders
-│   ├── controllers/           # 12 controllers (auth, appointments, symptoms, trends...)
-│   ├── middlewares/           # Auth guards + input validation
-│   ├── models/                # 9 data access models (parameterised queries)
-│   └── routes/                # 6 route modules
+│   ├── app.js                 # Express entry point + middleware chain
+│   ├── constants.js           # Frozen enums (roles, statuses, types)
+│   ├── config/                # Database pool, session, security, migrations, seeders
+│   ├── middleware/            # authenticate, authorize, ownership, CSRF, validation, errorHandler
+│   ├── utils/                 # catchAsync, AppError, sanitize, dates
+│   └── modules/
+│       ├── auth/              # Login, register, logout, password reset
+│       ├── profile/           # View, edit, delete account
+│       ├── symptoms/          # Symptom checker, OTC recommendations, history
+│       ├── appointments/      # Booking, cancellation, reschedule, nurse grid API
+│       ├── availability/      # Nurse weekly schedule management
+│       ├── reviews/           # Per-consultation ratings + per-nurse reviews
+│       ├── trends/            # Health map, zone analytics, period filtering
+│       ├── nurse/             # Nurse dashboard, Teams links, notes, bio editor
+│       ├── admin/             # Reports, student/nurse CRUD, review moderation
+│       ├── staff/             # "Meet Our Staff" public nurse profiles
+│       ├── notifications/     # Upcoming appointment API for browser alerts
+│       └── export/            # CSV downloads (appointments, trends)
 ├── views/
 │   ├── admin/                 # Reports, student/nurse CRUD forms
 │   ├── auth/                  # Login, register, forgot/reset password
-│   ├── consultations/         # Booking grid, confirmation, appointment list
-│   ├── nurse/                 # Dashboard, availability grid, patient history
+│   ├── consultations/         # Booking grid, confirmation, appointments, reviews
+│   ├── nurse/                 # Dashboard, availability grid, patient history, bio editor
 │   ├── partials/              # Header, footer, navbar, alerts
 │   ├── profile/               # View + edit profile
+│   ├── staff/                 # Meet Our Staff page
 │   ├── student/               # Symptom checker, recommendations, history
 │   └── trends/                # Health map + analytics dashboard
-├── .env                       # Environment variables (not committed)
 ├── CHANGES.md                 # Full development changelog
 └── package.json
 ```
@@ -141,15 +166,16 @@ CampusCare/
 
 ## Database Schema
 
-The platform uses **12 tables** with full relational integrity:
+The platform uses **17 tables** with full relational integrity:
 
 | Table | Purpose |
 |-------|---------|
 | `Student` | Student profiles (StudentNumber PK, bcrypt password) |
-| `Nurse` | Nurse staff (StaffNumber PK, clinic assignment) |
+| `Nurse` | Nurse staff (StaffNumber PK, bio, years experience, clinic assignment) |
 | `Admin` | System administrators |
 | `Appointment` | Consultation bookings with status lifecycle |
-| `Rating` | Student feedback (1–5 score + description) |
+| `Rating` | Per-consultation feedback (1–5 score + description) |
+| `NurseReviews` | Per-nurse written reviews (admin-moderated, anonymous public display) |
 | `Symptoms` | Master symptom catalog (20 conditions, 3 tiers) |
 | `Medication` | OTC medication registry (15 medications) |
 | `SymptomMedication` | Many-to-many symptom ↔ medication mappings |
@@ -157,18 +183,27 @@ The platform uses **12 tables** with full relational integrity:
 | `NurseAvailability` | Weekly slot grid (27 slots × 5 days per nurse) |
 | `CampusZone` | GPS-located campus zones (8 zones) |
 | `StudentZone` | Student ↔ zone address mapping |
+| `Clinic` | Clinic locations and contact info |
+| `MedicalFacility` | Medical facilities linked to clinics |
+| `PasswordResetToken` | Single-use password reset tokens with expiry |
+| `sessions` | Persistent session store |
 
 ---
 
 ## Security
 
 - All passwords hashed with **bcrypt** (10 salt rounds)
-- Sessions use `httpOnly` cookies (1-hour expiry, configurable secret)
+- Sessions use `httpOnly` + `sameSite: lax` cookies (1-hour expiry)
+- **CSRF tokens** on every POST form (session-based, validated server-side)
 - Every database query uses **parameterised placeholders** (SQL injection proof)
 - All user text inputs **sanitised** against XSS (`<>` stripped)
+- **Ownership middleware** prevents IDOR (students can't access other students' records)
 - Role-based middleware on every protected route
+- **Atomic transactions** on booking (prevents double-booking race conditions)
+- Security headers: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`
 - Password reset tokens are single-use with 1-hour expiry
-- No student-identifiable data exposed in health trend APIs
+- Nurse review moderation prevents abuse (admin approval required for public display)
+- No student-identifiable data exposed in health trend APIs or public reviews
 
 ---
 
