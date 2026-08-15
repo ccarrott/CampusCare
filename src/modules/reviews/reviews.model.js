@@ -129,8 +129,7 @@ export async function getAllNurseAverages() {
   const sql = `
     SELECT n.StaffNumber, n.FirstName, n.LastName,
            AVG(r.Score) AS Average,
-           COUNT(r.RatingID) AS TotalCount,
-           SUM(CASE WHEN r.Verified = 'Approved' THEN 1 ELSE 0 END) AS ApprovedCount
+           COUNT(r.RatingID) AS TotalCount
     FROM Nurse n
     LEFT JOIN Appointment a ON n.StaffNumber = a.StaffNumber
     LEFT JOIN Rating r ON a.AppointmentID = r.AppointmentID

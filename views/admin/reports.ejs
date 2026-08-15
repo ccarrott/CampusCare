@@ -128,8 +128,7 @@
             <tr>
               <th>Nurse</th>
               <th>Avg Rating</th>
-              <th>Approved</th>
-              <th>Total</th>
+              <th>Total Ratings</th>
             </tr>
           </thead>
           <tbody>
@@ -146,7 +145,6 @@
                     <span class="text-muted">—</span>
                   <% } %>
                 </td>
-                <td><%= n.ApprovedCount || 0 %></td>
                 <td><%= n.TotalCount || 0 %></td>
               </tr>
             <% }); %>
