@@ -1,45 +1,130 @@
-<%- include('../partials/header', { title: 'My Nurse Reviews' }) %>
+<%- include('../partials/header', { title: 'Review a Nurse' }) %>
 <%- include('../partials/navbar') %>
 
 <main class="container page-wrapper">
   <%- include('../partials/alerts') %>
 
   <header class="page-header">
-    <h1>My Nurse Reviews</h1>
-    <p class="subtitle">Reviews you have submitted for nurses after consultations.</p>
+    <h1>Review a Nurse</h1>
+    <p class="subtitle">Share your experience with nurses you've had completed consultations with.</p>
   </header>
 
-  <% if (reviews.length === 0) { %>
+  <!-- Review Form (only if there are reviewable nurses) -->
+  <% if (typeof reviewableNurses !== 'undefined' && reviewableNurses.length > 0) { %>
     <section class="content-card">
-      <p class="text-muted">You have not submitted any nurse reviews yet.</p>
-      <a href="/consultations/book" class="btn btn-primary">Book a Consultation</a>
-    </section>
-  <% } else { %>
-    <% reviews.forEach(function(review) { %>
-      <section class="content-card mb-3">
-        <div class="form-row" style="justify-content: space-between; align-items: center;">
-          <div>
-            <h3 style="margin: 0;">Nurse: <%= review.NurseFirstName %> <%= review.NurseLastName %></h3>
-            <p class="text-muted" style="margin: 0.25rem 0 0 0;">Appointment: <%= review.AppointmentID %></p>
-          </div>
-          <div>
-            <span style="font-size: 1.25rem; color: #f5a623;">
-              <% for (let i = 1; i <= 5; i++) { %>
-                <% if (i <= review.Rating) { %>&#9733;<% } else { %>&#9734;<% } %>
-              <% } %>
-            </span>
-            <span class="text-muted">(<%= review.Rating %>/5)</span>
+      <h2>Write a Review</h2>
+      <p class="text-muted mb-2">You can review each nurse once. Your review will be submitted for admin approval before appearing publicly.</p>
+      <form action="/consultations/review" method="POST">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="rating" id="reviewRatingInput">
+
+        <div class="form-group">
+          <label for="staffNumber">Select Nurse</label>
+          <select id="staffNumber" name="staffNumber" class="form-control" required>
+            <option value="" disabled selected>-- Choose a nurse to review --</option>
+            <% reviewableNurses.forEach(function(nurse) { %>
+              <option value="<%= nurse.StaffNumber %>"><%= nurse.FirstName %> <%= nurse.LastName %></option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Your Rating</label>
+          <div class="star-rating" id="reviewStarRating">
+            <span class="star" data-value="1">&#9733;</span>
+            <span class="star" data-value="2">&#9733;</span>
+            <span class="star" data-value="3">&#9733;</span>
+            <span class="star" data-value="4">&#9733;</span>
+            <span class="star" data-value="5">&#9733;</span>
           </div>
         </div>
-        <hr style="border-color: var(--border-color); margin: 0.75rem 0;">
-        <p><%= review.ReviewText %></p>
-        <% if (review.CreatedAt) { %>
-          <p class="text-muted" style="font-size: 0.85rem;">Submitted: <%= new Date(review.CreatedAt).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }) %></p>
+
+        <div class="form-group">
+          <label for="reviewText">Your Review</label>
+          <textarea id="reviewText" name="reviewText" class="form-control" rows="3" placeholder="Describe your experience with this nurse..." required></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="reviewSubmitBtn" disabled>Submit Review</button>
+      </form>
+    </section>
+  <% } else { %>
+    <section class="content-card">
+      <p class="text-muted">
+        <% if (reviews.length > 0) { %>
+          You've reviewed all nurses you've had completed consultations with.
+        <% } else { %>
+          No nurses available to review yet. Complete a consultation first.
         <% } %>
-      </section>
-    <% }); %>
+      </p>
+    </section>
+  <% } %>
+
+  <!-- Existing Reviews -->
+  <% if (reviews.length > 0) { %>
+    <section class="content-card mt-3">
+      <h2>Your Submitted Reviews</h2>
+      <% reviews.forEach(function(review) { %>
+        <div style="padding:12px 0; border-bottom:1px solid var(--border-color);">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <h3 style="margin:0; font-size:1rem;"><%= review.NurseFirstName %> <%= review.NurseLastName %></h3>
+            <span class="star-rating-static">
+              <% for (let i = 1; i <= 5; i++) { %>
+                <% if (i <= review.Rating) { %><span>&#9733;</span><% } else { %><span class="star-empty">&#9734;</span><% } %>
+              <% } %>
+            </span>
+          </div>
+          <p style="margin:8px 0 0; font-size:0.9rem;"><%= review.ReviewText %></p>
+          <% if (review.CreatedAt) { %>
+            <span class="text-muted" style="font-size:0.75rem;">Submitted: <%= new Date(review.CreatedAt).toLocaleDateString('en-ZA', { dateStyle: 'medium' }) %></span>
+          <% } %>
+        </div>
+      <% }); %>
+    </section>
   <% } %>
 
 </main>
+
+<script>
+(function() {
+  const stars = document.querySelectorAll('#reviewStarRating .star');
+  const ratingInput = document.getElementById('reviewRatingInput');
+  const submitBtn = document.getElementById('reviewSubmitBtn');
+  const reviewText = document.getElementById('reviewText');
+  const staffSelect = document.getElementById('staffNumber');
+  let selectedRating = 0;
+
+  if (!stars.length) return;
+
+  stars.forEach(function(star) {
+    star.addEventListener('click', function() {
+      selectedRating = parseInt(this.dataset.value);
+      ratingInput.value = selectedRating;
+      updateStars();
+      checkReady();
+    });
+    star.addEventListener('mouseenter', function() {
+      const hoverVal = parseInt(this.dataset.value);
+      stars.forEach(function(s) {
+        s.style.color = parseInt(s.dataset.value) <= hoverVal ? '#d4a843' : '#94a3b8';
+      });
+    });
+  });
+
+  document.getElementById('reviewStarRating').addEventListener('mouseleave', updateStars);
+
+  function updateStars() {
+    stars.forEach(function(s) {
+      s.style.color = parseInt(s.dataset.value) <= selectedRating ? '#d4a843' : '#94a3b8';
+    });
+  }
+
+  function checkReady() {
+    submitBtn.disabled = !(selectedRating > 0 && reviewText.value.trim().length > 0 && staffSelect.value);
+  }
+
+  reviewText.addEventListener('input', checkReady);
+  staffSelect.addEventListener('change', checkReady);
+})();
+</script>
 
 <%- include('../partials/footer') %>

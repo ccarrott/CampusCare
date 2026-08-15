@@ -43,6 +43,7 @@
               <td>
                 <a href="/management/admin/students/<%= s.StudentNumber %>/edit" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">Edit</a>
                 <form action="/management/admin/students/<%= s.StudentNumber %>/delete" method="POST" style="display: inline;" onsubmit="return confirm('Delete student <%= s.FirstName %> <%= s.LastName %>? This cannot be undone.');">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                   <button type="submit" class="btn btn-danger" style="padding: 4px 10px; font-size: 0.75rem;">Delete</button>
                 </form>
               </td>

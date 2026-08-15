@@ -1301,3 +1301,121 @@ textarea.form-control {
   flex-wrap: wrap;
   align-items: center;
 }
+
+/* ---------- Modal Overlay ---------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  padding: 20px;
+}
+
+.modal-card {
+  background: var(--surface-white);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  padding: 32px;
+  width: 100%;
+  max-width: 440px;
+  position: relative;
+  animation: modalSlideIn 0.2s ease;
+}
+
+@keyframes modalSlideIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: var(--text-dark);
+}
+
+.modal-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: var(--text-dark);
+}
+
+.modal-subtitle {
+  margin-bottom: 20px;
+}
+
+/* ---------- Star Rating (Interactive) ---------- */
+.star-rating {
+  font-size: 2rem;
+  display: inline-flex;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.star-rating .star {
+  color: #94a3b8;
+  transition: color 0.15s, transform 0.1s;
+}
+
+.star-rating .star:hover {
+  transform: scale(1.15);
+}
+
+/* ---------- Star Rating (Static / Read-only) ---------- */
+.star-rating-static {
+  font-size: 1.2rem;
+  display: inline-flex;
+  gap: 2px;
+  color: #d4a843;
+}
+
+.star-rating-static .star-empty {
+  color: #94a3b8;
+}
+
+/* ---------- Disabled Action Button ---------- */
+.action-btn-disabled {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+  height: 32px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  background-color: #475569;
+  color: #94a3b8;
+  cursor: default;
+  user-select: none;
+}
+
+/* ---------- Dark Mode: Modal ---------- */
+[data-theme="dark"] .modal-card {
+  background: #2d3748;
+}
+
+[data-theme="dark"] .modal-title {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .modal-close {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .modal-close:hover {
+  color: #f1f5f9;
+}

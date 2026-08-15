@@ -41,6 +41,7 @@
               <td>
                 <a href="/management/admin/nurses/<%= n.StaffNumber %>/edit" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">Edit</a>
                 <form action="/management/admin/nurses/<%= n.StaffNumber %>/delete" method="POST" style="display: inline;" onsubmit="return confirm('Delete nurse <%= n.FirstName %> <%= n.LastName %>? Cannot delete if they have appointments.');">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                   <button type="submit" class="btn btn-danger" style="padding: 4px 10px; font-size: 0.75rem;">Delete</button>
                 </form>
               </td>

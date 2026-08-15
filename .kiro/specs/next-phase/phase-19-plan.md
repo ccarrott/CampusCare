@@ -1,288 +1,354 @@
-# Phase 19: Rating & Review System Overhaul
+# Phase 19: Review System, Appointment Table Normalisation & UX Polish
 
 ## Overview
 
-Transform the current flat rating system into a polished, moderated nurse review platform with interactive star ratings, contextual nurse profiles, modal dialogs, admin verification workflow, and role-scoped visibility.
+This phase combines the nurse review/moderation system with a full normalisation pass on appointment tables, action buttons, and lifecycle logic across both student and nurse views. It also addresses dark mode issues, dashboard text cleanup, and stale data handling.
 
-**Core Principles:**
-1. Reviews are **moderated** — admin must verify before they appear publicly to students
-2. Reviews are **anonymous** — displayed as "Patient 1", "Patient 2", etc. (never student names)
-3. Nurses see their **aggregate only** — never individual feedback text
-4. Students can read **verified reviews** during booking + on the "Meet Our Staff" page to make informed choices
+**Two pillars:**
+1. Clean up the current appointment experience so it's consistent, bug-free, and professional
+2. Build the moderated review system, "Meet Our Staff" page, and nurse profile integration
 
 ---
 
-## Part A: Database Schema Changes
+## Part A: Appointment Table Normalisation (Student + Nurse)
 
-### New Columns on `Nurse` Table
+### A1 — Unified Action Button Rules (Student Side)
+
+Every appointment row shows exactly the buttons it should — no more, no less:
+
+| Status | Appointment Type | Buttons Shown |
+|--------|-----------------|---------------|
+| Pending | Physical | Cancel |
+| Pending | Online | Cancel, ~~Join~~ (disabled/greyed "Awaiting Link") |
+| Confirmed | Physical | Cancel |
+| Confirmed | Online + no link | Cancel, "Awaiting Link" (greyed, non-interactive) |
+| Confirmed | Online + has link | Cancel, Join (active, opens Teams) |
+| Completed | Any (unrated) | Rate |
+| Completed | Any (already rated) | *(no buttons — show "Rated ✓" badge)* |
+| Cancelled | Any | *(no buttons — row greyed out)* |
+
+**Key fixes:**
+- "Join" button only appears when `TeamsID` exists AND status is Confirmed — never Pending
+- "Rate" button ONLY on Completed rows where `ratedIds` doesn't include the appointment
+- Remove the old "Pending" grey button for online appointments without links — replace with a clear "Awaiting Link" text badge (not clickable)
+- Cancelled rows get `opacity: 0.6` styling on the entire `<tr>`
+- Rated completed rows show a small "✓ Rated" badge instead of a button
+
+### A2 — Unified Action Button Rules (Nurse Side)
+
+| Status | Buttons Shown |
+|--------|---------------|
+| Pending | Confirm, Cancel |
+| Confirmed | Complete, Cancel, (Teams Link btn if Online + no link) |
+| Completed | *(no action buttons)* |
+| Cancelled | *(no action buttons, row greyed)* |
+
+**Key fixes:**
+- Remove "Join" button from nurse side for Online appointments — nurses create the link, they don't join via button
+- "Link" button only shows for Confirmed Online appointments that don't yet have a TeamsID
+- No action buttons on Completed or Cancelled rows
+- Cancelled rows greyed (`opacity: 0.6`)
+
+### A3 — Button Styling Standardisation
+
+All action buttons across both tables use the same CSS classes, sizes, and colours:
+
+| Action | CSS Class | Colour |
+|--------|-----------|--------|
+| Confirm | `.action-btn-confirm` | Gold (accent) |
+| Complete | `.action-btn-complete` | Green (success) |
+| Cancel | `.action-btn-cancel` | Red (danger) |
+| Join (Teams) | `.action-btn-teams` | Purple (#5b5fc7) |
+| Rate | `.action-btn-rate` | Green (success) |
+| Link (add Teams) | `.action-btn-teams` | Purple |
+| Awaiting Link | `.action-btn-disabled` | Grey, no cursor, non-interactive |
+| Rated ✓ | `.status-badge status-completed` | Green badge (same as Completed badge style) |
+
+All buttons: same `height: 32px`, `min-width: 80px`, `font-size: 0.78rem`, `border-radius: 6px`.
+
+### A4 — Auto-Expire Past Appointments
+
+**Problem:** Appointments with dates in the past still show as "Pending" or "Confirmed" — they should auto-transition.
+
+**Fix:** Add a query that runs on page load (in the controller, before rendering):
+
+```js
+// In appointments.controller.js (showStudentAppointments) and nurse.controller.js (showNurseDashboard):
+await AppointmentsModel.expirePastAppointments();
+```
+
+```sql
+-- New model function: expirePastAppointments()
+UPDATE Appointment 
+SET Status = 'Cancelled' 
+WHERE Time < NOW() 
+  AND Status IN ('Pending', 'Confirmed')
+```
+
+This silently cleans up stale appointments every time either dashboard loads. Past-date slots that were "Confirmed" but never "Completed" get auto-cancelled (nurse didn't mark them done).
+
+**Note:** This also frees up availability slots that were held by stale bookings — fixing the "nurses still showed booked when they aren't" issue.
+
+### A5 — Availability Data Freshness
+
+**Problem:** Booked slots from old test data with wrong dates persist in the availability grid.
+
+**Fix:** The `getBookedTimesForNurse` and `getBookedAppointmentsForDate` queries already filter by date. The real issue is appointments with past dates still having `Status != 'Cancelled'`. Once A4's auto-expire runs, these slots are freed because the query excludes cancelled appointments:
+
+```sql
+WHERE StaffNumber = ? AND DATE(Time) = ? AND Status != 'Cancelled'
+```
+
+No additional fix needed beyond A4.
+
+### A6 — Remove Bridget's Post-Booking Review Redirect
+
+**Problem:** After booking, the app redirects to `/consultations/review/:id` which asks to review a nurse you haven't even SEEN yet (appointment is Pending). This makes no sense.
+
+**Fix:** 
+- Change booking redirect from `/consultations/review/:id` to `/consultations/confirmed/:id` (the confirmation page)
+- Remove the "Review Your Nurse" page from the post-booking flow entirely
+- Reviews happen ONLY after a consultation is Completed, via the Rate button in the appointment table
+- Keep the `views/consultations/review.ejs` for potential future use in Phase 19's modal system, but don't route to it from booking
+
+---
+
+## Part B: Dashboard & Dark Mode Fixes
+
+### B1 — Remove Tier Text from Dashboard Cards
+
+Change the two student dashboard cards:
+- "Tier 1: Symptom Checker" → "Symptom Checker"
+- "Tier 2: Book Consultation" → "Book Consultation"
+
+Keep descriptions as-is.
+
+### B2 — Pie Chart Legend Dark Mode Fix
+
+**Problem:** Chart.js legend text colour is unreadable in dark mode.
+
+**Fix:** In `views/trends/dashboard.ejs`, when initialising Chart.js doughnut, set:
+
+```js
+plugins: {
+  legend: {
+    labels: {
+      color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#f1f5f9' : '#0f172a'
+    }
+  }
+}
+```
+
+Also listen for theme toggle changes and update the chart:
+```js
+// In the darkmode toggle handler, after setting data-theme:
+if (window.pieChart) {
+  window.pieChart.options.plugins.legend.labels.color = isDark ? '#f1f5f9' : '#0f172a';
+  window.pieChart.update();
+}
+```
+
+### B3 — Admin Reports Line Chart Legend (Same Fix)
+
+Apply the same dark mode legend colour fix to the admin reports line chart.
+
+---
+
+## Part C: Rating & Review System (Moderated)
+
+### C1 — Database Schema Changes
 
 ```sql
 ALTER TABLE Nurse ADD COLUMN Bio TEXT DEFAULT NULL;
 ALTER TABLE Nurse ADD COLUMN YearsExperience INT DEFAULT 0;
-```
-
-- `Bio`: Nurse-editable short biography (max ~300 chars in UI, TEXT in DB for flexibility)
-- `YearsExperience`: Integer, set by admin or nurse themselves
-
-### New Column on `Rating` Table
-
-```sql
 ALTER TABLE Rating ADD COLUMN Verified ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending';
 ALTER TABLE Rating ADD COLUMN VerifiedAt DATETIME DEFAULT NULL;
 ```
 
-- `Verified`: Admin moderation status. Only `'Approved'` ratings are visible to students.
-- `VerifiedAt`: Timestamp when admin approved/rejected (audit trail)
+Add to `src/config/migrate.js`.
 
-### Moderation Flow
-1. Student submits rating → stored with `Verified = 'Pending'`
-2. Admin sees all pending ratings in a review queue
-3. Admin approves or rejects each rating
-4. Only `Approved` ratings appear in:
-   - Booking flow nurse profile card
-   - "Meet Our Staff" page
-   - Nurse average calculations visible to students
-5. Nurse dashboard average includes ALL ratings (pending + approved) since they're about self-improvement
-6. Rejected ratings are hidden from everyone except admin (for record-keeping)
+### C2 — Reviews Model Expansion (`src/modules/reviews/reviews.model.js`)
 
----
-
-## Part B: Rating Model Expansion
-
-### New Query Functions (`src/models/ratingModel.js`)
+Add these functions:
 
 | Function | Purpose |
 |----------|---------|
-| `getAverageRatingForNurse(staffNumber)` | Returns `{ average, count }` — uses ALL ratings (for nurse self-view) |
-| `getVerifiedAverageForNurse(staffNumber)` | Returns `{ average, count }` — only `Approved` ratings (for student-facing contexts) |
-| `getVerifiedRatingsForNurse(staffNumber)` | Returns individual approved ratings (for student "Meet Our Staff" + booking card) |
-| `getAllNurseAverages()` | Returns array of all nurses with averages + counts (admin view) |
-| `getRatingsByNurse(staffNumber)` | Returns ALL individual ratings for a nurse regardless of status (admin drill-down) |
-| `getPendingRatings()` | Returns all `Pending` ratings for the admin moderation queue |
-| `updateRatingVerification(ratingId, status)` | Sets `Verified` + `VerifiedAt` (admin action) |
-| `getRatedAppointmentIds(studentNumber)` | Replaces the inline raw query currently in appointmentController |
+| `getAverageRatingForNurse(staffNumber)` | `{ average, count }` from ALL ratings (nurse self-view) |
+| `getVerifiedAverageForNurse(staffNumber)` | `{ average, count }` from Approved only (student-facing) |
+| `getVerifiedRatingsForNurse(staffNumber)` | Individual approved ratings (for Meet Our Staff + booking) |
+| `getAllNurseAverages()` | All nurses with their averages (admin panel) |
+| `getPendingRatings()` | All Pending ratings (admin moderation queue) |
+| `updateRatingVerification(ratingId, status)` | Sets Verified + VerifiedAt |
 
----
+### C3 — Star Rating CSS Component
 
-## Part C: Star Rating UI Component
+**Interactive widget** (for submission forms):
+- 5 Unicode stars, hover fills left-to-right in gold
+- Click locks selection, stores value in hidden input
+- Works in both light and dark mode
 
-### Interactive 5-Star Widget (CSS-only, no library)
+**Static read-only variant** (for display):
+- Renders N filled + (5-N) empty stars from a numeric score
+- CSS class: `.star-rating-static`
 
-**Approach:** CSS `:hover` + `:checked` sibling selectors on hidden radio inputs. Stars rendered as Unicode `&#9733;` (filled) / `&#9734;` (empty) with gold colour on active.
+Add to `public/css/style.css`.
 
-**Behaviour:**
-- Hover fills stars up to cursor position (left-to-right fill)
-- Click locks the selection
-- Selected value stored in hidden `<input name="score">`
-- Stars scale up slightly on hover for tactile feedback
-- Works identically in dark mode (gold on dark surface)
+### C4 — Rating Modal (Replaces Current Rate Section)
 
-**Read-only variant:** For display contexts (nurse profile card, admin reports), render static filled/empty stars from a numeric value. Half-star rounding: 3.7 → 4 stars, 3.4 → 3.5 (or nearest integer for simplicity).
+**Student appointment table → Rate button → opens modal overlay:**
 
-### CSS Classes
+- Modal pops up centred with backdrop
+- Pre-filled: nurse name + appointment date (from row data attributes)
+- Interactive star rating widget
+- Comments textarea (optional)
+- Submit button (POST /consultations/rate with appointmentId + score + description)
+- Close: X button, backdrop click, Escape key
 
+**Remove:** The entire "Rate a Consultation" section at the bottom of `consultations/index.ejs`. All rating happens via the modal.
+
+Implementation: `public/js/rating-modal.js` + modal HTML at bottom of `consultations/index.ejs`.
+
+### C5 — Nurse Profile Card in Booking Flow
+
+After nurse selection in booking form, a card fades in showing:
+- Nurse name (bold)
+- Years of experience
+- Bio (or "No bio yet")
+- Star rating (verified average + count)
+- Top 3 verified reviews (anonymous: "Patient 1", "Patient 2", "Patient 3")
+- "View full profile" link → `/staff`
+
+**Data:** New API: `GET /consultations/api/nurse-profile/:staffNumber`
+Returns: `{ firstName, lastName, bio, yearsExperience, averageRating, ratingCount, recentReviews[] }`
+
+Only `Approved` ratings included. No student names exposed.
+
+### C6 — "Meet Our Staff" Page (New Module)
+
+**New module:** `src/modules/staff/`
+- `staff.routes.js` — `GET /staff` (requireAuth)
+- `staff.controller.js` — fetches all nurses with their verified ratings
+- `staff.model.js` — queries nurses + approved ratings
+
+**New view:** `views/staff/index.ejs`
+
+**Sidebar link** for students: icon + "Meet Our Staff"
+
+**Page layout:** 2-column card grid, each nurse card:
+- Name, years experience, bio
+- Star rating (static) + count
+- Verified reviews (anonymous "Patient 1, 2, 3..." with stars + comment + relative date)
+- Scrollable review area if > 5 reviews
+- Empty state: "No reviews yet"
+
+### C7 — Nurse Dashboard Rating Summary
+
+New card at top of nurse dashboard:
+- "Your Rating Summary"
+- Large static star display + average number (e.g. "4.3 / 5")
+- Total count ("from 12 consultations")
+- Uses ALL ratings (not just approved) — this is for self-improvement
+- No individual comments shown (student anonymity)
+
+### C8 — Admin Moderation Queue
+
+**New section in admin reports (or separate admin sub-page):**
+
+**"Pending Reviews" queue:**
+- Table: Nurse name | Score (stars) | Comment | Student name (admin visibility) | Date
+- Action buttons: Approve (green) | Reject (red)
+- Routes: `POST /management/admin/rating/approve`, `POST /management/admin/rating/reject`
+
+**"Nurse Feedback Overview" table:**
+- All nurses with: Name, Average rating (stars + number), Approved/Total count
+- Expandable rows showing individual ratings with status badges
+
+### C9 — Nurse Bio Editor
+
+Add to nurse dashboard (or profile page):
+- Bio textarea (300 char limit, live counter)
+- Years of experience number input
+- Save button → `POST /management/nurse/profile`
+
+New model function in `nurse.model.js`:
+```js
+export async function updateNurseProfile(staffNumber, { bio, yearsExperience }) { ... }
 ```
-.star-rating         — wrapper (inline-flex, direction: rtl for sibling trick)
-.star-rating input   — hidden radio buttons (value 1-5)
-.star-rating label   — star glyphs, cursor: pointer
-.star-rating-static  — read-only display variant
+
+---
+
+## Part D: Appointment Lifecycle Hardening
+
+### D1 — Prevent Interaction with Invalid States
+
+Server-side validation for ALL appointment status transitions:
+
+```js
+// Valid transitions:
+// Pending → Confirmed (nurse only)
+// Pending → Cancelled (student or nurse)
+// Confirmed → Completed (nurse only)
+// Confirmed → Cancelled (student or nurse)
+// Nothing → Pending (only on creation)
+// Completed → (terminal state, no transitions)
+// Cancelled → (terminal state, no transitions)
 ```
 
----
+Reject any transition that doesn't follow these rules with a 400 error.
 
-## Part D: Rating Modal Dialog (Replaces #ratingForm Anchor)
+### D2 — Reschedule Restrictions
 
-### Trigger
-- "Rate" button in appointment history table row → opens a centred modal overlay
+- Can only reschedule Pending or Confirmed
+- New time must be in the future AND a weekday
+- Must pass the same atomic booking check (slot not taken)
+- Old slot freed, new slot claimed (already works via time update + cancelled status check in queries)
 
-### Modal Structure
-- Backdrop (semi-transparent dark overlay, click-to-close)
-- Modal card (max-width 440px, rounded, matches `.content-card` styling)
-- Content:
-  - Header: "Rate Your Consultation"
-  - Subtext: Nurse name + appointment date (pre-filled from the row data)
-  - Interactive 5-star widget
-  - Comments textarea (optional, 3 rows)
-  - Submit button (POST to `/consultations/rate`)
-  - Hidden inputs: `appointmentId`, `score`
-- Close via: X button top-right, backdrop click, or Escape key
-- Focus trapped inside modal while open (accessibility)
+### D3 — Cancel Cascades Correctly
 
-### Implementation
-- Pure vanilla JS (no library) — `<dialog>` element or custom div+aria
-- Modal HTML rendered once in the page, populated dynamically via JS `dataset` attributes from the Rate button
-- Form submission remains a standard POST (no AJAX needed — keeps it simple)
-
-### Accessibility
-- `role="dialog"`, `aria-modal="true"`, `aria-labelledby`
-- Focus moves to first interactive element on open
-- Escape key closes
-
----
-
-## Part E: "Rate a Nurse" Section (Replaces "Rate a Consultation")
-
-### Change
-The bottom-of-page section currently says "Rate a Consultation" with a dropdown of appointments. Replace with:
-
-**"Rate a Nurse"**
-- Dropdown populated with **unique nurses** the student has completed (unrated) consultations with
-- When nurse selected: shows their name + the date range of completed appointments with that nurse
-- 5-star widget + comments box
-- Hidden `appointmentId` auto-assigned to the most recent unrated completed appointment with that nurse (so the DB schema stays unchanged — ratings still link to specific appointments)
-
-This is a UX simplification: students think "I'm rating Nurse Jenkins" not "I'm rating appointment APT-SHOW-007". Backend still maps to a specific appointment.
-
----
-
-## Part F: Nurse Profile Card in Booking Flow
-
-### Placement
-After the student selects a nurse in the booking form (Step 1), a "Nurse Info" card fades in below the nurse dropdown, before the schedule grid (between Step 1 and Step 2).
-
-### Card Content
-- Nurse full name (large, bold)
-- `YearsExperience` years as a registered nurse
-- Bio text (or "No bio available" fallback)
-- Star rating display (read-only static stars + "4.2 avg from 8 reviews")
-- **Verified patient reviews** (up to 3 most recent approved ratings):
-  - Displayed as anonymous cards: "Patient 1", "Patient 2", "Patient 3"
-  - Each shows: star score + comment text + relative date ("2 weeks ago")
-  - "View all reviews" link → navigates to the nurse's full profile on "Meet Our Staff" page
-- Subtle border, slightly elevated shadow
-
-### Data Source
-- New API endpoint: `GET /consultations/api/nurse-profile/:staffNumber`
-- Returns: `{ firstName, lastName, bio, yearsExperience, averageRating, ratingCount, recentReviews[] }`
-- `recentReviews` contains only `Approved` ratings, limited to 3, ordered by most recent
-- Called via `fetch()` on nurse dropdown change (same event that loads the grid)
-
-### Privacy
-- Reviews anonymised as "Patient 1", "Patient 2" (sequential per display, not persistent IDs)
-- Only `Approved` ratings shown — admin has already vetted the content
-- No student names or identifying information exposed
-
----
-
-## Part F2: "Meet Our Staff" Page (New)
-
-### Sidebar Link
-New sidebar entry for **Students** (and public/logged-in users):
-- Icon: &#128105;&#8205;&#9877;&#65039; (or a people icon)
-- Label: "Meet Our Staff"
-- Route: `/staff`
-
-### Page Layout (`views/staff/index.ejs`)
-
-**Page header:** "Meet Our Staff" — "Get to know the nurses who keep our campus healthy."
-
-**Nurse cards grid** (2-column on desktop, 1-column mobile):
-
-Each card contains:
-- Nurse name (h3, bold)
-- Years of experience badge
-- Bio paragraph
-- Star rating (static read-only stars + numeric average + review count)
-- **Verified reviews section** (all approved reviews for this nurse):
-  - Listed as expandable/scrollable area (max-height with scroll if > 5)
-  - Each review: "Patient 1" — stars — comment — relative time
-  - Anonymous numbering resets per nurse (each nurse's reviews start at Patient 1)
-- If no approved reviews: "No reviews yet — be the first after your consultation!"
-
-### Data Source
-- New controller: `staffController.js` (or add to existing)
-- Route: `GET /staff` (mounted in app.js, protected by `requireAuth`)
-- Queries: All nurses + their verified averages + all verified reviews per nurse
-- Efficient: single JOIN query returning nurses with their approved ratings, grouped in controller
-
-### API Design
-- Could do server-side rendering (simpler) — fetch all data in controller, pass to EJS
-- Nurse cards rendered in a `.dashboard-grid`-like layout
-
----
-
-## Part G: Nurse Dashboard — Personal Rating Summary
-
-### Addition to `views/nurse/dashboard.ejs`
-New section at the top (after page header, before appointment table):
-
-**"Your Rating Summary"** card:
-- Large star display (static, read-only)
-- Average score (e.g. "4.3 / 5")
-- Total review count (e.g. "from 12 consultations")
-- No individual comments shown (privacy — student anonymity preserved)
-
-### Data Source
-- `getAverageRatingForNurse(staffNumber)` called in `nurseController.showDashboard`
-- Passed to view as `{ nurseAverage, nurseRatingCount }`
-
----
-
-## Part H: Admin Feedback Panel (Full Visibility + Moderation)
-
-### Enhancement to `views/admin/reports.ejs`
-
-#### 1. Moderation Queue (New — Top Priority)
-
-**"Pending Reviews"** section (shown at top if any pending exist):
-- Badge count in sidebar: e.g. "Reviews (3)" indicating pending items
-- Table of unverified ratings:
-  - Nurse name | Score (stars) | Comment text | Student name (admin CAN see) | Date submitted
-  - Action buttons per row: **Approve** (green) | **Reject** (red)
-- POST routes:
-  - `POST /management/admin/rating/approve` → sets `Verified = 'Approved'`, `VerifiedAt = NOW()`
-  - `POST /management/admin/rating/reject` → sets `Verified = 'Rejected'`, `VerifiedAt = NOW()`
-- Once approved, the rating becomes visible on "Meet Our Staff" + booking flow
-- Once rejected, it's hidden everywhere except this admin panel (greyed out, labelled "Rejected")
-
-#### 2. Nurse Feedback Overview
-
-**Summary table** — all nurses with:
-- Name
-- Average rating (star display + number) — calculated from ALL ratings (not just approved)
-- Approved count / Total count
-- Sortable by average (descending default)
-
-**Expandable per-nurse detail** (click row → reveals):
-- Individual rating cards showing: Score (stars), Comment text, Date, Status badge (Approved/Pending/Rejected)
-- Student name shown to admin (they need this for accountability)
-- Filters: All | Approved | Pending | Rejected
-
-### Data Source
-- `getAllNurseAverages()` for the table
-- `getRatingsByNurse(staffNumber)` for drill-down (could be AJAX or page-level)
-
----
-
-## Part I: Nurse Bio Editor
-
-### Where
-Nurse profile edit page (or a new section in nurse dashboard if no edit page exists for nurses).
-
-### Fields
-- `Bio` — textarea, max 300 characters, with live char counter
-- `YearsExperience` — number input (min 0, max 50)
-
-### Route
-- `POST /management/nurse/profile` (or similar, depends on existing profile routes)
+When a student or nurse cancels:
+- Status set to Cancelled ✓ (already done)
+- Any associated NurseReview for this appointment should be prevented (can't review an appointment you cancelled)
+- Rating submission should check appointment status is Completed before accepting
 
 ---
 
 ## Implementation Order
 
-| Step | What | Files Touched |
-|------|------|---------------|
-| 1 | DB migration: add `Bio`, `YearsExperience` to Nurse + `Verified`, `VerifiedAt` to Rating | `migrate.js` |
-| 2 | Rating model expansion (8 new functions) | `ratingModel.js` |
-| 3 | Star rating CSS component (interactive + static) | `style.css` |
-| 4 | Rating modal dialog (HTML + JS) | `consultations/index.ejs`, new `public/js/rating-modal.js` |
-| 5 | Replace "Rate a Consultation" with "Rate a Nurse" | `consultations/index.ejs`, `appointmentController.js` |
-| 6 | Nurse profile API endpoint | `appointmentController.js` or new controller, `consultationRoutes.js` |
-| 7 | Nurse info card + verified reviews in booking flow | `consultations/book.ejs` |
-| 8 | "Meet Our Staff" page (new route, controller, view) | `staffController.js`, `staffRoutes.js`, `views/staff/index.ejs`, `app.js`, `navbar.ejs` |
-| 9 | Nurse dashboard rating summary | `nurseController.js`, `nurse/dashboard.ejs` |
-| 10 | Admin moderation queue + feedback panel | `adminController.js`, `admin/reports.ejs`, `managementRoutes.js` |
-| 11 | Nurse bio editor | `nurseController.js`, `nurse/dashboard.ejs` (or new view) |
+| Step | What | Effort |
+|------|------|--------|
+| 1 | A4: Auto-expire past appointments (model function + controller calls) | Low |
+| 2 | A6: Fix booking redirect (→ confirmed page, not review page) | Low |
+| 3 | A1-A3: Normalise student appointment table (view rewrite) | Medium |
+| 4 | A2-A3: Normalise nurse appointment table (view rewrite) | Medium |
+| 5 | B1: Remove tier text from dashboard | Low |
+| 6 | B2-B3: Dark mode chart legend fixes | Low |
+| 7 | C1: DB migration (Bio, YearsExperience, Verified, VerifiedAt) | Low |
+| 8 | C2: Reviews model expansion (6 new functions) | Medium |
+| 9 | C3: Star rating CSS component | Medium |
+| 10 | C4: Rating modal (replaces bottom section) | Medium |
+| 11 | C5: Nurse profile card in booking flow | Medium |
+| 12 | C6: "Meet Our Staff" page (new module) | Medium |
+| 13 | C7: Nurse dashboard rating summary | Low |
+| 14 | C8: Admin moderation queue | Medium |
+| 15 | C9: Nurse bio editor | Low |
+| 16 | D1-D3: Lifecycle validation hardening | Medium |
+
+---
+
+## File Mapping (Post-Phase 20 Architecture)
+
+| Old Reference | New Location |
+|---------------|--------------|
+| `ratingModel.js` | `src/modules/reviews/reviews.model.js` |
+| `appointmentController.js` | `src/modules/appointments/appointments.controller.js` |
+| `consultationRoutes.js` | `src/modules/appointments/appointments.routes.js` + `src/modules/reviews/reviews.routes.js` |
+| `nurseController.js` | `src/modules/nurse/nurse.controller.js` |
+| `adminController.js` | `src/modules/admin/admin.controller.js` |
+| `nurse/dashboard.ejs` | `views/nurse/dashboard.ejs` (unchanged) |
+| `consultations/index.ejs` | `views/consultations/index.ejs` (unchanged) |
+| New "Meet Our Staff" | `src/modules/staff/` (new module) |
+| New rating modal JS | `public/js/rating-modal.js` |
+| Migration | `src/config/migrate.js` |
 
 ---
 
@@ -290,20 +356,36 @@ Nurse profile edit page (or a new section in nurse dashboard if no edit page exi
 
 | Actor | Can See |
 |-------|---------|
-| **Student** | Their own submitted ratings. Nurse aggregate stars + **verified anonymous reviews** (as "Patient 1, 2, 3...") during booking and on "Meet Our Staff" page. |
-| **Nurse** | Their own average score + count (includes all ratings). No individual comment text. |
-| **Admin** | All ratings (all statuses), per-nurse breakdown, individual comments, student names. Moderation queue with approve/reject actions. |
-| **Public** | Nothing. No unauthenticated rating data exposed. |
+| **Student** | Own ratings. Verified nurse averages + anonymous approved reviews ("Patient 1, 2...") on booking + Meet Our Staff. |
+| **Nurse** | Own average + count (ALL ratings). No individual comments. Bio editor. |
+| **Admin** | All ratings (all statuses). Per-nurse breakdown. Student names. Approve/reject queue. |
+| **Public** | Nothing. All data requires authentication. |
 
 ---
 
-## UX Principles Applied
+## Verification Checklist
 
-1. **Recognition over recall** — modal pre-fills nurse name and date, student doesn't have to pick from a dropdown
-2. **Progressive disclosure** — nurse info card only appears after selection (not cluttering initial state)
-3. **Emotional safety** — anonymous reviews ("Patient 1") encourage honest feedback while still letting future patients benefit
-4. **Trust through moderation** — admin-verified badge ensures reviews are legitimate, preventing abuse
-5. **Immediate feedback** — star hover animation confirms interaction
-6. **Minimum friction** — one click to open modal, click stars, optional comment, submit. Three interactions total.
-7. **Social proof** — verified reviews in booking flow help students choose confidently
-8. **Discoverability** — "Meet Our Staff" sidebar link gives students a dedicated space to explore nurse profiles at their own pace
+After implementation:
+
+- [ ] Student table: Rate button only shows on Completed + unrated rows
+- [ ] Student table: Join button only shows when TeamsID exists + status is Confirmed
+- [ ] Student table: "Awaiting Link" badge (non-clickable) for Online without TeamsID
+- [ ] Student table: Cancelled rows greyed out, no buttons
+- [ ] Student table: Rated rows show "✓ Rated" badge
+- [ ] Nurse table: No actions on Completed/Cancelled rows
+- [ ] Nurse table: Link button only for Confirmed Online without TeamsID
+- [ ] Nurse table: Cancelled rows greyed
+- [ ] Past appointments auto-cancelled on dashboard load
+- [ ] Booking redirects to confirmation page (not review page)
+- [ ] Dashboard cards: no "Tier 1" / "Tier 2" text
+- [ ] Pie chart legend readable in dark mode
+- [ ] Star rating modal opens from Rate button, submits correctly
+- [ ] Nurse profile card appears in booking flow after nurse selection
+- [ ] "Meet Our Staff" page shows all nurses with verified reviews
+- [ ] Nurse dashboard shows personal rating summary
+- [ ] Admin can approve/reject pending ratings
+- [ ] Only approved ratings appear on student-facing pages
+- [ ] Nurse can edit bio + years of experience
+- [ ] Invalid status transitions rejected (400 error)
+- [ ] Can't rate a cancelled appointment
+- [ ] Can't review a nurse for a Pending appointment

@@ -43,6 +43,10 @@
           <span class="sidebar-icon">&#128200;</span>
           <span class="sidebar-label">Health Trends</span>
         </a>
+        <a href="/staff" class="sidebar-link">
+          <span class="sidebar-icon">&#128101;</span>
+          <span class="sidebar-label">Meet Our Staff</span>
+        </a>
       <% } else if (user.role === 'nurse') { %>
         <a href="/" class="sidebar-link">
           <span class="sidebar-icon">&#127968;</span>
@@ -63,6 +67,10 @@
         <a href="/profile" class="sidebar-link">
           <span class="sidebar-icon">&#128100;</span>
           <span class="sidebar-label">Profile</span>
+        </a>
+        <a href="/management/nurse/edit-bio" class="sidebar-link">
+          <span class="sidebar-icon">&#9997;&#65039;</span>
+          <span class="sidebar-label">Edit Bio</span>
         </a>
       <% } else if (user.role === 'admin') { %>
         <a href="/" class="sidebar-link">

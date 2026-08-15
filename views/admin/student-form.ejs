@@ -15,6 +15,7 @@
     <% } %>
 
     <form action="<%= isEdit ? '/management/admin/students/' + student.StudentNumber + '/update' : '/management/admin/students/add' %>" method="POST">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <div class="form-group">
         <label for="studentNumber">Student Number</label>
         <input type="text" id="studentNumber" name="studentNumber" class="form-control" 

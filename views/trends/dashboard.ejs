@@ -178,7 +178,12 @@
       plugins: {
         legend: {
           position: 'right',
-          labels: { padding: 16, font: { size: 13 }, boxWidth: 16 }
+          labels: {
+            padding: 16,
+            font: { size: 13 },
+            boxWidth: 16,
+            color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#f1f5f9' : '#0f172a'
+          }
         }
       }
     }

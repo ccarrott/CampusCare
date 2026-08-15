@@ -45,6 +45,7 @@
         <div class="profile-actions">
           <a href="/profile/edit" class="btn btn-primary">Edit Profile</a>
           <form action="/profile/delete" method="POST" style="display: inline-block;" onsubmit="return confirm('Permanently delete your account? This cannot be undone.');">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <button type="submit" class="btn btn-danger">Delete Account</button>
           </form>
         </div>
@@ -55,6 +56,7 @@
     <section class="content-card">
       <h2>Change Password</h2>
       <form action="/profile/change-password" method="POST">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="form-group">
           <label for="currentPassword">Current Password</label>
           <input type="password" id="currentPassword" name="currentPassword" class="form-control" required>

@@ -11,6 +11,7 @@
 
   <section class="content-card">
     <form action="/consultations/book" method="POST" id="bookingForm">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
       <!-- Step 1: Consultation Type -->
       <div class="booking-step" id="step1">
@@ -58,6 +59,23 @@
 
       <!-- Hidden field for combined datetime -->
       <input type="hidden" name="time" id="selectedTime">
+
+      <!-- Nurse Profile Card (loaded via AJAX after nurse selection) -->
+      <div id="nurseProfileCard" class="content-card mt-3" style="display:none; border-left: 4px solid var(--accent-cyan);">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h3 id="npName" style="margin:0;"></h3>
+            <p class="text-muted" style="margin:4px 0;" id="npExperience"></p>
+          </div>
+          <div style="text-align:right;">
+            <div class="star-rating-static" id="npStars"></div>
+            <span class="text-muted" style="font-size:0.85rem;" id="npRatingText"></span>
+          </div>
+        </div>
+        <p id="npBio" style="margin:12px 0 0; font-size:0.9rem;"></p>
+        <div id="npReviews" style="margin-top:12px;"></div>
+        <a href="/staff" class="text-muted" style="font-size:0.8rem; margin-top:8px; display:inline-block;">View full profile &rarr;</a>
+      </div>
 
       <!-- Step: Time Slot Grid -->
       <div class="booking-step" id="stepSlot" style="display: none;">
@@ -210,6 +228,9 @@
     const staffNumber = staffSelect.value;
     if (!staffNumber) return;
 
+    // Load nurse profile card
+    loadNurseProfile(staffNumber);
+
     // Reset downstream
     selectedSlotInfo.style.display = 'none';
     submitBtn.disabled = true;
@@ -317,6 +338,64 @@
     } else {
       // Physical: ready to submit
       submitBtn.disabled = false;
+    }
+  }
+
+  // Load nurse profile card (called on nurse selection)
+  async function loadNurseProfile(staffNumber) {
+    const card = document.getElementById('nurseProfileCard');
+    card.style.display = 'none';
+
+    try {
+      const resp = await fetch('/consultations/api/nurse-profile/' + staffNumber);
+      const data = await resp.json();
+      if (data.error) return;
+
+      // Name
+      document.getElementById('npName').textContent = data.firstName + ' ' + data.lastName;
+
+      // Experience
+      document.getElementById('npExperience').textContent = data.yearsExperience > 0
+        ? data.yearsExperience + ' years as a registered nurse'
+        : 'Campus nurse';
+
+      // Bio
+      document.getElementById('npBio').textContent = data.bio || 'No bio available yet.';
+
+      // Stars
+      const starsEl = document.getElementById('npStars');
+      if (data.averageRating) {
+        const full = Math.round(data.averageRating);
+        starsEl.innerHTML = '';
+        for (let i = 1; i <= 5; i++) {
+          starsEl.innerHTML += i <= full ? '<span>&#9733;</span>' : '<span class="star-empty">&#9734;</span>';
+        }
+        document.getElementById('npRatingText').textContent = data.averageRating + ' avg from ' + data.ratingCount + ' reviews';
+      } else {
+        starsEl.innerHTML = '<span class="star-empty">&#9734;&#9734;&#9734;&#9734;&#9734;</span>';
+        document.getElementById('npRatingText').textContent = 'No ratings yet';
+      }
+
+      // Recent reviews
+      const reviewsEl = document.getElementById('npReviews');
+      if (data.recentReviews && data.recentReviews.length > 0) {
+        reviewsEl.innerHTML = data.recentReviews.map(function(r) {
+          const stars = Array.from({length: 5}, function(_, i) { return i < r.score ? '&#9733;' : '&#9734;'; }).join('');
+          const ago = r.date ? new Date(r.date).toLocaleDateString('en-ZA', { dateStyle: 'medium' }) : '';
+          return '<div style="padding:8px 0; border-top:1px solid var(--border-color); font-size:0.85rem;">' +
+            '<span style="color:#d4a843;">' + stars + '</span> ' +
+            '<strong>' + r.patient + '</strong>' +
+            (r.comment ? '<br><span class="text-muted">"' + r.comment + '"</span>' : '') +
+            (ago ? '<br><span class="text-muted" style="font-size:0.75rem;">' + ago + '</span>' : '') +
+            '</div>';
+        }).join('');
+      } else {
+        reviewsEl.innerHTML = '<p class="text-muted" style="font-size:0.85rem;">No reviews yet — be the first after your consultation!</p>';
+      }
+
+      card.style.display = 'block';
+    } catch (e) {
+      // Silent fail — card just doesn't show
     }
   }
 })();

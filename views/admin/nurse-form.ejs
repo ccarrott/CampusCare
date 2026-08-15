@@ -15,6 +15,7 @@
     <% } %>
 
     <form action="<%= isEdit ? '/management/admin/nurses/' + nurse.StaffNumber + '/update' : '/management/admin/nurses/add' %>" method="POST">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <div class="form-group">
         <label for="staffNumber">Staff Number</label>
         <input type="text" id="staffNumber" name="staffNumber" class="form-control"

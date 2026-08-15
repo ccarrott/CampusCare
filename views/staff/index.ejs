@@ -1,0 +1,85 @@
+<%- include('../partials/header', { title: 'Meet Our Staff' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="container page-wrapper">
+  <%- include('../partials/alerts') %>
+
+  <header class="page-header">
+    <h1>Meet Our Staff</h1>
+    <p class="subtitle">Get to know the nurses who keep our campus healthy.</p>
+  </header>
+
+  <% if (staffData.length > 0) { %>
+    <div class="dashboard-grid">
+      <% staffData.forEach(function(nurse) { %>
+        <section class="content-card" style="min-height: auto;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
+            <div>
+              <h2 style="border-bottom:none; margin-bottom:4px; padding-bottom:0;"><%= nurse.firstName %> <%= nurse.lastName %></h2>
+              <p class="text-muted" style="margin:0; font-size:0.85rem;">
+                <% if (nurse.yearsExperience > 0) { %>
+                  <%= nurse.yearsExperience %> years as a registered nurse
+                <% } else { %>
+                  Campus Nurse
+                <% } %>
+              </p>
+            </div>
+            <div style="text-align:right;">
+              <% if (nurse.averageRating) { %>
+                <div class="star-rating-static">
+                  <% for (let i = 1; i <= 5; i++) { %>
+                    <% if (i <= Math.round(nurse.averageRating)) { %><span>&#9733;</span><% } else { %><span class="star-empty">&#9734;</span><% } %>
+                  <% } %>
+                </div>
+                <span class="text-muted" style="font-size:0.8rem;"><%= nurse.averageRating %> from <%= nurse.ratingCount %> reviews</span>
+              <% } else { %>
+                <span class="text-muted" style="font-size:0.8rem;">No ratings yet</span>
+              <% } %>
+            </div>
+          </div>
+
+          <% if (nurse.bio) { %>
+            <p style="margin:12px 0 0; font-size:0.9rem;"><%= nurse.bio %></p>
+          <% } else { %>
+            <p class="text-muted" style="margin:12px 0 0; font-size:0.9rem; font-style:italic;">No bio available yet.</p>
+          <% } %>
+
+          <% if (nurse.reviews.length > 0) { %>
+            <div style="margin-top:16px; max-height:240px; overflow-y:auto; border-top:1px solid var(--border-color); padding-top:12px;">
+              <% nurse.reviews.forEach(function(review) { %>
+                <div style="padding:8px 0; border-bottom:1px solid var(--border-color);">
+                  <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="font-size:0.85rem;"><%= review.patient %></strong>
+                    <span class="star-rating-static" style="font-size:0.9rem;">
+                      <% for (let i = 1; i <= 5; i++) { %>
+                        <% if (i <= review.score) { %><span>&#9733;</span><% } else { %><span class="star-empty">&#9734;</span><% } %>
+                      <% } %>
+                    </span>
+                  </div>
+                  <% if (review.comment) { %>
+                    <p class="text-muted" style="margin:4px 0 0; font-size:0.85rem;">"<%= review.comment %>"</p>
+                  <% } %>
+                  <% if (review.date) { %>
+                    <span class="text-muted" style="font-size:0.7rem;"><%= new Date(review.date).toLocaleDateString('en-ZA', { dateStyle: 'medium' }) %></span>
+                  <% } %>
+                </div>
+              <% }); %>
+            </div>
+          <% } else { %>
+            <p class="text-muted" style="margin-top:12px; font-size:0.85rem;">No reviews yet — be the first after your consultation!</p>
+          <% } %>
+        </section>
+      <% }); %>
+    </div>
+  <% } else { %>
+    <section class="content-card">
+      <div class="empty-state">
+        <div class="empty-state-icon">&#128105;&#8205;&#9877;&#65039;</div>
+        <p class="empty-state-text">No staff profiles available yet.</p>
+      </div>
+    </section>
+  <% } %>
+
+</main>
+
+<%- include('../partials/footer') %>

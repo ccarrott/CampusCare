@@ -102,6 +102,23 @@ const migrations = [
       ReviewText text NOT NULL,
       CreatedAt datetime DEFAULT CURRENT_TIMESTAMP
     )`
+  },
+  // Phase 19: Review moderation + nurse profile fields
+  {
+    name: 'Add Bio to Nurse',
+    sql: `ALTER TABLE Nurse ADD COLUMN Bio text NULL`
+  },
+  {
+    name: 'Add YearsExperience to Nurse',
+    sql: `ALTER TABLE Nurse ADD COLUMN YearsExperience int DEFAULT 0`
+  },
+  {
+    name: 'Add Verified to NurseReviews',
+    sql: `ALTER TABLE NurseReviews ADD COLUMN Verified ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending'`
+  },
+  {
+    name: 'Add VerifiedAt to NurseReviews',
+    sql: `ALTER TABLE NurseReviews ADD COLUMN VerifiedAt datetime NULL`
   }
 ];
 

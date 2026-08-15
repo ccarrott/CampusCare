@@ -72,34 +72,121 @@
       <canvas id="dailyChart" style="max-height: 300px;"></canvas>
     </section>
 
-    <!-- Ratings Overview -->
+    <!-- Pending Nurse Reviews Moderation Queue -->
+    <% if (typeof pendingNurseReviews !== 'undefined' && pendingNurseReviews.length > 0) { %>
+      <section class="content-card mt-3" style="border-left: 4px solid var(--status-warning);">
+        <h2>Pending Nurse Reviews (<%= pendingNurseReviews.length %>)</h2>
+        <p class="text-muted mb-2">These nurse reviews need approval before they appear on "Meet Our Staff".</p>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Nurse</th>
+              <th>Score</th>
+              <th>Review</th>
+              <th>Student</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% pendingNurseReviews.forEach(function(r) { %>
+              <tr>
+                <td><%= r.NurseFirstName %> <%= r.NurseLastName %></td>
+                <td>
+                  <span class="star-rating-static">
+                    <% for (let i = 1; i <= 5; i++) { %><% if (i <= r.Rating) { %><span>&#9733;</span><% } else { %><span class="star-empty">&#9734;</span><% } %><% } %>
+                  </span>
+                </td>
+                <td><%= r.ReviewText %></td>
+                <td><%= r.StudentFirstName %> <%= r.StudentLastName %></td>
+                <td>
+                  <div class="action-btns">
+                    <form action="/management/admin/review/approve" method="POST" style="display:inline;">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                      <input type="hidden" name="reviewId" value="<%= r.ReviewID %>">
+                      <button type="submit" class="action-btn action-btn-complete">Approve</button>
+                    </form>
+                    <form action="/management/admin/review/reject" method="POST" style="display:inline;" onsubmit="return confirm('Reject this review?');">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                      <input type="hidden" name="reviewId" value="<%= r.ReviewID %>">
+                      <button type="submit" class="action-btn action-btn-cancel">Reject</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </section>
+    <% } %>
+
+    <!-- Nurse Feedback Overview -->
     <section class="content-card mt-3" id="ratings">
-      <h2>Nurse Ratings</h2>
-      <% if (ratings.length > 0) { %>
+      <h2>Nurse Feedback Overview</h2>
+      <% if (typeof nurseAverages !== 'undefined' && nurseAverages.length > 0) { %>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Nurse</th>
+              <th>Avg Rating</th>
+              <th>Approved</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% nurseAverages.forEach(function(n) { %>
+              <tr>
+                <td><%= n.FirstName %> <%= n.LastName %></td>
+                <td>
+                  <% if (n.Average) { %>
+                    <span class="star-rating-static">
+                      <% for (let i = 1; i <= 5; i++) { %><% if (i <= Math.round(n.Average)) { %><span>&#9733;</span><% } else { %><span class="star-empty">&#9734;</span><% } %><% } %>
+                    </span>
+                    <span class="text-muted" style="font-size:0.8rem;"><%= Number(n.Average).toFixed(1) %></span>
+                  <% } else { %>
+                    <span class="text-muted">—</span>
+                  <% } %>
+                </td>
+                <td><%= n.ApprovedCount || 0 %></td>
+                <td><%= n.TotalCount || 0 %></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      <% } else { %>
+        <p class="text-muted">No nurse ratings data available yet.</p>
+      <% } %>
+    </section>
+
+    <!-- All Consultation Ratings -->
+    <% if (ratings.length > 0) { %>
+      <section class="content-card mt-3">
+        <h2>All Consultation Ratings</h2>
         <table class="data-table">
           <thead>
             <tr>
               <th>Nurse</th>
               <th>Score</th>
               <th>Feedback</th>
-              <th>Appointment</th>
+              <th>Student</th>
             </tr>
           </thead>
           <tbody>
             <% ratings.forEach(function(r) { %>
               <tr>
                 <td><%= r.NurseFirstName %> <%= r.NurseLastName %></td>
-                <td><%= r.Score %> / 5</td>
-                <td><%= r.RatingDescription || 'No comments' %></td>
-                <td><%= r.AppointmentID %></td>
+                <td>
+                  <span class="star-rating-static">
+                    <% for (let i = 1; i <= 5; i++) { %><% if (i <= r.Score) { %><span>&#9733;</span><% } else { %><span class="star-empty">&#9734;</span><% } %><% } %>
+                  </span>
+                </td>
+                <td><%= r.RatingDescription || '—' %></td>
+                <td><%= r.StudentFirstName %> <%= r.StudentLastName %></td>
               </tr>
             <% }); %>
           </tbody>
         </table>
-      <% } else { %>
-        <p class="text-muted">No ratings submitted yet.</p>
-      <% } %>
-    </section>
+      </section>
+    <% } %>
 
   <% } else { %>
     <section class="content-card">

@@ -1,6 +1,6 @@
-# CampusCare — Development Changelog (Phases 3–18)
+# CampusCare — Development Changelog (Phases 3–20)
 
-Full-stack university health platform built across 16 development phases.
+Full-stack university health platform built across 18 development phases.
 
 ---
 
@@ -167,39 +167,93 @@ Full-stack university health platform built across 16 development phases.
 - Renamed "CampusCare Hub" → "CampusCare" across all source files
 - Fixed sidebar logo animation (smooth transition both directions)
 
-## Phase 19: Booking Flow Revamp & Nurse Reviews
+## Phase 19: Review System, Appointment Table Normalisation & UX Polish
+- Auto-expire past appointments (Pending/Confirmed past their time → auto-Cancelled on page load)
+- Fixed booking redirect (confirmation page, not premature review page)
+- Normalised student appointment table:
+  - Rate button ONLY on Completed + unrated rows (opens star rating modal)
+  - Join button ONLY when TeamsID exists + status is Confirmed
+  - "Awaiting Link" disabled badge for Online without TeamsID
+  - Cancel button only on Pending/Confirmed
+  - Cancelled rows greyed (opacity 0.6)
+  - Rated rows show "✓ Rated" badge
+- Normalised nurse appointment table:
+  - Pending: Confirm + Cancel
+  - Confirmed: Complete + Cancel + Add Link (Online only)
+  - Completed/Cancelled: no action buttons, cancelled rows greyed
+  - Removed separate Teams Link Management section (inline button instead)
+- Removed "Tier 1" / "Tier 2" text from student dashboard cards
+- Fixed pie chart legend colour for dark mode
+- Database migration: Added Bio + YearsExperience to Nurse, Verified + VerifiedAt to NurseReviews
+- Star rating CSS component (interactive 5-star widget + static read-only variant)
+- Rating modal overlay (replaces old bottom form section):
+  - Opens from Rate button with nurse name + date pre-filled
+  - Stars + optional comment + submit (POST /consultations/rate)
+  - Close via X, backdrop click, or Escape key
+- Nurse profile card in booking flow:
+  - Fades in after nurse selection, before schedule grid
+  - Shows name, years experience, bio, star average, recent approved reviews
+  - "View full profile" link to /staff
+- "Meet Our Staff" page (new module):
+  - Sidebar link for students
+  - 2-column card grid with all nurses
+  - Shows bio, experience, approved anonymous reviews ("Patient 1, 2, 3...")
+  - Only admin-approved nurse reviews visible
+- Nurse dashboard rating summary card (average + count from all ratings)
+- Admin moderation queue:
+  - Pending nurse reviews table with Approve/Reject buttons
+  - Only approved nurse reviews appear on public-facing pages
+  - Per-consultation ratings are NOT moderated (go straight in)
+- Nurse bio editor:
+  - Edit Bio (300 char limit, live counter) + Years of Experience
+  - Route: GET/POST /management/nurse/edit-bio
+  - Sidebar link for nurses
+- "Review a Nurse" page:
+  - Dropdown of nurses with completed consultations (one review per nurse per student)
+  - Star rating + written review required
+  - Auto-links to most recent completed appointment with that nurse
+  - Submitted reviews go to Pending → admin approves/rejects
+- Lifecycle validation hardening:
+  - Strict state transition rules (Pending→Confirmed/Cancelled, Confirmed→Completed/Cancelled, terminals reject all)
+  - Rating submission verifies appointment is Completed + owned by student
+  - Nurse patient history IDOR-protected (requirePatientRelationship middleware)
 
-### Booking Form Redesign (`views/consultations/book.ejs`)
-- Stepped booking flow with progressive disclosure
-- Step 1: Choose consultation type (Physical / Online)
-- Physical path: Step 2 = Select NMU campus (South, North, Second Avenue, Missionvale, Bird Street, George), Step 3 = Select nurse, Step 4 = Select time slot
-- Online path: Step 2 = Select nurse, Step 3 = Select time slot, Step 4 = Choose preferred language for Teams meeting (all 11 SA official languages)
-- Submit button only enables when all required steps are completed
-- Campus dropdown hidden for Online; language dropdown hidden for Physical
-
-### Controller & Model Updates
-- `appointmentController.js`: `handleBooking` now extracts `campus` and `preferredLanguage`, validates conditionally (campus required for Physical, language required for Online), redirects to review page after booking
-- `appointmentModel.js`: `createAppointment` now inserts `Campus` and `PreferredLanguage` columns (8 fields total)
-
-### Nurse Review System (new feature)
-- **New table**: `NurseReviews` (ReviewID PK, AppointmentID, StudentNumber, StaffNumber, Rating, ReviewText, CreatedAt)
-- **New model**: `src/models/nurseReviewModel.js` — createNurseReview, getReviewsByNurse, getReviewsByStudent, hasReviewedAppointment
-- **New controller**: `src/controllers/nurseReviewController.js` — showReviewPage, handleReviewSubmission, showStudentReviews
-- **New views**:
-  - `views/consultations/review.ejs` — post-booking review prompt with star rating (1–5) and text area; shows appointment summary with campus/language info
-  - `views/consultations/nurse-reviews.ejs` — list of all reviews submitted by the student
-- **Routes added** to `consultationRoutes.js`:
-  - `GET /consultations/review/:id` — review page after booking
-  - `POST /consultations/review` — submit nurse review
-  - `GET /consultations/nurse-reviews` — view all student's past reviews
-
-### Navigation
-- Added "Review Nurse" link in student sidebar (after My Appointments)
-
-### Database Migrations (`src/config/migrate.js`)
-- `ALTER TABLE Appointment ADD COLUMN Campus varchar(50) NULL`
-- `ALTER TABLE Appointment ADD COLUMN PreferredLanguage varchar(50) NULL`
-- `CREATE TABLE IF NOT EXISTS NurseReviews (ReviewID, AppointmentID, StudentNumber, StaffNumber, Rating, ReviewText, CreatedAt)`
-
-### Post-deploy Steps
-- Run `node src/config/migrate.js` to apply schema changes
+## Phase 20: Module-Based Architecture Conversion & Security Hardening
+- Converted flat MVC to domain-based module architecture:
+  - 11 modules: auth, profile, symptoms, appointments, availability, reviews, trends, nurse, admin, notifications, export, staff
+  - Each module: `module.routes.js` + `module.controller.js` + `module.model.js`
+- Created shared middleware layer:
+  - `authenticate.js` — requireAuth
+  - `authorize.js` — requireRole(...roles) composable
+  - `ownership.js` — IDOR guards (requireAppointmentOwner, requireAssignedNurse, requirePatientRelationship)
+  - `errorHandler.js` — global async error catcher + renderer
+  - `validate.js` — isValidEmail, isValidScore, isValidStatus, etc.
+- Created utils:
+  - `catchAsync.js` — wraps async handlers, forwards errors
+  - `AppError.js` — operational error class with statusCode
+  - `sanitize.js` — single-source input sanitisation
+  - `dates.js` — getUpcomingWeekDays, isWeekday
+- Created config layer:
+  - `environment.js` — validates required env vars (fail-fast on boot)
+  - `session.js` — session middleware with secure cookie config (httpOnly, sameSite: lax)
+  - `security.js` — security headers (nosniff, X-Frame-Options, Referrer-Policy, Permissions-Policy)
+- Added `constants.js` (frozen enums: ROLES, APPOINTMENT_STATUS, APPOINTMENT_TYPE, SEVERITY)
+- CSRF protection (session-based token):
+  - Token generated per session, attached to res.locals for all views
+  - Validated on all POST requests (except /api/ JSON endpoints)
+  - Hidden input `_csrf` added to all 19+ POST forms
+- Atomic booking transaction:
+  - `atomicBookSlot()` uses SELECT...FOR UPDATE + transaction
+  - Prevents race condition double-bookings
+- Eliminated `rawQuery` export — all DB access via named model functions
+- Merged redundant files:
+  - `ratingController` + `nurseReviewController` → `reviews.controller.js`
+  - `ratingModel` + `nurseReviewModel` → `reviews.model.js`
+  - `adminController` + `adminCrudController` → `admin.controller.js`
+  - `adminReportModel` + `adminCrudModel` → `admin.model.js`
+- Split `userModel.js` → `auth.model.js` + `profile.model.js`
+- Created `views/error.ejs` generic error page (403, 404, 500)
+- Added 404 handler for unmatched routes
+- Deleted old `src/controllers/`, `src/models/`, `src/routes/`, `src/middlewares/`
+- XSS audit: all `<%-` usages verified as server-generated data only
+- 3 new dependencies: `express-mysql-session`, `csrf-csrf`, `cookie-parser`

@@ -1,92 +1,177 @@
-// ======================================================================================
-// CAMPUSCARE - CENTRAL APPLICATION ENTRY POINT (src/app.js)
-// ======================================================================================
+// src/app.js
+// CampusCare — Express application entry point.
+
 import express from 'express';
-import session from 'express-session';
-import dotenv from 'dotenv/config';
+import 'dotenv/config';
+import crypto from 'crypto';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { query } from './config/database.js';
-import authRoutes from './routes/authRoutes.js';
-import profileRoutes from './routes/profileRoutes.js';
-import symptomRoutes from './routes/symptomRoutes.js';
-import trendRoutes from './routes/trendRoutes.js';
-import consultationRoutes from './routes/consultationRoutes.js';
-import managementRoutes from './routes/managementRoutes.js';
-import { requireAuth } from './middlewares/authMiddleware.js';
 
-// Setup cross-platform directory paths for ES Modules
+// Config
+import { validateEnv } from './config/environment.js';
+import { query } from './config/database.js';
+import { createSessionMiddleware } from './config/session.js';
+import { securityHeaders } from './config/security.js';
+import cookieParser from 'cookie-parser';
+
+// Middleware
+import { requireAuth } from './middleware/authenticate.js';
+import { globalErrorHandler } from './middleware/errorHandler.js';
+
+// Module routes
+import authRoutes from './modules/auth/auth.routes.js';
+import profileRoutes from './modules/profile/profile.routes.js';
+import symptomsRoutes from './modules/symptoms/symptoms.routes.js';
+import appointmentsRoutes from './modules/appointments/appointments.routes.js';
+import reviewsRoutes from './modules/reviews/reviews.routes.js';
+import trendsRoutes from './modules/trends/trends.routes.js';
+import nurseRoutes from './modules/nurse/nurse.routes.js';
+import availabilityRoutes from './modules/availability/availability.routes.js';
+import adminRoutes from './modules/admin/admin.routes.js';
+import staffRoutes from './modules/staff/staff.routes.js';
+
+// Cross-module controllers (mounted on other module prefixes)
+import { getUpcomingAppointmentsAPI } from './modules/notifications/notifications.controller.js';
+import { exportAppointmentsCSV, exportTrendsCSV } from './modules/export/export.controller.js';
+
+// ============================================================================
+// BOOTSTRAP
+// ============================================================================
+
+validateEnv();
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 const app = express();
 
-// Core Middlewares
+// ============================================================================
+// CORE MIDDLEWARE
+// ============================================================================
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(securityHeaders);
+app.use(createSessionMiddleware());
 
-// Secure Session Configuration
-app.use(
-  session({
-    secret: process.env.SESSION_SEED, // Strictly bound to .env for security
-    resave: false,
-    saveUninitialized: false,
-    cookie: { 
-      maxAge: 3600000, // 1 hour session duration
-      httpOnly: true   // Protects against cross-site scripting (XSS) attacks
+// CSRF protection (session-based token)
+app.use((req, res, next) => {
+  if (req.session) {
+    if (!req.session.csrfToken) {
+      req.session.csrfToken = crypto.randomBytes(32).toString('hex');
     }
-  })
-);
+    res.locals.csrfToken = req.session.csrfToken;
+  } else {
+    res.locals.csrfToken = '';
+  }
+  next();
+});
 
-// Serve Static Assets & View Engine
+// Validate CSRF on state-changing requests
+app.use((req, res, next) => {
+  if (req.method === 'GET' || req.method === 'HEAD') return next();
+  if (req.path.includes('/api/')) return next();
+
+  const token = req.body._csrf || req.headers['x-csrf-token'];
+  if (!token || token !== req.session?.csrfToken) {
+    return res.status(403).render('error', {
+      user: req.session?.user || null,
+      statusCode: 403,
+      message: 'Invalid or missing security token. Please refresh the page and try again.'
+    });
+  }
+  next();
+});
+
+// ============================================================================
+// STATIC ASSETS & VIEW ENGINE
+// ============================================================================
+
 app.use(express.static(path.join(__dirname, '../public')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '../views'));
 
-// ======================================================================================
+// ============================================================================
 // ROUTES
-// ======================================================================================
+// ============================================================================
 
-// Root Dashboard Route (Protected by Auth Middleware)
+// Root dashboard
 app.get('/', requireAuth, (req, res) => {
   res.render('index', { user: req.session.user });
 });
 
-// Mount modular Auth routes
+// Auth (login, register, logout, password reset)
 app.use('/auth', authRoutes);
 
-// Mount Profile routes
+// Profile (view, edit, delete, change password)
 app.use('/profile', profileRoutes);
 
-// Mount Symptom Checker routes
-app.use('/symptoms', symptomRoutes);
+// Symptoms (checker, recommendations, history)
+app.use('/symptoms', symptomsRoutes);
 
-// Mount Health Trends routes
-app.use('/trends', trendRoutes);
+// Consultations (booking, history, cancel, reschedule)
+app.use('/consultations', appointmentsRoutes);
 
-// Mount Consultations routes
-app.use('/consultations', consultationRoutes);
+// Reviews (ratings, nurse reviews)
+app.use('/consultations', reviewsRoutes);
 
-// Mount Nurse & Admin Management routes
-app.use('/management', managementRoutes);
+// Notifications API (upcoming appointments for browser notifications)
+app.get('/consultations/api/upcoming', requireAuth, getUpcomingAppointmentsAPI);
 
-// ======================================================================================
-// STARTUP VERIFICATION & SERVER BOOT
-// ======================================================================================
+// Health Trends (dashboard, map data API)
+app.use('/trends', trendsRoutes);
+
+// Meet Our Staff (nurse profiles + verified reviews)
+app.use('/staff', staffRoutes);
+
+// Trends CSV export
+app.get('/trends/export-csv', requireAuth, exportTrendsCSV);
+
+// Nurse management (dashboard, teams links, status, notes, patient history)
+app.use('/management/nurse', nurseRoutes);
+
+// Nurse availability (grid view + save)
+app.use('/management/nurse', availabilityRoutes);
+
+// Admin management (reports, student CRUD, nurse CRUD)
+app.use('/management/admin', adminRoutes);
+
+// Admin CSV export
+app.get('/management/admin/reports/export-csv', requireAuth, exportAppointmentsCSV);
+
+// ============================================================================
+// ERROR HANDLING
+// ============================================================================
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).render('error', {
+    user: req.session?.user || null,
+    statusCode: 404,
+    message: 'Page not found.'
+  });
+});
+
+// Global error handler (must be last)
+app.use(globalErrorHandler);
+
+// ============================================================================
+// SERVER BOOT
+// ============================================================================
+
 const PORT = process.env.APP_PORT;
 
 async function startServer() {
   try {
-    // Ping MySQL to verify active connection pool before opening HTTP ports
     await query('SELECT 1');
-    console.log('[Database] MySQL connection pool verified successfully.');
+    console.log('[Database] Connection pool verified.');
 
     app.listen(PORT, () => {
-      console.log(`[Server] CampusCare running live at http://localhost:${PORT}`);
+      console.log(`[Server] CampusCare running at http://localhost:${PORT}`);
     });
   } catch (error) {
-    console.error('[Server Fatal Error] Unable to establish database connection:', error.message);
-    process.exit(1); // Terminate process to prevent half-baked app states
+    console.error('[FATAL] Database connection failed:', error.message);
+    process.exit(1);
   }
 }
 
