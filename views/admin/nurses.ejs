@@ -27,7 +27,7 @@
             <th>Phone</th>
             <th>Email</th>
             <th>Clinic</th>
-            <th>Actions</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -38,12 +38,15 @@
               <td><%= n.PhoneNumber || '—' %></td>
               <td><%= n.Email || '—' %></td>
               <td><%= n.ClinicID || '—' %></td>
-              <td>
-                <a href="/management/admin/nurses/<%= n.StaffNumber %>/edit" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">Edit</a>
-                <form action="/management/admin/nurses/<%= n.StaffNumber %>/delete" method="POST" style="display: inline;" onsubmit="return confirm('Delete nurse <%= n.FirstName %> <%= n.LastName %>? Cannot delete if they have appointments.');">
-                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                  <button type="submit" class="btn btn-danger" style="padding: 4px 10px; font-size: 0.75rem;">Delete</button>
-                </form>
+              <td class="table-actions">
+                <button class="kebab-btn" aria-label="Actions menu" onclick="toggleKebab(this)">&#8942;</button>
+                <div class="kebab-menu">
+                  <a href="/management/admin/nurses/<%= n.StaffNumber %>/edit" class="kebab-item">Edit</a>
+                  <form action="/management/admin/nurses/<%= n.StaffNumber %>/delete" method="POST" onsubmit="return confirm('Delete nurse <%= n.FirstName %> <%= n.LastName %>? Cannot delete if they have appointments.');">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button type="submit" class="kebab-item kebab-danger">Delete</button>
+                  </form>
+                </div>
               </td>
             </tr>
           <% }); %>
@@ -55,5 +58,18 @@
   </section>
 
 </main>
+
+<script>
+function toggleKebab(btn) {
+  document.querySelectorAll('.kebab-menu.open').forEach(function(m) { m.classList.remove('open'); });
+  var menu = btn.nextElementSibling;
+  menu.classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.table-actions')) {
+    document.querySelectorAll('.kebab-menu.open').forEach(function(m) { m.classList.remove('open'); });
+  }
+});
+</script>
 
 <%- include('../partials/footer') %>

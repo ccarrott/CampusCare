@@ -32,21 +32,21 @@ export const showProfile = catchAsync(async (req, res) => {
 
 export const showEditProfile = catchAsync(async (req, res) => {
   const profile = await ProfileModel.findStudentById(req.session.user.id);
+  const zones = await ProfileModel.getAllZones();
 
   if (!profile) {
-    return res.status(404).render('profile/edit', { user: req.session.user, profile: {}, error: 'Profile not found.' });
+    return res.status(404).render('profile/edit', { user: req.session.user, profile: {}, zones: [], error: 'Profile not found.' });
   }
 
-  res.render('profile/edit', { user: req.session.user, profile, error: null });
+  res.render('profile/edit', { user: req.session.user, profile, zones, error: null });
 });
 
 export const updateProfile = catchAsync(async (req, res) => {
   const { id } = req.session.user;
-  const cleanAddress = sanitize(req.body.address);
   const cleanHistory = sanitize(req.body.medicalHistory);
 
-  await ProfileModel.updateStudentProfile(id, { address: cleanAddress, medicalHistory: cleanHistory });
-  res.redirect('/profile');
+  await ProfileModel.updateStudentProfile(id, { medicalHistory: cleanHistory });
+  res.redirect('/profile?toast=Profile+updated');
 });
 
 // ============================================================================
@@ -84,4 +84,55 @@ export const changePassword = catchAsync(async (req, res) => {
   await ProfileModel.updatePassword(id, role, hashedPassword);
 
   res.redirect('/profile');
+});
+
+// ============================================================================
+// LOCATION PICKER (Pin Drop Map)
+// ============================================================================
+
+import { query } from '../../config/database.js';
+import { getZoneForPoint } from '../../utils/geo.js';
+
+export const showLocationPicker = catchAsync(async (req, res) => {
+  const student = await ProfileModel.findStudentById(req.session.user.id);
+  const zones = await query('SELECT ZoneID, Name, Latitude, Longitude, Boundary FROM CampusZone');
+
+  res.render('profile/location', {
+    user: req.session.user,
+    zones,
+    currentLat: student?.Latitude || null,
+    currentLon: student?.Longitude || null,
+    success: null
+  });
+});
+
+export const saveLocation = catchAsync(async (req, res) => {
+  const { latitude, longitude } = req.body;
+  const studentNumber = req.session.user.id;
+
+  if (!latitude || !longitude) {
+    const zones = await query('SELECT ZoneID, Name, Latitude, Longitude, Boundary FROM CampusZone');
+    return res.render('profile/location', {
+      user: req.session.user, zones, currentLat: null, currentLon: null,
+      success: null, error: 'Please drop a pin on the map.'
+    });
+  }
+
+  const lat = parseFloat(latitude);
+  const lon = parseFloat(longitude);
+
+  // Save coordinates to Student
+  await query('UPDATE Student SET Latitude = ?, Longitude = ? WHERE StudentNumber = ?', [lat, lon, studentNumber]);
+
+  // Compute zone from pin position
+  const zones = await query('SELECT ZoneID, Name, Latitude, Longitude, Boundary FROM CampusZone');
+  const zoneId = getZoneForPoint(lat, lon, zones);
+
+  // Update StudentZone
+  await query('DELETE FROM StudentZone WHERE StudentNumber = ?', [studentNumber]);
+  if (zoneId) {
+    await query('INSERT INTO StudentZone (StudentNumber, ZoneID) VALUES (?, ?)', [studentNumber, zoneId]);
+  }
+
+  res.redirect('/?toast=Location+saved');
 });

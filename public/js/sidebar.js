@@ -90,3 +90,25 @@ document.querySelectorAll('.sidebar-arrow-btn').forEach(function(btn) {
     });
   });
 })();
+
+// Sidebar Active Link Highlight
+(function() {
+  const currentPath = window.location.pathname;
+  document.querySelectorAll('.sidebar-link').forEach(function(link) {
+    const href = link.getAttribute('href');
+    if (!href) return;
+    // Exact match or starts-with (but not just '/')
+    if (href === currentPath || (href !== '/' && currentPath.startsWith(href))) {
+      link.classList.add('active');
+    }
+  });
+})();
+
+// Prevent sidebar bounce animation on navigation (avoids visual glitch)
+(function() {
+  document.querySelectorAll('.sidebar-link').forEach(function(link) {
+    link.addEventListener('click', function() {
+      document.getElementById('sidebar').classList.add('navigating');
+    });
+  });
+})();

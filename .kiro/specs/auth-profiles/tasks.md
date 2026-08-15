@@ -10,9 +10,9 @@
 - [x] Task 7: Create profile management UI views (`views/profile/view.ejs` and `views/profile/edit.ejs`).
 - [x] Task 8: Add `Password` column to `Nurse` and `Admin` tables via migration.
 - [x] Task 9: Install bcrypt and hash all passwords (registration + login comparison).
+- [x] Task 10: Add validation middleware (isValidStudentNumber, isValidEmail, isValidPassword) — Phase 20.
+- [x] Task 12: Add password change functionality for all roles (current pw + new pw + confirm) — Phase 17.
 
 ## Remaining
-- [ ] Task 10: Add express-validator middleware to registration and login forms.
-- [ ] Task 11: Implement nurse and admin profile view/edit pages (admin currently shows "not found").
-- [ ] Task 12: Add password change functionality for all roles (current pw + new pw + confirm).
+- [ ] Task 11: Implement nurse and admin profile view/edit pages (admin currently shows basic info only).
 - [ ] Task 13: End-to-end authentication testing across all three roles.

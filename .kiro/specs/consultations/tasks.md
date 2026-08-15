@@ -10,12 +10,12 @@
 - [x] Task 7: Update `createAppointment` to set Status = 'Pending' on insert.
 - [x] Task 8: Add status change model function (`updateAppointmentStatus`).
 - [x] Task 9: Update nurse dashboard to show status-change buttons (Confirm/Complete/Cancel).
-- [x] Task 10: Enforce ratings only on Status = 'Completed' appointments.
+- [x] Task 10: Enforce ratings only on Status = 'Completed' appointments — Phase 19.
 - [x] Task 11: Add appointment cancellation route for students.
 - [x] Task 12: Add `Notes` column and nurse consultation notes form.
+- [x] Task 13: Server-side duplicate timeslot prevention (atomic transaction with SELECT...FOR UPDATE) — Phase 20.
 - [x] Task 14: Show status badges in student appointment list view.
+- [x] Task 15: Prevent rating an appointment more than once (ratedIds check + hide button) — Phase 19.
 
 ## Remaining
-- [ ] Task 13: Server-side duplicate timeslot prevention (reject if nurse already booked at that time).
-- [ ] Task 15: Prevent rating an appointment more than once (hide already-rated from dropdown).
 - [ ] Task 16: End-to-end booking → confirm → complete → rate workflow testing.

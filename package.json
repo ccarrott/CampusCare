@@ -7,6 +7,12 @@
   "scripts": {
     "start": "node src/app.js",
     "db": "node src/config/test_database.js",
+    "migrate": "node src/config/migrate.js",
+    "seed:symptoms": "node src/config/seed-symptoms.js",
+    "state:naked": "node src/config/states/state-naked.js",
+    "state:showcase": "node src/config/states/state-showcase.js",
+    "state:outbreak": "node src/config/states/state-outbreak.js",
+    "state:clear": "node src/config/states/state-clear-outbreak.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

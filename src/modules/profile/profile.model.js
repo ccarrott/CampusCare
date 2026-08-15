@@ -21,9 +21,9 @@ export async function findAdminById(staffNumber) {
   return results[0];
 }
 
-export async function updateStudentProfile(studentNumber, { address, medicalHistory }) {
-  const sql = 'UPDATE Student SET Address = ?, MedicalHistory = ? WHERE StudentNumber = ?';
-  return await query(sql, [address, medicalHistory, studentNumber]);
+export async function updateStudentProfile(studentNumber, { medicalHistory }) {
+  const sql = 'UPDATE Student SET MedicalHistory = ? WHERE StudentNumber = ?';
+  return await query(sql, [medicalHistory, studentNumber]);
 }
 
 export async function deleteStudentAccount(studentNumber) {
@@ -36,4 +36,8 @@ export async function updatePassword(userId, userType, hashedPassword) {
   const pkMap = { student: 'StudentNumber', nurse: 'StaffNumber', admin: 'StaffNumber' };
   const sql = `UPDATE ${tableMap[userType]} SET Password = ? WHERE ${pkMap[userType]} = ?`;
   return await query(sql, [hashedPassword, userId]);
+}
+
+export async function getAllZones() {
+  return await query('SELECT ZoneID, Name, Latitude, Longitude, Boundary FROM CampusZone');
 }

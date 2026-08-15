@@ -29,12 +29,12 @@ export async function findAdminById(staffNumber) {
 // REGISTRATION
 // ============================================================================
 
-export async function createStudent({ studentNumber, firstName, lastName, address, medicalHistory, password }) {
+export async function createStudent({ studentNumber, firstName, lastName, medicalHistory, password }) {
   const sql = `
-    INSERT INTO Student (StudentNumber, FirstName, LastName, Address, MedicalHistory, Password)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO Student (StudentNumber, FirstName, LastName, MedicalHistory, Password)
+    VALUES (?, ?, ?, ?, ?)
   `;
-  return await query(sql, [studentNumber, firstName, lastName, address || '', medicalHistory || '', password]);
+  return await query(sql, [studentNumber, firstName, lastName, medicalHistory || '', password]);
 }
 
 // ============================================================================

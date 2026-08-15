@@ -83,7 +83,6 @@ export const handleRegister = catchAsync(async (req, res) => {
   const studentNumber = sanitize(req.body.studentNumber);
   const firstName = sanitize(req.body.firstName);
   const lastName = sanitize(req.body.lastName);
-  const address = sanitize(req.body.address);
   const medicalHistory = sanitize(req.body.medicalHistory);
   const password = req.body.password || '';
 
@@ -107,10 +106,19 @@ export const handleRegister = catchAsync(async (req, res) => {
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
   await AuthModel.createStudent({
-    studentNumber, firstName, lastName, address, medicalHistory, password: hashedPassword
+    studentNumber, firstName, lastName, medicalHistory, password: hashedPassword
   });
 
-  res.redirect('/auth/login');
+  // Auto-login the new student and redirect to pin-drop location page
+  req.session.user = {
+    id: studentNumber,
+    name: `${firstName} ${lastName}`,
+    firstName,
+    lastName,
+    role: ROLES.STUDENT
+  };
+
+  res.redirect('/profile/location');
 });
 
 // ============================================================================

@@ -41,7 +41,7 @@ export const handleRatingSubmission = catchAsync(async (req, res) => {
     studentNumber: req.session.user.id
   });
 
-  res.redirect('/consultations/my-appointments');
+  res.redirect('/consultations/my-appointments?toast=Rating+submitted');
 });
 
 // ============================================================================
@@ -95,7 +95,7 @@ export const handleReviewSubmission = catchAsync(async (req, res) => {
     reviewText: sanitize(reviewText)
   });
 
-  res.redirect('/consultations/nurse-reviews');
+  res.redirect('/consultations/nurse-reviews?toast=Review+submitted+for+approval');
 });
 
 // ============================================================================

@@ -7,6 +7,7 @@
   --primary-navy: #1e293b;
   --accent-cyan: #d4a843;
   --accent-gold: #d4a843;
+  --accent-text: #a07c1e;
   --bg-canvas: #f8fafc;
   --surface-white: #ffffff;
   --text-dark: #0f172a;
@@ -44,7 +45,7 @@ body {
 }
 
 a {
-  color: var(--accent-cyan);
+  color: var(--accent-text);
   text-decoration: none;
 }
 
@@ -79,6 +80,10 @@ img {
 
 .sidebar:hover {
   animation: sidebarBounce 0.4s ease forwards;
+}
+
+.sidebar.navigating {
+  animation: none !important;
 }
 
 @keyframes sidebarBounce {
@@ -731,7 +736,7 @@ textarea.form-control {
 
 .auth-links a {
   font-size: 0.88rem;
-  color: var(--accent-cyan);
+  color: var(--accent-text);
 }
 
 .auth-footer {
@@ -1417,5 +1422,503 @@ textarea.form-control {
 }
 
 [data-theme="dark"] .modal-close:hover {
+  color: #f1f5f9;
+}
+
+/* ==========================================================================
+   PHASE 21: HCI MICRO-INTERACTIONS & POLISH
+   ========================================================================== */
+
+/* ---------- Button Press Feedback ---------- */
+.btn:active, .action-btn:active {
+  transform: scale(0.96);
+}
+
+/* ---------- Dashboard Card Hover Lift ---------- */
+.dashboard-grid .content-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dashboard-grid .content-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="dark"] .dashboard-grid .content-card:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+/* ---------- Star Rating Pulse on Click ---------- */
+@keyframes starPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+
+.star-rating .star.just-selected {
+  animation: starPulse 0.25s ease;
+}
+
+/* ---------- Focus-Visible Outlines (Accessibility) ---------- */
+:focus-visible {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ---------- Skip-to-Content Link ---------- */
+.skip-link {
+  position: absolute;
+  top: -50px;
+  left: 0;
+  background: var(--accent-cyan);
+  color: var(--primary-navy);
+  padding: 10px 20px;
+  z-index: 99999;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-radius: 0 0 8px 0;
+  transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+  top: 0;
+  text-decoration: none;
+}
+
+/* ---------- Sidebar Active Link ---------- */
+.sidebar-link.active {
+  background-color: #334155;
+  color: #ffffff;
+  border-left: 3px solid var(--accent-cyan);
+  padding-left: 11px;
+}
+
+/* ---------- Toast Notifications ---------- */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  padding: 14px 22px;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #ffffff;
+  z-index: 10002;
+  transform: translateX(120%);
+  transition: transform 0.3s ease;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  max-width: 360px;
+}
+
+.toast-visible {
+  transform: translateX(0);
+}
+
+.toast-success { background: var(--status-success); }
+.toast-error { background: var(--status-danger); }
+.toast-info { background: #0ea5e9; }
+
+/* ---------- Step Progress Indicator ---------- */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32px;
+  padding: 0 16px;
+}
+
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 60px;
+}
+
+.step-circle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  background: var(--surface-white);
+  transition: all 0.25s ease;
+}
+
+.step-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.step-item.active .step-circle {
+  background: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+  color: var(--primary-navy);
+}
+
+.step-item.active .step-label {
+  color: var(--text-dark);
+  font-weight: 600;
+}
+
+.step-item.completed .step-circle {
+  background: var(--status-success);
+  border-color: var(--status-success);
+  color: #ffffff;
+}
+
+.step-connector {
+  flex: 1;
+  height: 2px;
+  background: var(--border-color);
+  margin: 0 6px;
+  margin-bottom: 22px;
+  transition: background 0.25s ease;
+}
+
+.step-connector.done {
+  background: var(--status-success);
+}
+
+/* ---------- Data Table Row Context ---------- */
+.row-today {
+  background-color: rgba(212, 168, 67, 0.06);
+}
+
+.row-upcoming {
+  border-left: 3px solid var(--accent-cyan);
+}
+
+.row-cancelled td:nth-child(3) {
+  text-decoration: line-through;
+}
+
+[data-theme="dark"] .row-today {
+  background-color: rgba(212, 168, 67, 0.08);
+}
+
+/* ---------- Kebab Menu (Admin Tables) ---------- */
+.table-actions {
+  position: relative;
+}
+
+.kebab-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 4px 10px;
+  border-radius: 6px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.kebab-btn:hover {
+  background: var(--bg-canvas);
+  color: var(--text-dark);
+}
+
+.kebab-menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background: var(--surface-white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  min-width: 130px;
+  z-index: 200;
+  overflow: hidden;
+}
+
+.kebab-menu.open {
+  display: block;
+  animation: modalSlideIn 0.15s ease;
+}
+
+.kebab-item {
+  display: block;
+  padding: 10px 16px;
+  font-size: 0.85rem;
+  color: var(--text-dark);
+  text-decoration: none;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: inherit;
+}
+
+.kebab-item:hover {
+  background: var(--bg-canvas);
+  text-decoration: none;
+}
+
+.kebab-danger {
+  color: var(--status-danger);
+}
+
+.kebab-danger:hover {
+  background: #fef2f2;
+}
+
+[data-theme="dark"] .kebab-btn:hover {
+  background: #374151;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .kebab-menu {
+  background: #2d3748;
+  border-color: #475569;
+}
+
+[data-theme="dark"] .kebab-item {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .kebab-item:hover {
+  background: #374151;
+}
+
+[data-theme="dark"] .kebab-danger:hover {
+  background: #3b1a1a;
+}
+
+/* ---------- Welcome Card ---------- */
+.welcome-card {
+  background: linear-gradient(135deg, var(--accent-cyan) 0%, #b8922e 100%);
+  color: var(--primary-navy);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px;
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.welcome-card h2 {
+  color: var(--primary-navy);
+  border-bottom: none;
+  margin-bottom: 8px;
+  padding-bottom: 0;
+  font-size: 1.3rem;
+}
+
+.welcome-card p {
+  opacity: 0.85;
+  margin-bottom: 16px;
+}
+
+.welcome-card .welcome-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.welcome-card .welcome-actions .btn {
+  background: var(--primary-navy);
+  color: #ffffff;
+  font-size: 0.85rem;
+  padding: 8px 16px;
+}
+
+.welcome-card .welcome-actions .btn:hover {
+  background: #334155;
+}
+
+.welcome-dismiss {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  color: var(--primary-navy);
+  cursor: pointer;
+  opacity: 0.6;
+  line-height: 1;
+}
+
+.welcome-dismiss:hover {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   PHASE 22: SYMPTOM TAG PICKER
+   ========================================================================== */
+
+/* Symptom tag pill */
+.symptom-tag {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  transition: all 0.15s;
+  margin: 3px;
+  user-select: none;
+}
+
+.symptom-tag:hover {
+  border-color: var(--accent-cyan);
+  background: rgba(212, 168, 67, 0.06);
+}
+
+.symptom-tag.selected {
+  background: var(--accent-cyan);
+  color: var(--primary-navy);
+  border-color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+/* Selected symptoms summary bar */
+.symptom-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px;
+  background: var(--bg-canvas);
+  border-radius: var(--radius-md);
+  min-height: 44px;
+  align-items: center;
+}
+
+.symptom-summary-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: var(--accent-cyan);
+  color: var(--primary-navy);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.symptom-summary-tag .remove {
+  cursor: pointer;
+  opacity: 0.7;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 50%;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.symptom-summary-tag .remove:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* Category accordion */
+.symptom-category {
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+}
+
+.symptom-category:last-child {
+  border-bottom: none;
+}
+
+.symptom-category-header {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-dark);
+}
+
+.symptom-category-header::before {
+  content: '▸';
+  transition: transform 0.2s;
+  font-size: 0.9rem;
+}
+
+.symptom-category.open .symptom-category-header::before {
+  transform: rotate(90deg);
+}
+
+.symptom-category-body {
+  display: none;
+  padding: 8px 0 8px 8px;
+}
+
+.symptom-category.open .symptom-category-body {
+  display: block;
+}
+
+/* Dark mode overrides */
+[data-theme="dark"] .symptom-tag {
+  border-color: #475569;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .symptom-tag:hover {
+  border-color: var(--accent-cyan);
+  background: rgba(212, 168, 67, 0.1);
+}
+
+[data-theme="dark"] .symptom-tag.selected {
+  background: var(--accent-cyan);
+  color: var(--primary-navy);
+}
+
+[data-theme="dark"] .symptom-summary {
+  background: #1e293b;
+}
+
+[data-theme="dark"] .symptom-category-header {
+  color: #f1f5f9;
+}
+
+/* ---------- Choropleth Map Info Panel + Legend ---------- */
+.map-info-panel {
+  padding: 8px 12px;
+  background: var(--surface-white);
+  border-radius: 6px;
+  box-shadow: var(--shadow-md);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  min-width: 120px;
+}
+
+.map-legend-panel {
+  padding: 8px 12px;
+  background: var(--surface-white);
+  border-radius: 6px;
+  box-shadow: var(--shadow-md);
+  font-size: 0.78rem;
+  line-height: 2;
+}
+
+.map-legend-panel i {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  margin-right: 6px;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+[data-theme="dark"] .map-info-panel,
+[data-theme="dark"] .map-legend-panel {
+  background: #2d3748;
   color: #f1f5f9;
 }

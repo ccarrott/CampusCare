@@ -33,6 +33,7 @@ import staffRoutes from './modules/staff/staff.routes.js';
 // Cross-module controllers (mounted on other module prefixes)
 import { getUpcomingAppointmentsAPI } from './modules/notifications/notifications.controller.js';
 import { exportAppointmentsCSV, exportTrendsCSV } from './modules/export/export.controller.js';
+import statesApi from './config/states/states-api.js';
 
 // ============================================================================
 // BOOTSTRAP
@@ -138,6 +139,9 @@ app.use('/management/admin', adminRoutes);
 
 // Admin CSV export
 app.get('/management/admin/reports/export-csv', requireAuth, exportAppointmentsCSV);
+
+// Database state management API (admin-only, browser console)
+app.use('/api/admin/state', statesApi);
 
 // ============================================================================
 // ERROR HANDLING

@@ -257,3 +257,37 @@ Full-stack university health platform built across 18 development phases.
 - Deleted old `src/controllers/`, `src/models/`, `src/routes/`, `src/middlewares/`
 - XSS audit: all `<%-` usages verified as server-generated data only
 - 3 new dependencies: `express-mysql-session`, `csrf-csrf`, `cookie-parser`
+
+
+## Phase 23: Database States & Showcase Tooling
+- Created database state management system with 4 states: naked, showcase, outbreak, clear-outbreak
+- Browser console API: `CampusCare.showcase()`, `CampusCare.outbreak()`, `CampusCare.clear()`, `CampusCare.naked()`
+- CLI commands: `npm run state:showcase`, `npm run state:outbreak`, `npm run state:clear`, `npm run state:naked`
+- Showcase: 19 students, 50 appointments, 20 ratings, 6 reviews, 100 symptom logs, 405 availability slots
+- All data temporally relative (always fresh regardless of when run)
+- Batch-optimised inserts (20s instead of 120s+)
+- Admin tools JS loaded on every page for console access
+
+## Pre-Phase 23: Map & Location System Overhaul
+- Replaced text address field with Leaflet pin-drop map for student location
+- Point-in-polygon zone computation (server-side, invisible to students)
+- Pin-drop pages show clean map only (no zone boundaries visible)
+- Auto-login after registration → redirect to pin-drop page
+- Student.Address column dropped, replaced by Latitude/Longitude
+- Profile view shows "Pin set ✓" with update link
+
+## Phase 24: Zone System Overhaul & Choropleth Heat Map
+- Expanded from 8 to 16 OSM-verified suburb zones (Nominatim bounding box data)
+- Zones: Summerstrand, Humewood, South End & Central, North End & Korsten, Newton Park, Mill Park, Walmer, Lorraine, Sherwood & Kabega, Westering & Bridgemead, Sunridge Park, Richmond Hill, Sydenham & Malabar, Mangold Park & Charlo, Kamma Park & Theescombe, Lovemore Heights & Sardinia Bay
+- Choropleth heat map (replaces old circles): soft cloud/splotch polygon fills, opacity scales with severity
+- GeoJSON FeatureCollection API for Leaflet L.geoJson() rendering
+- Hover shows info panel, click zooms with popup showing top symptoms
+- Legend: Low → Moderate → High → Outbreak colour scale
+- NMU logo (nmu.jpg) implemented in sidebar and auth pages
+- Pie chart: fixed size (500×500), centred, legend below, white text for dark mode
+- Map and pie chart now use same period (page-level reload on dropdown change)
+- Fixed data inconsistency: StudentZone records rebuilt via showcase state
+- Symptom data updated with med-student verified mappings (48 symptoms, 27 meds, 66 mappings)
+- Tier 2 symptoms get NO OTC recommendations (instructive language: "You need to book a nurse")
+- CSV formula injection fix (CWE-1236)
+- Removed all remaining address text inputs (replaced by pin-drop)

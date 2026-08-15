@@ -9,11 +9,11 @@
 - [x] Task 6: Add `Status` column → implement status change buttons on nurse dashboard.
 - [x] Task 7: Add `Notes` column → implement consultation notes form per appointment.
 - [x] Task 8: Build admin student + nurse CRUD (list, add, edit, delete).
+- [x] Task 11: Implement CSV export for report data (`/management/admin/reports/export-csv`) — Phase 17.
 - [x] Task 12: Build nurse availability slot system (27 × 15-min slots, drag-draw, date headers).
+- [x] Task 13: Add nurse performance breakdown (per-nurse averages in Nurse Feedback Overview) — Phase 19.
 
 ## Remaining
 - [ ] Task 9: Build admin medication inventory management page.
 - [ ] Task 10: Add date range filtering to admin reports.
-- [ ] Task 11: Implement CSV export for report data.
-- [ ] Task 13: Add nurse performance breakdown (appointments per nurse, avg rating).
 - [ ] Task 14: Role-based workflow validation testing (Student → Nurse → Admin).

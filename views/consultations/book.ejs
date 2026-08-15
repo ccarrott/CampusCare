@@ -10,6 +10,17 @@
   </header>
 
   <section class="content-card">
+    <!-- Step Progress Indicator -->
+    <div class="step-indicator" id="stepIndicator">
+      <div class="step-item active" data-step="1"><span class="step-circle">1</span><span class="step-label">Type</span></div>
+      <div class="step-connector" id="conn1"></div>
+      <div class="step-item" data-step="2"><span class="step-circle">2</span><span class="step-label">Nurse</span></div>
+      <div class="step-connector" id="conn2"></div>
+      <div class="step-item" data-step="3"><span class="step-circle">3</span><span class="step-label">Schedule</span></div>
+      <div class="step-connector" id="conn3"></div>
+      <div class="step-item" data-step="4"><span class="step-circle">4</span><span class="step-label">Confirm</span></div>
+    </div>
+
     <form action="/consultations/book" method="POST" id="bookingForm">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
@@ -152,6 +163,21 @@
   let currentSelection = null;
   let isPhysical = false;
 
+  // Step indicator management
+  function updateStepIndicator(activeStep) {
+    const steps = document.querySelectorAll('.step-item');
+    const connectors = document.querySelectorAll('.step-connector');
+    steps.forEach(function(step, i) {
+      const stepNum = i + 1;
+      step.classList.remove('active', 'completed');
+      if (stepNum < activeStep) step.classList.add('completed');
+      else if (stepNum === activeStep) step.classList.add('active');
+    });
+    connectors.forEach(function(conn, i) {
+      conn.classList.toggle('done', i < activeStep - 1);
+    });
+  }
+
   function updateStepTitles() {
     if (isPhysical) {
       document.getElementById('stepNurseTitle').textContent = '3. Select a Nurse';
@@ -200,6 +226,7 @@
       stepNurse.style.display = 'block';
     }
     updateStepTitles();
+    updateStepIndicator(2);
   });
 
   // Step 2a: Campus selected (Physical only)
@@ -215,7 +242,10 @@
   });
 
   // Step: Nurse selected -> load grid
-  staffSelect.addEventListener('change', loadNurseGrid);
+  staffSelect.addEventListener('change', function() {
+    updateStepIndicator(3);
+    loadNurseGrid();
+  });
 
   // Step: Language selected (Online) -> enable submit
   languageSelect.addEventListener('change', function() {
@@ -323,6 +353,7 @@
     selectedTimeInput.value = dateStr + ' ' + timeStr + ':00';
     selectedSlotText.textContent = label;
     selectedSlotInfo.style.display = 'block';
+    updateStepIndicator(4);
 
     // Show next step based on type
     submitSection.style.display = 'block';

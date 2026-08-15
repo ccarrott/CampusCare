@@ -55,7 +55,7 @@ export async function getDailyAppointmentCounts(days = 14) {
 // ============================================================================
 
 export async function getAllStudents() {
-  return await query('SELECT StudentNumber, FirstName, LastName, Email, Address, MedicalHistory FROM Student ORDER BY LastName ASC');
+  return await query('SELECT StudentNumber, FirstName, LastName, Address, MedicalHistory FROM Student ORDER BY LastName ASC');
 }
 
 export async function getStudentById(studentNumber) {
@@ -63,21 +63,21 @@ export async function getStudentById(studentNumber) {
   return results[0];
 }
 
-export async function createStudent({ studentNumber, firstName, lastName, email, address, medicalHistory, password }) {
+export async function createStudent({ studentNumber, firstName, lastName, address, medicalHistory, password }) {
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
   const sql = `
-    INSERT INTO Student (StudentNumber, FirstName, LastName, Email, Address, MedicalHistory, Password)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO Student (StudentNumber, FirstName, LastName, Address, MedicalHistory, Password)
+    VALUES (?, ?, ?, ?, ?, ?)
   `;
-  return await query(sql, [studentNumber, firstName, lastName, email || '', address || '', medicalHistory || '', hashedPassword]);
+  return await query(sql, [studentNumber, firstName, lastName, address || '', medicalHistory || '', hashedPassword]);
 }
 
-export async function updateStudent(studentNumber, { firstName, lastName, email, address, medicalHistory }) {
+export async function updateStudent(studentNumber, { firstName, lastName, address, medicalHistory }) {
   const sql = `
-    UPDATE Student SET FirstName = ?, LastName = ?, Email = ?, Address = ?, MedicalHistory = ?
+    UPDATE Student SET FirstName = ?, LastName = ?, Address = ?, MedicalHistory = ?
     WHERE StudentNumber = ?
   `;
-  return await query(sql, [firstName, lastName, email || '', address || '', medicalHistory || '', studentNumber]);
+  return await query(sql, [firstName, lastName, address || '', medicalHistory || '', studentNumber]);
 }
 
 export async function deleteStudent(studentNumber) {
@@ -90,7 +90,7 @@ export async function deleteStudent(studentNumber) {
 
 export async function searchStudents(searchQuery) {
   const sql = `
-    SELECT StudentNumber, FirstName, LastName, Email, Address
+    SELECT StudentNumber, FirstName, LastName, Address
     FROM Student
     WHERE StudentNumber LIKE ? OR FirstName LIKE ? OR LastName LIKE ?
     ORDER BY LastName ASC

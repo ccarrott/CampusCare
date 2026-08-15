@@ -119,6 +119,58 @@ const migrations = [
   {
     name: 'Add VerifiedAt to NurseReviews',
     sql: `ALTER TABLE NurseReviews ADD COLUMN VerifiedAt datetime NULL`
+  },
+  // Phase 22: Symptom system overhaul + 3NF cleanup
+  {
+    name: 'Create Symptom table (atomic, tag-based)',
+    sql: `CREATE TABLE IF NOT EXISTS Symptom (
+      SymptomID varchar(10) PRIMARY KEY,
+      Name varchar(100) NOT NULL,
+      Category varchar(30) NOT NULL,
+      Tier int DEFAULT 1,
+      Description text NULL
+    )`
+  },
+  {
+    name: 'Create new SymptomMedicationMap (SymptomID ↔ MedicationCode)',
+    sql: `CREATE TABLE IF NOT EXISTS SymptomMedicationMap (
+      SymptomID varchar(10) NOT NULL,
+      MedicationCode varchar(10) NOT NULL,
+      PRIMARY KEY (SymptomID, MedicationCode)
+    )`
+  },
+  {
+    name: 'Create SymptomLogEntry join table (multi-select per log)',
+    sql: `CREATE TABLE IF NOT EXISTS SymptomLogEntry (
+      LogID varchar(50) NOT NULL,
+      SymptomID varchar(10) NOT NULL,
+      PRIMARY KEY (LogID, SymptomID)
+    )`
+  },
+  {
+    name: 'Drop Student.Email column',
+    sql: `ALTER TABLE Student DROP COLUMN Email`
+  },
+  {
+    name: 'Drop Medication.SymptomsTreated column',
+    sql: `ALTER TABLE Medication DROP COLUMN SymptomsTreated`
+  },
+  // Pre-Phase 23: Map & Location System Overhaul
+  {
+    name: 'Add Latitude to Student',
+    sql: `ALTER TABLE Student ADD COLUMN Latitude DECIMAL(10, 7) NULL`
+  },
+  {
+    name: 'Add Longitude to Student',
+    sql: `ALTER TABLE Student ADD COLUMN Longitude DECIMAL(10, 7) NULL`
+  },
+  {
+    name: 'Add Boundary JSON to CampusZone',
+    sql: `ALTER TABLE CampusZone ADD COLUMN Boundary JSON NULL`
+  },
+  {
+    name: 'Drop Student.Address column',
+    sql: `ALTER TABLE Student DROP COLUMN Address`
   }
 ];
 

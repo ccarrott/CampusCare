@@ -50,15 +50,23 @@ export const getMapDataAPI = catchAsync(async (req, res) => {
     symptomMap[r.ZoneID].push({ name: r.SymptomName, count: r.SymptomCount });
   });
 
-  const mapData = zones.map(zone => ({
-    zoneId: zone.ZoneID,
-    name: zone.Name,
-    lat: parseFloat(zone.Latitude),
-    lon: parseFloat(zone.Longitude),
-    radius: zone.Radius,
-    totalReports: totalMap[zone.ZoneID] || 0,
-    topSymptoms: (symptomMap[zone.ZoneID] || []).slice(0, 3)
-  }));
+  // Return GeoJSON FeatureCollection for choropleth rendering
+  const features = zones.map(zone => {
+    const boundary = typeof zone.Boundary === 'string' ? JSON.parse(zone.Boundary) : zone.Boundary;
+    // GeoJSON uses [lon, lat] order (opposite of Leaflet)
+    const coordinates = boundary ? [boundary.map(p => [p[1], p[0]]).concat([[ boundary[0][1], boundary[0][0] ]])] : null;
 
-  res.json({ mapData });
+    return {
+      type: 'Feature',
+      properties: {
+        zoneId: zone.ZoneID,
+        name: zone.Name,
+        totalReports: totalMap[zone.ZoneID] || 0,
+        topSymptoms: (symptomMap[zone.ZoneID] || []).slice(0, 3)
+      },
+      geometry: coordinates ? { type: 'Polygon', coordinates } : null
+    };
+  }).filter(f => f.geometry !== null);
+
+  res.json({ type: 'FeatureCollection', features });
 });

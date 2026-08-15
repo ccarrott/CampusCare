@@ -19,21 +19,19 @@
   <section class="content-card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
       <h2 style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">Campus Health Map</h2>
-      <select id="mapPeriodSelect" class="form-control" style="width: auto; min-width: 140px;">
-        <option value="7d">Past 7 days</option>
-        <option value="1m">Past month</option>
+      <select id="mapPeriodSelect" class="form-control" style="width: auto; min-width: 140px;" onchange="window.location.href='/trends?period='+this.value">
+        <option value="7d" <%= (typeof period !== 'undefined' && period === '7d') ? 'selected' : '' %>>Past 7 days</option>
+        <option value="1m" <%= (typeof period === 'undefined' || period === '1m') ? 'selected' : '' %>>Past month</option>
+        <option value="2m" <%= (typeof period !== 'undefined' && period === '2m') ? 'selected' : '' %>>Past 2 months</option>
+        <option value="6m" <%= (typeof period !== 'undefined' && period === '6m') ? 'selected' : '' %>>Past 6 months</option>
+        <option value="1y" <%= (typeof period !== 'undefined' && period === '1y') ? 'selected' : '' %>>Past year</option>
         <option value="2m">Past 2 months</option>
         <option value="6m">Past 6 months</option>
         <option value="1y">Past year</option>
       </select>
     </div>
-    <p class="text-muted mb-2">Circle size and colour show symptom report density per zone.</p>
-    <div id="healthMap" style="height: 420px; border-radius: 8px; overflow: hidden;"></div>
-    <div class="map-legend mt-2">
-      <span class="legend-item"><span class="legend-swatch" style="background:#10b981;"></span> Normal (1-2)</span>
-      <span class="legend-item"><span class="legend-swatch" style="background:#f59e0b;"></span> Elevated (3-4)</span>
-      <span class="legend-item"><span class="legend-swatch" style="background:#ef4444;"></span> Outbreak (5+)</span>
-    </div>
+    <p class="text-muted mb-2">Shaded zones show symptom report density across Gqeberha. Hover for details, click to zoom.</p>
+    <div id="healthMap" style="height: 450px; border-radius: 8px; overflow: hidden;"></div>
   </section>
 
   <!-- Symptom Type Summary -->
@@ -49,10 +47,8 @@
       </select>
     </div>
     <% if (symptomsByType.length > 0) { %>
-      <div style="display: flex; align-items: center; gap: 24px; flex-wrap: wrap;">
-        <div style="flex: 1; min-width: 250px;">
-          <canvas id="symptomPieChart"></canvas>
-        </div>
+      <div style="display: flex; align-items: center; justify-content: center;">
+        <canvas id="symptomPieChart" width="500" height="500"></canvas>
       </div>
     <% } else { %>
       <p class="text-muted">No data available.</p>
@@ -89,8 +85,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 (function() {
-  // Initialize map centered on NMU South Campus
-  const map = L.map('healthMap', { zoomControl: false }).setView([-33.9855, 25.6600], 13);
+  // Initialize map centered on Gqeberha
+  const map = L.map('healthMap', { zoomControl: false }).setView([-33.955, 25.600], 12);
   L.control.zoom({ position: 'bottomright' }).addTo(map);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -98,59 +94,105 @@
     maxZoom: 18
   }).addTo(map);
 
-  let circles = [];
+  let geojsonLayer = null;
+
+  // Colour + opacity scale based on severity
+  function getColor(reports) {
+    return reports > 10 ? '#dc3545' :
+           reports > 5  ? '#f5a623' :
+           reports > 2  ? '#ffc107' :
+           reports > 0  ? '#28a745' :
+                          'transparent';
+  }
+
+  function getOpacity(reports) {
+    return reports > 10 ? 0.55 :
+           reports > 5  ? 0.45 :
+           reports > 2  ? 0.35 :
+           reports > 0  ? 0.25 :
+                          0;
+  }
+
+  function zoneStyle(feature) {
+    const reports = feature.properties.totalReports;
+    return {
+      fillColor: getColor(reports),
+      weight: 0,
+      opacity: 0,
+      color: 'transparent',
+      fillOpacity: getOpacity(reports)
+    };
+  }
+
+  // Info panel (top-right)
+  const info = L.control({ position: 'topright' });
+  info.onAdd = function() {
+    this._div = L.DomUtil.create('div', 'map-info-panel');
+    this.update();
+    return this._div;
+  };
+  info.update = function(props) {
+    this._div.innerHTML = props
+      ? '<strong>' + props.name + '</strong><br>' + props.totalReports + ' report' + (props.totalReports !== 1 ? 's' : '')
+      : '<span class="text-muted">Hover over a zone</span>';
+  };
+  info.addTo(map);
+
+  // Legend (bottom-right)
+  const legend = L.control({ position: 'bottomleft' });
+  legend.onAdd = function() {
+    const div = L.DomUtil.create('div', 'map-legend-panel');
+    div.innerHTML = '<strong>Activity</strong><br>' +
+      '<i style="background:#28a745; opacity:0.4;"></i> Low (1–2)<br>' +
+      '<i style="background:#ffc107; opacity:0.5;"></i> Moderate (3–5)<br>' +
+      '<i style="background:#f5a623; opacity:0.6;"></i> High (6–10)<br>' +
+      '<i style="background:#dc3545; opacity:0.7;"></i> Outbreak (11+)';
+    return div;
+  };
+  legend.addTo(map);
+
+  function highlightFeature(e) {
+    const layer = e.target;
+    layer.setStyle({ fillOpacity: 0.7 });
+    layer.bringToFront();
+    info.update(layer.feature.properties);
+  }
+
+  function resetHighlight(e) {
+    if (geojsonLayer) geojsonLayer.resetStyle(e.target);
+    info.update();
+  }
+
+  function zoomToFeature(e) {
+    map.fitBounds(e.target.getBounds());
+    const props = e.target.feature.properties;
+    let html = '<strong>' + props.name + '</strong><br>Reports: <strong>' + props.totalReports + '</strong>';
+    if (props.topSymptoms && props.topSymptoms.length > 0) {
+      html += '<br><br><em>Top symptoms:</em>';
+      props.topSymptoms.forEach(function(s) { html += '<br>• ' + s.name + ' (' + s.count + ')'; });
+    }
+    e.target.bindPopup(html).openPopup();
+  }
+
+  function onEachFeature(feature, layer) {
+    layer.on({ mouseover: highlightFeature, mouseout: resetHighlight, click: zoomToFeature });
+  }
 
   function loadMapData(period) {
-    // Clear existing circles
-    circles.forEach(c => map.removeLayer(c));
-    circles = [];
+    if (geojsonLayer) { map.removeLayer(geojsonLayer); geojsonLayer = null; }
 
     fetch('/trends/api/map-data?period=' + period)
       .then(r => r.json())
-      .then(data => {
-        if (!data.mapData) return;
-
-        data.mapData.forEach(zone => {
-          if (zone.totalReports === 0) return;
-
-          let colour = '#10b981';
-          if (zone.totalReports >= 5) colour = '#ef4444';
-          else if (zone.totalReports >= 3) colour = '#f59e0b';
-
-          const circleRadius = Math.min(150 + zone.totalReports * 40, 600);
-
-          const circle = L.circle([zone.lat, zone.lon], {
-            radius: circleRadius,
-            color: colour,
-            fillColor: colour,
-            fillOpacity: 0.4,
-            weight: 2
-          }).addTo(map);
-
-          let popupHTML = '<strong>' + zone.name + '</strong><br>';
-          popupHTML += 'Reports: <strong>' + zone.totalReports + '</strong><br>';
-          if (zone.topSymptoms.length > 0) {
-            popupHTML += '<br><em>Top symptoms:</em><br>';
-            zone.topSymptoms.forEach(s => {
-              popupHTML += '• ' + s.name + ' (' + s.count + ')<br>';
-            });
-          }
-          circle.bindPopup(popupHTML);
-          circles.push(circle);
-        });
+      .then(geojson => {
+        if (!geojson.features) return;
+        geojsonLayer = L.geoJson(geojson, { style: zoneStyle, onEachFeature: onEachFeature }).addTo(map);
       })
       .catch(err => console.error('Map data load error:', err));
   }
 
-  // Initial load — use page period
+  // Initial load
   const pagePeriod = '<%= typeof period !== "undefined" ? period : "1m" %>';
-  document.getElementById('mapPeriodSelect').value = pagePeriod;
   loadMapData(pagePeriod);
-
-  // Period dropdown change
-  document.getElementById('mapPeriodSelect').addEventListener('change', function() {
-    loadMapData(this.value);
-  });
 })();
 
 // Pie Chart: Symptoms by Category
@@ -174,15 +216,15 @@
       }]
     },
     options: {
-      responsive: true,
+      responsive: false,
       plugins: {
         legend: {
-          position: 'right',
+          position: 'bottom',
           labels: {
-            padding: 16,
+            padding: 20,
             font: { size: 13 },
             boxWidth: 16,
-            color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#f1f5f9' : '#0f172a'
+            color: getComputedStyle(document.body).color || '#333'
           }
         }
       }

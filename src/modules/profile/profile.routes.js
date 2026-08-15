@@ -24,4 +24,8 @@ router.post('/delete', requireRole(ROLES.STUDENT), ProfileController.deleteAccou
 // Change password (all roles)
 router.post('/change-password', requireAuth, ProfileController.changePassword);
 
+// Location picker (students only)
+router.get('/location', requireRole(ROLES.STUDENT), ProfileController.showLocationPicker);
+router.post('/location', requireRole(ROLES.STUDENT), ProfileController.saveLocation);
+
 export default router;

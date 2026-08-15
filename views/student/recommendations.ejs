@@ -5,80 +5,92 @@
   <%- include('../partials/alerts') %>
 
   <header class="page-header">
-    <h1>Your Health Recommendations</h1>
-    <p class="subtitle">Based on your reported symptom and severity level.</p>
+    <h1>Your Recommendations</h1>
+    <p class="subtitle">Based on the <%= selectedSymptoms.length %> symptom<%= selectedSymptoms.length > 1 ? 's' : '' %> you reported.</p>
   </header>
 
-  <% if (escalation) { %>
-    <!-- Escalation Warning -->
-    <section class="alert alert-danger">
-      <strong>Clinical Escalation Required:</strong>
-      Your symptom severity or tier level indicates you should book a Tier 2 nurse consultation immediately.
-      <br>
-      <a href="/consultations/book" class="btn btn-danger mt-1" style="display: inline-block;">Book Consultation Now</a>
-    </section>
+  <!-- Tier Escalation Banner -->
+  <% if (maxTier >= 3) { %>
+    <div class="alert alert-danger" style="border-left: 4px solid var(--status-danger); font-size: 1rem;">
+      <strong>Urgent: Seek immediate medical attention.</strong><br>
+      One or more of your symptoms requires emergency care. Contact the campus clinic at <strong>041 504 1111</strong> or go to your nearest emergency room now.
+    </div>
+  <% } else if (maxTier >= 2) { %>
+    <div class="alert alert-warning" style="border-left: 4px solid var(--status-warning);">
+      <strong>You need to book a nurse consultation.</strong><br>
+      One or more of your symptoms requires professional assessment. OTC medication alone is not appropriate for these symptoms.
+      <a href="/consultations/book" class="btn btn-primary" style="margin-top: 8px; display: inline-block;">Book Consultation Now</a>
+    </div>
   <% } %>
 
-  <% if (symptom) { %>
-    <!-- Symptom Details Card -->
-    <section class="content-card">
-      <h2>Symptom Information</h2>
-      <ul class="profile-details">
-        <li>
-          <span class="detail-label">Symptom</span>
-          <span class="detail-value"><%= symptom.Name %></span>
-        </li>
-        <li>
-          <span class="detail-label">Description</span>
-          <span class="detail-value"><%= symptom.Description || 'No description available' %></span>
-        </li>
-        <li>
-          <span class="detail-label">Type</span>
-          <span class="detail-value"><%= symptom.Type || 'General' %></span>
-        </li>
-        <li>
-          <span class="detail-label">Tier Level</span>
-          <span class="detail-value">Tier <%= symptom.Tier %></span>
-        </li>
-        <li>
-          <span class="detail-label">Common Cause</span>
-          <span class="detail-value"><%= symptom.Cause || 'Various' %></span>
-        </li>
-        <li>
-          <span class="detail-label">Reported Severity</span>
-          <span class="detail-value"><%= severity %></span>
-        </li>
-      </ul>
-    </section>
+  <!-- Selected Symptoms Summary -->
+  <section class="content-card">
+    <h2>Symptoms Reported</h2>
+    <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+      <% selectedSymptoms.forEach(function(sym) { %>
+        <span class="symptom-summary-tag">
+          <%= sym.Name %>
+          <% if (sym.Tier >= 2) { %><span style="color:var(--status-warning);">&#9679;</span><% } %>
+          <% if (sym.Tier >= 3) { %><span style="color:var(--status-danger);">&#9679;</span><% } %>
+        </span>
+      <% }); %>
+    </div>
+    <p class="text-muted mt-2">Severity: <strong><%= severity %></strong></p>
+  </section>
 
-    <!-- OTC Medication Recommendations -->
+  <!-- OTC Recommendations (Ranked by Relevance) -->
+  <% if (medications.length > 0 && maxTier < 3) { %>
     <section class="content-card">
       <h2>Recommended OTC Medications</h2>
+      <p class="text-muted mb-2">Ranked by how many of your symptoms each medication covers. Available at campus pharmacy, Clicks, or Dis-Chem.</p>
 
-      <% if (medications.length > 0) { %>
-        <div class="medication-list">
-          <% medications.forEach(function(med) { %>
-            <div class="medication-card">
+      <div class="medication-list">
+        <% medications.forEach(function(med, idx) { %>
+          <div class="medication-card">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
               <h3 class="medication-name"><%= med.Name %></h3>
-              <ul class="profile-details">
-                <li>
-                  <span class="detail-label">Treats</span>
-                  <span class="detail-value"><%= med.SymptomsTreated || 'Related symptoms' %></span>
-                </li>
-              </ul>
+              <span class="severity-badge severity-<%= med.RelevanceScore >= 3 ? 'high' : med.RelevanceScore >= 2 ? 'moderate' : 'low' %>" style="font-size: 0.7rem;">
+                Covers <%= med.RelevanceScore %> of your symptoms
+              </span>
             </div>
-          <% }); %>
-        </div>
-        <p class="text-muted mt-2" style="font-style: italic;">Always consult a healthcare professional for dosage guidance and before taking any medication.</p>
-      <% } else { %>
-        <p class="text-muted">No OTC medications are currently mapped for this symptom. Please consult a nurse.</p>
-      <% } %>
+            <p class="medication-desc"><%= med.Description %></p>
+            <% if (med.covers && med.covers.length > 0) { %>
+              <p style="margin-top: 8px; font-size: 0.82rem;">
+                <strong>Helps with:</strong>
+                <% med.covers.forEach(function(name, i) { %>
+                  <span class="symptom-summary-tag" style="font-size:0.72rem; padding: 2px 8px;"><%= name %></span>
+                <% }); %>
+              </p>
+            <% } %>
+          </div>
+        <% }); %>
+      </div>
+    </section>
+  <% } else if (maxTier >= 3) { %>
+    <section class="content-card">
+      <h2>Supportive Care Only</h2>
+      <p class="text-muted">Given the severity of your symptoms, OTC medications alone are not sufficient. Please see a healthcare professional. In the meantime, stay hydrated (Rehidrat Sachets if available) and rest.</p>
+    </section>
+  <% } else { %>
+    <section class="content-card">
+      <p class="text-muted">No specific OTC medications found for your symptom combination. Consider booking a nurse consultation for personalised advice.</p>
     </section>
   <% } %>
 
-  <div class="mt-3">
-    <a href="/symptoms" class="btn btn-secondary">Check Another Symptom</a>
-    <a href="/" class="btn btn-primary">Back to Dashboard</a>
+  <!-- Disclaimer -->
+  <section class="content-card" style="border-left: 3px solid var(--text-muted);">
+    <p class="text-muted" style="font-size: 0.82rem; margin: 0;">
+      <strong>Disclaimer:</strong> These recommendations are for informational purposes only and do not constitute medical advice. Always consult a healthcare professional if symptoms persist or worsen.
+    </p>
+  </section>
+
+  <!-- Actions -->
+  <div class="mt-3" style="display: flex; gap: 12px; flex-wrap: wrap;">
+    <a href="/symptoms" class="btn btn-primary">Check Again</a>
+    <a href="/symptoms/history" class="btn btn-secondary">View History</a>
+    <% if (maxTier >= 2) { %>
+      <a href="/consultations/book" class="btn btn-success">Book Consultation Now</a>
+    <% } %>
   </div>
 
 </main>

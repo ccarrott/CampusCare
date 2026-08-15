@@ -91,18 +91,26 @@ CampusCare implements a **Three-Tier Healthcare Strategy** that triages student 
 
 ## Campus Health Map
 
-CampusCare maps real-time health trends across **8 NMU campus zones** using anonymised, aggregated SymptomLog data:
+CampusCare maps real-time health trends across **16 Gqeberha suburb zones** using anonymised, aggregated symptom data displayed as a **choropleth heat map**:
 
-- **NMU South Campus (Residences)** — Lena Allen, Xanadu, Founders
-- **NMU North Campus** — Academic buildings
-- **Summerstrand Flats** — Hoff Street, 3rd/6th Avenue, Beach Road
-- **Marine Drive Area** — Coastal housing
-- **Newton Park** — Ring Road, Buffelsfontein
-- **Central (Gqeberha CBD)** — Mount Road, Albany Road
-- **Walmer** — Heugh Road, Main Road
-- **Lorraine** — Circular Drive area
+- **Summerstrand** — NMU campus + student accommodation
+- **Humewood** — Beachfront area
+- **South End & Central** — CBD and inner city
+- **North End & Korsten** — Dense residential
+- **Newton Park** — Major western suburb
+- **Mill Park** — Inner residential
+- **Walmer** — Southern suburb
+- **Lorraine** — Northern suburb
+- **Sherwood & Kabega** — Western suburbs
+- **Westering & Bridgemead** — Northwest
+- **Sunridge Park** — Midlands
+- **Richmond Hill** — Inner east
+- **Sydenham & Malabar** — North of CBD
+- **Mangold Park & Charlo** — South-west
+- **Kamma Park & Theescombe** — Far west
+- **Lovemore Heights & Sardinia Bay** — Southern coast
 
-Circle markers scale by report density. Colour indicates severity: green (normal), amber (elevated), red (outbreak). No individual student data is ever exposed.
+Zones rendered as soft coloured splotches — opacity and colour intensify with report density (green → amber → orange → red). Students set their location via a map pin-drop; zone assignment is computed server-side from polygon boundaries. No individual student data is exposed.
 
 ---
 
@@ -112,10 +120,10 @@ Circle markers scale by report density. Colour indicates severity: green (normal
 Runtime        Node.js 18+ (ES Modules)
 Framework      Express.js 4.x
 View Engine    EJS with layout partials
-Database       MySQL 8.0 (mysql2/promise, connection pooling)
+Database       MySQL 8.0 (mysql2/promise, connection pooling, transactions)
 Auth           bcrypt + express-session (httpOnly, sameSite, 1hr expiry)
-Security       CSRF tokens, ownership middleware, security headers
-Maps           Leaflet.js 1.9 + OpenStreetMap tiles
+Security       CSRF tokens, ownership middleware, security headers, CSV sanitisation
+Maps           Leaflet.js 1.9 + OpenStreetMap tiles (choropleth + pin-drop)
 Charts         Chart.js 4.4 (doughnut + line)
 Architecture   Domain-based modules (routes + controller + model per feature)
 ```

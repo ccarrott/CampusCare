@@ -5,29 +5,34 @@
   <%- include('../partials/alerts') %>
 
   <header class="page-header">
-    <h1>My Symptom History</h1>
-    <p class="subtitle">A record of all your symptom checks on CampusCare.</p>
+    <h1>Symptom History</h1>
+    <p class="subtitle">Your previous symptom checks and reported severity.</p>
   </header>
 
   <% if (logs.length > 0) { %>
     <section class="content-card">
-      <h2>Recent Checks (<%= logs.length %> records)</h2>
       <table class="data-table">
         <thead>
           <tr>
             <th>Date</th>
-            <th>Symptom</th>
+            <th>Symptoms</th>
             <th>Severity</th>
           </tr>
         </thead>
         <tbody>
           <% logs.forEach(function(log) { %>
             <tr>
-              <td><%= new Date(log.LogDate).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) %></td>
-              <td><%= log.SymptomName %></td>
+              <td><%= new Date(log.LogDate).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }) %></td>
               <td>
-                <span class="severity-badge severity-<%= log.Severity.toLowerCase() %>"><%= log.Severity %></span>
+                <% if (log.SymptomNames) { %>
+                  <% log.SymptomNames.split(', ').forEach(function(name) { %>
+                    <span class="symptom-summary-tag" style="font-size:0.72rem; padding: 2px 8px; margin: 2px;"><%= name %></span>
+                  <% }); %>
+                <% } else { %>
+                  <span class="text-muted">—</span>
+                <% } %>
               </td>
+              <td><span class="severity-badge severity-<%= (log.Severity || 'moderate').toLowerCase() %>"><%= log.Severity %></span></td>
             </tr>
           <% }); %>
         </tbody>
@@ -35,13 +40,13 @@
     </section>
   <% } else { %>
     <section class="content-card">
-      <p class="text-muted text-center">No symptom checks recorded yet. Use the <a href="/symptoms">Symptom Checker</a> to get started.</p>
+      <div class="empty-state">
+        <div class="empty-state-icon">&#129657;</div>
+        <p class="empty-state-text">No symptom checks recorded yet. Try the Symptom Checker to get personalised recommendations.</p>
+        <a href="/symptoms" class="btn btn-primary">Check Symptoms</a>
+      </div>
     </section>
   <% } %>
-
-  <div class="mt-2">
-    <a href="/symptoms" class="btn btn-primary">Check Symptoms Now</a>
-  </div>
 
 </main>
 

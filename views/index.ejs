@@ -16,6 +16,29 @@
 
   <% if (user.role === 'student') { %>
 
+    <!-- First-use Welcome Card (dismissed via localStorage) -->
+    <div class="welcome-card" id="welcomeCard" style="display:none;">
+      <button class="welcome-dismiss" id="welcomeDismiss" aria-label="Dismiss welcome message">&times;</button>
+      <h2>Welcome to CampusCare, <%= user.firstName || user.name %>!</h2>
+      <p>Here are 3 things you can do right now:</p>
+      <div class="welcome-actions">
+        <a href="/symptoms" class="btn">Check Symptoms</a>
+        <a href="/consultations/book" class="btn">Book a Consultation</a>
+        <a href="/trends" class="btn">Explore Health Trends</a>
+      </div>
+    </div>
+    <script>
+    (function() {
+      if (!localStorage.getItem('campuscare_welcomed')) {
+        document.getElementById('welcomeCard').style.display = 'block';
+      }
+      document.getElementById('welcomeDismiss').addEventListener('click', function() {
+        localStorage.setItem('campuscare_welcomed', '1');
+        document.getElementById('welcomeCard').style.display = 'none';
+      });
+    })();
+    </script>
+
     <div class="dashboard-grid">
       <section class="content-card">
         <div class="card-icon">&#129657;</div>

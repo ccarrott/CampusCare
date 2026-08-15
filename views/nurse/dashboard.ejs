@@ -57,7 +57,10 @@
         <tbody>
           <% appointments.forEach(function(apt) { %>
             <% const status = apt.Status || 'Pending'; %>
-            <tr<%= status === 'Cancelled' ? ' style="opacity:0.6;"' : '' %>>
+            <% const aptDate = new Date(apt.Time); %>
+            <% const isToday = aptDate.toDateString() === new Date().toDateString(); %>
+            <% const isUpcoming = (aptDate - Date.now() < 86400000) && (aptDate > Date.now()); %>
+            <tr class="<%= status === 'Cancelled' ? 'row-cancelled' : '' %> <%= isToday && status !== 'Cancelled' ? 'row-today' : '' %> <%= isUpcoming && status !== 'Cancelled' ? 'row-upcoming' : '' %>">
               <td>
                 <%= apt.StudentFirstName %> <%= apt.StudentLastName %>
                 <a href="/management/nurse/patient/<%= apt.StudentNumber %>/history" style="font-size:0.7rem; margin-left:4px;" title="View patient symptom history">&#128196;</a>
@@ -140,7 +143,8 @@
     <section class="content-card">
       <div class="empty-state">
         <div class="empty-state-icon">&#128197;</div>
-        <p class="empty-state-text">No appointments scheduled.</p>
+        <p class="empty-state-text">No patients scheduled. Check back after students book consultations.</p>
+        <a href="/management/nurse/availability" class="btn btn-primary">Set Your Availability</a>
       </div>
     </section>
   <% } %>

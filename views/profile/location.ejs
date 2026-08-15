@@ -1,0 +1,96 @@
+<%- include('../partials/header', { title: 'Set Your Location' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="container page-wrapper">
+  <%- include('../partials/alerts') %>
+
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="alert alert-success"><%= success %></div>
+  <% } %>
+
+  <header class="page-header">
+    <h1>Set Your Location</h1>
+    <p class="subtitle">Drop a pin on the map where you stay. This helps us show health trends in your area.</p>
+  </header>
+
+  <section class="content-card">
+    <div id="locationMap" style="height: 420px; border-radius: 8px; overflow: hidden; margin-bottom: 16px;"></div>
+
+    <div id="locationInfo" style="display:none; margin-bottom: 16px;">
+      <div class="alert alert-success" style="margin-bottom:0;">
+        <strong>Zone:</strong> <span id="zoneName">—</span>
+      </div>
+    </div>
+
+    <form action="/profile/location" method="POST" id="locationForm">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="latitude" id="latInput">
+      <input type="hidden" name="longitude" id="lonInput">
+      <button type="submit" class="btn btn-primary" id="saveBtn" disabled>Save Location</button>
+      <a href="/profile" class="btn btn-secondary">Skip for now</a>
+    </form>
+  </section>
+
+</main>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function() {
+  const map = L.map('locationMap').setView([-33.9855, 25.6600], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors', maxZoom: 18
+  }).addTo(map);
+
+  const zones = <%- JSON.stringify(zones) %>;
+
+  let marker = null;
+  const latInput = document.getElementById('latInput');
+  const lonInput = document.getElementById('lonInput');
+  const saveBtn = document.getElementById('saveBtn');
+  const locationInfo = document.getElementById('locationInfo');
+  const zoneName = document.getElementById('zoneName');
+
+  // If student already has a pin, show it
+  <% if (currentLat && currentLon) { %>
+    marker = L.marker([<%= currentLat %>, <%= currentLon %>], { draggable: true }).addTo(map);
+    latInput.value = '<%= currentLat %>';
+    lonInput.value = '<%= currentLon %>';
+    saveBtn.disabled = false;
+    locationInfo.style.display = 'block';
+    zoneName.textContent = detectZone(<%= currentLat %>, <%= currentLon %>);
+    marker.on('dragend', onMarkerMove);
+  <% } %>
+
+  // Click to place/move pin
+  map.on('click', function(e) {
+    const lat = e.latlng.lat;
+    const lon = e.latlng.lng;
+
+    if (marker) {
+      marker.setLatLng(e.latlng);
+    } else {
+      marker = L.marker(e.latlng, { draggable: true }).addTo(map);
+      marker.on('dragend', onMarkerMove);
+    }
+
+    updatePin(lat, lon);
+  });
+
+  function onMarkerMove(e) {
+    const pos = e.target.getLatLng();
+    updatePin(pos.lat, pos.lng);
+  }
+
+  function updatePin(lat, lon) {
+    latInput.value = lat.toFixed(7);
+    lonInput.value = lon.toFixed(7);
+    saveBtn.disabled = false;
+    locationInfo.style.display = 'block';
+    zoneName.textContent = 'Location set';
+  }
+
+})();
+</script>
+
+<%- include('../partials/footer') %>

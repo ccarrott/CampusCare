@@ -6,43 +6,96 @@
 
   <header class="page-header">
     <h1>Edit Profile</h1>
-    <p class="subtitle">Update your address and medical history information.</p>
+    <p class="subtitle">Update your medical history and location.</p>
   </header>
 
   <section class="content-card">
-    <h2>Update Your Details</h2>
+    <h2>Medical History</h2>
     <form action="/profile/update" method="POST">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <div class="form-group">
-        <label for="address">Address / Residence</label>
-        <input
-          type="text"
-          id="address"
-          name="address"
-          class="form-control"
-          value="<%= profile.Address || '' %>"
-          placeholder="e.g. Campus Residence Room 12"
-          required
-        >
-      </div>
-
-      <div class="form-group">
-        <label for="medicalHistory">Medical History</label>
+        <label for="medicalHistory">Medical History & Allergies</label>
         <textarea
           id="medicalHistory"
           name="medicalHistory"
           class="form-control"
-          rows="4"
-          placeholder="e.g. Asthma, Penicillin allergy"
+          rows="3"
+          placeholder="e.g. Asthma, Penicillin allergy, Lactose intolerance"
         ><%= profile.MedicalHistory || '' %></textarea>
       </div>
-
-      <div class="profile-actions">
-        <button type="submit" class="btn btn-primary">Save Changes</button>
-        <a href="/profile" class="btn btn-secondary">Cancel</a>
-      </div>
+      <button type="submit" class="btn btn-primary">Save Medical Info</button>
     </form>
   </section>
 
+  <!-- Location Map Picker -->
+  <section class="content-card mt-3">
+    <h2>Your Location</h2>
+    <p class="text-muted mb-2">Drop a pin where you stay. This helps show health trends in your area.</p>
+
+    <div id="editMap" style="height: 350px; border-radius: 8px; overflow: hidden; margin-bottom: 16px;"></div>
+
+    <div id="editLocationInfo" style="display:none; margin-bottom: 12px;">
+      <span class="status-badge status-confirmed" id="editZoneName"></span>
+    </div>
+
+    <form action="/profile/location" method="POST">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="latitude" id="editLatInput">
+      <input type="hidden" name="longitude" id="editLonInput">
+      <button type="submit" class="btn btn-primary" id="editSavePin" disabled>Save Location</button>
+    </form>
+  </section>
+
+  <div class="mt-3">
+    <a href="/profile" class="btn btn-secondary">Back to Profile</a>
+  </div>
+
 </main>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function() {
+  const map = L.map('editMap').setView([-33.9855, 25.6600], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors', maxZoom: 18
+  }).addTo(map);
+
+  const zones = <%- JSON.stringify(zones) %>;
+
+  let marker = null;
+  const latInput = document.getElementById('editLatInput');
+  const lonInput = document.getElementById('editLonInput');
+  const saveBtn = document.getElementById('editSavePin');
+  const info = document.getElementById('editLocationInfo');
+  const zoneLabel = document.getElementById('editZoneName');
+
+  <% if (profile.Latitude && profile.Longitude) { %>
+    marker = L.marker([<%= profile.Latitude %>, <%= profile.Longitude %>], { draggable: true }).addTo(map);
+    latInput.value = '<%= profile.Latitude %>';
+    lonInput.value = '<%= profile.Longitude %>';
+    saveBtn.disabled = false;
+    info.style.display = 'block';
+    zoneLabel.textContent = detectZone(<%= profile.Latitude %>, <%= profile.Longitude %>);
+    marker.on('dragend', onMove);
+  <% } %>
+
+  map.on('click', function(e) {
+    if (marker) marker.setLatLng(e.latlng);
+    else { marker = L.marker(e.latlng, { draggable: true }).addTo(map); marker.on('dragend', onMove); }
+    update(e.latlng.lat, e.latlng.lng);
+  });
+
+  function onMove(e) { const p = e.target.getLatLng(); update(p.lat, p.lng); }
+
+  function update(lat, lon) {
+    latInput.value = lat.toFixed(7);
+    lonInput.value = lon.toFixed(7);
+    saveBtn.disabled = false;
+    info.style.display = 'block';
+    zoneLabel.textContent = 'Location set';
+  }
+})();
+</script>
 
 <%- include('../partials/footer') %>

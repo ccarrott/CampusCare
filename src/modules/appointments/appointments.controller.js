@@ -138,7 +138,7 @@ export const handleCancelAppointment = catchAsync(async (req, res) => {
   }
 
   await AppointmentsModel.cancelAppointment(appointmentId);
-  res.redirect('/consultations/my-appointments');
+  res.redirect('/consultations/my-appointments?toast=Appointment+cancelled');
 });
 
 // ============================================================================
@@ -161,7 +161,7 @@ export const handleRescheduleAppointment = catchAsync(async (req, res) => {
   }
 
   await AppointmentsModel.rescheduleAppointment(appointmentId, newTime);
-  res.redirect('/consultations/my-appointments');
+  res.redirect('/consultations/my-appointments?toast=Appointment+rescheduled');
 });
 
 // ============================================================================

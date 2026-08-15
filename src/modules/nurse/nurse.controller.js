@@ -44,7 +44,7 @@ export const updateTeamsLink = catchAsync(async (req, res) => {
 
   const cleanLink = sanitize(teamsId);
   await NurseModel.updateTeamsLink(appointmentId, cleanLink);
-  res.redirect('/management/nurse/dashboard');
+  res.redirect('/management/nurse/dashboard?toast=Teams+link+updated');
 });
 
 // ============================================================================
@@ -81,7 +81,7 @@ export const changeAppointmentStatus = catchAsync(async (req, res) => {
   }
 
   await AppointmentsModel.updateAppointmentStatus(appointmentId, status);
-  res.redirect('/management/nurse/dashboard');
+  res.redirect('/management/nurse/dashboard?toast=Appointment+' + status.toLowerCase());
 });
 
 // ============================================================================
@@ -94,7 +94,7 @@ export const saveAppointmentNotes = catchAsync(async (req, res) => {
 
   const cleanNotes = sanitize(notes);
   await AppointmentsModel.updateAppointmentNotes(appointmentId, cleanNotes);
-  res.redirect('/management/nurse/dashboard');
+  res.redirect('/management/nurse/dashboard?toast=Notes+saved');
 });
 
 // ============================================================================

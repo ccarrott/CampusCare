@@ -17,7 +17,7 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
       <form action="/management/admin/students" method="GET" style="display: flex; gap: 8px;">
         <input type="text" name="search" class="form-control" placeholder="Search by name or ID..." value="<%= search %>" style="width: 250px;">
-        <button type="submit" class="btn btn-secondary" style="padding: 8px 14px;">Search</button>
+        <button type="submit" class="btn btn-secondary">Search</button>
       </form>
       <a href="/management/admin/students/add" class="btn btn-primary">+ Add Student</a>
     </div>
@@ -29,8 +29,7 @@
             <th>Student No.</th>
             <th>Name</th>
             <th>Email</th>
-            <th>Address</th>
-            <th>Actions</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -38,14 +37,16 @@
             <tr>
               <td><%= s.StudentNumber %></td>
               <td><%= s.FirstName %> <%= s.LastName %></td>
-              <td><%= s.Email || '—' %></td>
-              <td><%= s.Address || '—' %></td>
-              <td>
-                <a href="/management/admin/students/<%= s.StudentNumber %>/edit" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">Edit</a>
-                <form action="/management/admin/students/<%= s.StudentNumber %>/delete" method="POST" style="display: inline;" onsubmit="return confirm('Delete student <%= s.FirstName %> <%= s.LastName %>? This cannot be undone.');">
-                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                  <button type="submit" class="btn btn-danger" style="padding: 4px 10px; font-size: 0.75rem;">Delete</button>
-                </form>
+              <td><%= s.StudentNumber %>@mandela.ac.za</td>
+              <td class="table-actions">
+                <button class="kebab-btn" aria-label="Actions menu" onclick="toggleKebab(this)">&#8942;</button>
+                <div class="kebab-menu">
+                  <a href="/management/admin/students/<%= s.StudentNumber %>/edit" class="kebab-item">Edit</a>
+                  <form action="/management/admin/students/<%= s.StudentNumber %>/delete" method="POST" onsubmit="return confirm('Delete student <%= s.FirstName %> <%= s.LastName %>? This cannot be undone.');">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button type="submit" class="kebab-item kebab-danger">Delete</button>
+                  </form>
+                </div>
               </td>
             </tr>
           <% }); %>
@@ -57,5 +58,18 @@
   </section>
 
 </main>
+
+<script>
+function toggleKebab(btn) {
+  document.querySelectorAll('.kebab-menu.open').forEach(function(m) { m.classList.remove('open'); });
+  var menu = btn.nextElementSibling;
+  menu.classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.table-actions')) {
+    document.querySelectorAll('.kebab-menu.open').forEach(function(m) { m.classList.remove('open'); });
+  }
+});
+</script>
 
 <%- include('../partials/footer') %>

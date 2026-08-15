@@ -1,57 +1,73 @@
 // src/modules/symptoms/symptoms.controller.js
-// Handles Tier 1 symptom checking, OTC recommendations, and symptom history.
+// Handles the tag-based symptom checker: multi-select evaluation + relevance-scored recommendations.
 
 import crypto from 'crypto';
 import * as SymptomsModel from './symptoms.model.js';
 import { catchAsync } from '../../utils/catchAsync.js';
-import { SEVERITY } from '../../constants.js';
 
 // ============================================================================
-// SYMPTOM FORM
+// SYMPTOM FORM (Tag Picker)
 // ============================================================================
 
 export const renderSymptomForm = catchAsync(async (req, res) => {
-  const symptoms = await SymptomsModel.getAllSymptoms();
-  res.render('student/symptom-form', { user: req.session.user, symptoms, error: null });
+  const symptomsByCategory = await SymptomsModel.getAllSymptomsByCategory();
+  res.render('student/symptom-form', { user: req.session.user, symptomsByCategory, error: null });
 });
 
 // ============================================================================
-// EVALUATE SYMPTOMS
+// EVALUATE (Multi-Select)
 // ============================================================================
 
 export const processSymptomCheck = catchAsync(async (req, res) => {
-  const { symptomName, severity } = req.body;
+  let { symptoms, severity } = req.body;
 
-  if (!symptomName) {
-    const symptoms = await SymptomsModel.getAllSymptoms();
+  // symptoms comes as array (multiple checkboxes) or string (single)
+  if (!symptoms) {
+    const symptomsByCategory = await SymptomsModel.getAllSymptomsByCategory();
     return res.status(400).render('student/symptom-form', {
-      user: req.session.user, symptoms, error: 'Please select a symptom to evaluate.'
+      user: req.session.user, symptomsByCategory, error: 'Please select at least one symptom.'
     });
   }
 
-  const symptom = await SymptomsModel.getSymptomByName(symptomName);
-  const medications = await SymptomsModel.getMedicationsForSymptom(symptomName);
+  // Normalise to array
+  if (!Array.isArray(symptoms)) symptoms = [symptoms];
 
-  if (!symptom) {
-    const symptoms = await SymptomsModel.getAllSymptoms();
-    return res.status(404).render('student/symptom-form', {
-      user: req.session.user, symptoms, error: 'Selected symptom not found in the system.'
+  // Fetch selected symptom details
+  const selectedSymptoms = await SymptomsModel.getSymptomsByIds(symptoms);
+  if (selectedSymptoms.length === 0) {
+    const symptomsByCategory = await SymptomsModel.getAllSymptomsByCategory();
+    return res.status(400).render('student/symptom-form', {
+      user: req.session.user, symptomsByCategory, error: 'Invalid symptom selection.'
     });
   }
 
-  // Determine escalation: Tier >= 2 OR severity reported as High
-  const escalation = (symptom.Tier >= 2) || (severity === SEVERITY.HIGH);
+  // Determine max tier (drives escalation)
+  const maxTier = Math.max(...selectedSymptoms.map(s => s.Tier));
 
-  // Log this check (non-blocking — don't fail the whole request on log error)
+  // Get medications ranked by relevance
+  const medications = await SymptomsModel.getMedicationsForSymptoms(symptoms);
+
+  // For each med, get which of the student's symptoms it covers
+  for (const med of medications) {
+    const coverage = await SymptomsModel.getMedicationSymptomCoverage(med.MedicationCode, symptoms);
+    med.covers = coverage.map(c => c.Name);
+  }
+
+  // Log this check
   try {
     const logId = 'LOG-' + crypto.randomBytes(6).toString('hex');
-    await SymptomsModel.createSymptomLog(logId, req.session.user.id, symptomName, severity);
+    await SymptomsModel.createSymptomLog(logId, req.session.user.id, severity || 'Moderate', symptoms);
   } catch (logErr) {
     console.error('Symptom log write failed (non-blocking):', logErr.message);
   }
 
   res.render('student/recommendations', {
-    user: req.session.user, symptom, severity, medications, escalation, error: null
+    user: req.session.user,
+    selectedSymptoms,
+    severity: severity || 'Moderate',
+    medications,
+    maxTier,
+    error: null
   });
 });
 

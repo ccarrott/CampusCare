@@ -5,6 +5,18 @@ import { query } from '../../config/database.js';
 import { catchAsync } from '../../utils/catchAsync.js';
 
 /**
+ * Sanitises a value for safe CSV output.
+ * Prevents formula injection (CWE-1236) by prefixing dangerous leading characters.
+ */
+function csvSafe(value) {
+  const str = String(value || '');
+  if (/^[=+\-@\t\r]/.test(str)) return "'" + str;
+  // Escape quotes and wrap in quotes if contains comma
+  if (str.includes(',') || str.includes('"')) return '"' + str.replace(/"/g, '""') + '"';
+  return str;
+}
+
+/**
  * GET /management/admin/reports/export-csv
  * Exports all appointments as CSV download.
  */
@@ -22,7 +34,15 @@ export const exportAppointmentsCSV = catchAsync(async (req, res) => {
   let csv = 'AppointmentID,Type,Date,Time,Status,Student,Nurse\n';
   rows.forEach(r => {
     const date = new Date(r.Time);
-    csv += `${r.AppointmentID},${r.AppointmentType},${date.toLocaleDateString('en-ZA')},${date.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })},${r.Status || 'Pending'},${r.StudentFirst} ${r.StudentLast},${r.NurseFirst} ${r.NurseLast}\n`;
+    csv += [
+      csvSafe(r.AppointmentID),
+      csvSafe(r.AppointmentType),
+      csvSafe(date.toLocaleDateString('en-ZA')),
+      csvSafe(date.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })),
+      csvSafe(r.Status || 'Pending'),
+      csvSafe(`${r.StudentFirst} ${r.StudentLast}`),
+      csvSafe(`${r.NurseFirst} ${r.NurseLast}`)
+    ].join(',') + '\n';
   });
 
   res.setHeader('Content-Type', 'text/csv');
@@ -47,7 +67,12 @@ export const exportTrendsCSV = catchAsync(async (req, res) => {
 
   let csv = 'Zone,Symptom,Reports,Period\n';
   rows.forEach(r => {
-    csv += `${r.Zone},${r.SymptomName},${r.Reports},${r.Period}\n`;
+    csv += [
+      csvSafe(r.Zone),
+      csvSafe(r.SymptomName),
+      csvSafe(r.Reports),
+      csvSafe(r.Period)
+    ].join(',') + '\n';
   });
 
   res.setHeader('Content-Type', 'text/csv');

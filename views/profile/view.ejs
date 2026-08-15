@@ -19,8 +19,8 @@
           <li><span class="detail-label">Student Number</span><span class="detail-value"><%= profile.StudentNumber %></span></li>
           <li><span class="detail-label">First Name</span><span class="detail-value"><%= profile.FirstName %></span></li>
           <li><span class="detail-label">Last Name</span><span class="detail-value"><%= profile.LastName %></span></li>
-          <li><span class="detail-label">Email</span><span class="detail-value"><%= profile.Email || 'Not set' %></span></li>
-          <li><span class="detail-label">Address</span><span class="detail-value"><%= profile.Address || 'Not provided' %></span></li>
+          <li><span class="detail-label">Email</span><span class="detail-value"><%= profile.StudentNumber %>@mandela.ac.za</span></li>
+          <li><span class="detail-label">Location</span><span class="detail-value"><%= profile.Latitude ? 'Pin set ✓' : 'Not set' %> <a href="/profile/location" style="font-size:0.8rem;">Update</a></span></li>
           <li><span class="detail-label">Medical History</span><span class="detail-value"><%= profile.MedicalHistory || 'None on file' %></span></li>
         <% } else if (user.role === 'nurse') { %>
           <li><span class="detail-label">Staff Number</span><span class="detail-value"><%= profile.StaffNumber %></span></li>

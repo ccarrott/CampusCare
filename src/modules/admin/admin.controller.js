@@ -65,7 +65,6 @@ export const handleAddStudent = catchAsync(async (req, res) => {
   const studentNumber = sanitize(req.body.studentNumber);
   const firstName = sanitize(req.body.firstName);
   const lastName = sanitize(req.body.lastName);
-  const email = sanitize(req.body.email);
   const address = sanitize(req.body.address);
   const medicalHistory = sanitize(req.body.medicalHistory);
   const password = req.body.password || '';
@@ -76,9 +75,6 @@ export const handleAddStudent = catchAsync(async (req, res) => {
   if (!isValidStudentNumber(studentNumber)) {
     return res.render('admin/student-form', { user: req.session.user, student: req.body, isEdit: false, error: 'Student Number must start with "s" followed by 9 digits.' });
   }
-  if (email && !isValidEmail(email)) {
-    return res.render('admin/student-form', { user: req.session.user, student: req.body, isEdit: false, error: 'Invalid email format.' });
-  }
   if (!isValidPassword(password)) {
     return res.render('admin/student-form', { user: req.session.user, student: req.body, isEdit: false, error: 'Password must be at least 6 characters.' });
   }
@@ -88,14 +84,14 @@ export const handleAddStudent = catchAsync(async (req, res) => {
     return res.render('admin/student-form', { user: req.session.user, student: req.body, isEdit: false, error: 'A student with this number already exists.' });
   }
 
-  await AdminModel.createStudent({ studentNumber, firstName, lastName, email, address, medicalHistory, password });
-  res.redirect('/management/admin/students?success=Student added successfully.');
+  await AdminModel.createStudent({ studentNumber, firstName, lastName, address, medicalHistory, password });
+  res.redirect('/management/admin/students?toast=Student+added+successfully');
 });
 
 export const handleUpdateStudent = catchAsync(async (req, res) => {
-  const { firstName, lastName, email, address, medicalHistory } = req.body;
-  await AdminModel.updateStudent(req.params.id, { firstName, lastName, email, address, medicalHistory });
-  res.redirect('/management/admin/students?success=Student updated.');
+  const { firstName, lastName, address, medicalHistory } = req.body;
+  await AdminModel.updateStudent(req.params.id, { firstName, lastName, address, medicalHistory });
+  res.redirect('/management/admin/students?toast=Student+updated');
 });
 
 export const handleDeleteStudent = catchAsync(async (req, res) => {

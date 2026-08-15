@@ -6,36 +6,121 @@
 
   <header class="page-header">
     <h1>Symptom Checker</h1>
-    <p class="subtitle">Select your primary symptom and severity level for a Tier 1 health evaluation.</p>
+    <p class="subtitle">Select all symptoms you're experiencing, then get personalised OTC recommendations.</p>
   </header>
 
-  <section class="content-card">
-    <h2>Log Your Symptom</h2>
-    <form action="/symptoms/evaluate" method="POST">
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-danger"><%= error %></div>
+  <% } %>
+
+  <form action="/symptoms/evaluate" method="POST" id="symptomForm">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <!-- Selected Symptoms Summary -->
+    <section class="content-card">
+      <h2>Your Symptoms</h2>
+      <div class="symptom-summary" id="symptomSummary">
+        <span class="text-muted" id="summaryPlaceholder">Click symptoms below to add them here...</span>
+      </div>
+    </section>
+
+    <!-- Symptom Categories (Accordion) -->
+    <section class="content-card">
+      <h2>Select Symptoms</h2>
+      <p class="text-muted mb-2">Tap any symptom to select it. You can pick multiple.</p>
+
+      <% const categories = Object.keys(symptomsByCategory); %>
+      <% categories.forEach(function(category, catIdx) { %>
+        <div class="symptom-category <%= catIdx < 3 ? 'open' : '' %>">
+          <div class="symptom-category-header" onclick="this.parentElement.classList.toggle('open')">
+            <%= category %> <span class="text-muted" style="font-size:0.75rem; margin-left:4px;">(<%= symptomsByCategory[category].length %>)</span>
+          </div>
+          <div class="symptom-category-body">
+            <% symptomsByCategory[category].forEach(function(sym) { %>
+              <span class="symptom-tag" data-id="<%= sym.SymptomID %>" data-tier="<%= sym.Tier %>" title="<%= sym.Description %>">
+                <input type="checkbox" name="symptoms" value="<%= sym.SymptomID %>" style="display:none;" onchange="updateSummary()">
+                <%= sym.Name %>
+                <% if (sym.Tier === 2) { %><span style="color:var(--status-warning); font-size:0.7rem;">&#9679;</span><% } %>
+                <% if (sym.Tier >= 3) { %><span style="color:var(--status-danger); font-size:0.7rem;">&#9679;</span><% } %>
+              </span>
+            <% }); %>
+          </div>
+        </div>
+      <% }); %>
+    </section>
+
+    <!-- Severity + Submit -->
+    <section class="content-card" id="submitSection" style="display:none;">
       <div class="form-group">
-        <label for="symptomName">What symptom are you experiencing?</label>
-        <select id="symptomName" name="symptomName" class="form-control" required>
-          <option value="" disabled selected>-- Select a symptom --</option>
-          <% symptoms.forEach(function(s) { %>
-            <option value="<%= s.Name %>"><%= s.Name %> (<%= s.Type %>)</option>
-          <% }); %>
+        <label for="severity">How severe do these symptoms feel overall?</label>
+        <select id="severity" name="severity" class="form-control" style="max-width:250px;">
+          <option value="Low">Low — mild discomfort</option>
+          <option value="Moderate" selected>Moderate — affecting my day</option>
+          <option value="High">High — I need help now</option>
         </select>
       </div>
-
-      <div class="form-group">
-        <label for="severity">How severe are your symptoms?</label>
-        <select id="severity" name="severity" class="form-control" required>
-          <option value="" disabled selected>-- Select severity --</option>
-          <option value="Low">Low - Mild discomfort</option>
-          <option value="Moderate">Moderate - Noticeable impact on daily activities</option>
-          <option value="High">High - Significant pain or impairment</option>
-        </select>
-      </div>
-
-      <button type="submit" class="btn btn-primary">Evaluate Symptoms</button>
-    </form>
-  </section>
+      <button type="submit" class="btn btn-primary" id="submitBtn">Get Recommendations</button>
+    </section>
+  </form>
 
 </main>
+
+<script>
+(function() {
+  const summary = document.getElementById('symptomSummary');
+  const placeholder = document.getElementById('summaryPlaceholder');
+  const submitSection = document.getElementById('submitSection');
+
+  // Tag click toggles the checkbox + selected class
+  document.querySelectorAll('.symptom-tag').forEach(function(tag) {
+    tag.addEventListener('click', function(e) {
+      if (e.target.tagName === 'INPUT') return; // let checkbox handle itself
+      const cb = tag.querySelector('input[type="checkbox"]');
+      cb.checked = !cb.checked;
+      cb.dispatchEvent(new Event('change'));
+    });
+  });
+
+  window.updateSummary = function() {
+    const checked = document.querySelectorAll('.symptom-tag input:checked');
+
+    // Update tag visual states
+    document.querySelectorAll('.symptom-tag').forEach(function(tag) {
+      const cb = tag.querySelector('input');
+      tag.classList.toggle('selected', cb.checked);
+    });
+
+    // Update summary bar
+    if (checked.length === 0) {
+      placeholder.style.display = 'inline';
+      summary.querySelectorAll('.symptom-summary-tag').forEach(t => t.remove());
+      submitSection.style.display = 'none';
+      return;
+    }
+
+    placeholder.style.display = 'none';
+    submitSection.style.display = 'block';
+
+    // Rebuild summary tags
+    summary.querySelectorAll('.symptom-summary-tag').forEach(t => t.remove());
+    checked.forEach(function(cb) {
+      const tag = cb.closest('.symptom-tag');
+      const pill = document.createElement('span');
+      pill.className = 'symptom-summary-tag';
+      pill.innerHTML = tag.textContent.trim().replace(/●/g, '').trim() +
+        ' <span class="remove" onclick="removeSymptom(\'' + cb.value + '\')">&times;</span>';
+      summary.appendChild(pill);
+    });
+  };
+
+  window.removeSymptom = function(symId) {
+    const cb = document.querySelector('.symptom-tag input[value="' + symId + '"]');
+    if (cb) {
+      cb.checked = false;
+      cb.dispatchEvent(new Event('change'));
+    }
+  };
+})();
+</script>
 
 <%- include('../partials/footer') %>
