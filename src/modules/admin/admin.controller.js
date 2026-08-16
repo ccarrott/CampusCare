@@ -65,7 +65,6 @@ export const handleAddStudent = catchAsync(async (req, res) => {
   const studentNumber = sanitize(req.body.studentNumber);
   const firstName = sanitize(req.body.firstName);
   const lastName = sanitize(req.body.lastName);
-  const address = sanitize(req.body.address);
   const medicalHistory = sanitize(req.body.medicalHistory);
   const password = req.body.password || '';
 
@@ -84,13 +83,13 @@ export const handleAddStudent = catchAsync(async (req, res) => {
     return res.render('admin/student-form', { user: req.session.user, student: req.body, isEdit: false, error: 'A student with this number already exists.' });
   }
 
-  await AdminModel.createStudent({ studentNumber, firstName, lastName, address, medicalHistory, password });
+  await AdminModel.createStudent({ studentNumber, firstName, lastName, medicalHistory, password });
   res.redirect('/management/admin/students?toast=Student+added+successfully');
 });
 
 export const handleUpdateStudent = catchAsync(async (req, res) => {
-  const { firstName, lastName, address, medicalHistory } = req.body;
-  await AdminModel.updateStudent(req.params.id, { firstName, lastName, address, medicalHistory });
+  const { firstName, lastName, medicalHistory } = req.body;
+  await AdminModel.updateStudent(req.params.id, { firstName, lastName, medicalHistory });
   res.redirect('/management/admin/students?toast=Student+updated');
 });
 
@@ -181,4 +180,29 @@ export const rejectNurseReview = catchAsync(async (req, res) => {
   if (!reviewId) return res.redirect('/management/admin/reports');
   await ReviewsModel.updateNurseReviewVerification(reviewId, 'Rejected');
   res.redirect('/management/admin/reports');
+});
+
+// ============================================================================
+// NURSE DETAIL (drill-down from feedback overview)
+// ============================================================================
+
+export const showNurseDetail = catchAsync(async (req, res) => {
+  const { staffNumber } = req.params;
+
+  const nurse = await AdminModel.getNurseById(staffNumber);
+  if (!nurse) return res.redirect('/management/admin/nurses');
+
+  // Get all reviews (approved + pending + rejected)
+  const reviews = await ReviewsModel.getReviewsByNurse(staffNumber);
+
+  // Get consultation rating average
+  const { average, count } = await ReviewsModel.getAverageRatingForNurse(staffNumber);
+
+  res.render('admin/nurse-detail', {
+    user: req.session.user,
+    nurse,
+    reviews,
+    avgRating: average ? parseFloat(Number(average).toFixed(1)) : null,
+    ratingCount: count || 0
+  });
 });

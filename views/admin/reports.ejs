@@ -134,7 +134,7 @@
           <tbody>
             <% nurseAverages.forEach(function(n) { %>
               <tr>
-                <td><%= n.FirstName %> <%= n.LastName %></td>
+                <td><a href="/management/admin/nurse/<%= n.StaffNumber %>"><%= n.FirstName %> <%= n.LastName %></a></td>
                 <td>
                   <% if (n.Average) { %>
                     <span class="star-rating-static">

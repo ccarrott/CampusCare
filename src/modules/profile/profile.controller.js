@@ -135,3 +135,16 @@ export const saveLocation = catchAsync(async (req, res) => {
 
   res.redirect('/?toast=Location+saved');
 });
+
+// ============================================================================
+// NURSE BIO UPDATE (from profile page)
+// ============================================================================
+
+export const updateNurseBio = catchAsync(async (req, res) => {
+  const staffNumber = req.session.user.id;
+  const bio = sanitize(req.body.bio).substring(0, 300);
+  const yearsExperience = Math.max(0, Math.min(50, parseInt(req.body.yearsExperience) || 0));
+
+  await query("UPDATE Nurse SET Bio = ?, YearsExperience = ? WHERE StaffNumber = ?", [bio, yearsExperience, staffNumber]);
+  res.redirect('/profile?toast=Public+profile+updated');
+});

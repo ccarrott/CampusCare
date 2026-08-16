@@ -1,0 +1,78 @@
+<%- include('../partials/header', { title: 'Nurse Detail' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="container page-wrapper">
+  <%- include('../partials/alerts') %>
+
+  <header class="page-header">
+    <h1><%= nurse.FirstName %> <%= nurse.LastName %></h1>
+    <p class="subtitle">Staff Number: <%= nurse.StaffNumber %> | Clinic: <%= nurse.ClinicID || 'Unassigned' %></p>
+  </header>
+
+  <!-- Nurse Info -->
+  <section class="content-card">
+    <h2>Profile</h2>
+    <ul class="profile-details">
+      <li><span class="detail-label">Bio</span><span class="detail-value"><%= nurse.Bio || 'Not set' %></span></li>
+      <li><span class="detail-label">Experience</span><span class="detail-value"><%= nurse.YearsExperience || 0 %> years</span></li>
+      <li><span class="detail-label">Email</span><span class="detail-value"><%= nurse.Email || '—' %></span></li>
+      <li><span class="detail-label">Phone</span><span class="detail-value"><%= nurse.PhoneNumber || '—' %></span></li>
+    </ul>
+  </section>
+
+  <!-- Rating Summary -->
+  <section class="content-card">
+    <h2>Consultation Ratings</h2>
+    <% if (avgRating) { %>
+      <div style="display:flex; align-items:center; gap:16px;">
+        <span class="metric-value" style="font-size:2rem;"><%= avgRating %></span>
+        <span class="text-muted">/ 5 from <%= ratingCount %> consultation<%= ratingCount !== 1 ? 's' : '' %></span>
+      </div>
+    <% } else { %>
+      <p class="text-muted">No consultation ratings yet.</p>
+    <% } %>
+  </section>
+
+  <!-- All Nurse Reviews -->
+  <section class="content-card">
+    <h2>Nurse Reviews (<%= reviews.length %>)</h2>
+    <% if (reviews.length > 0) { %>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Score</th>
+            <th>Review</th>
+            <th>Student</th>
+            <th>Date</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% reviews.forEach(function(r) { %>
+            <tr<%= r.Verified === 'Rejected' ? ' style="opacity:0.5;"' : '' %>>
+              <td>
+                <span class="star-rating-static">
+                  <% for (let i = 1; i <= 5; i++) { %><% if (i <= r.Rating) { %><span>&#9733;</span><% } else { %><span class="star-empty">&#9734;</span><% } %><% } %>
+                </span>
+              </td>
+              <td><%= r.ReviewText %></td>
+              <td><%= r.StudentFirstName %> <%= r.StudentLastName %></td>
+              <td><%= r.CreatedAt ? new Date(r.CreatedAt).toLocaleDateString('en-ZA', { dateStyle: 'medium' }) : '—' %></td>
+              <td><span class="status-badge status-<%= (r.Verified || 'pending').toLowerCase() %>"><%= r.Verified || 'Pending' %></span></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <p class="text-muted">No nurse reviews submitted for this staff member.</p>
+    <% } %>
+  </section>
+
+  <div class="mt-3">
+    <a href="/management/admin/reports" class="btn btn-secondary">Back to Reports</a>
+    <a href="/management/admin/nurses" class="btn btn-secondary">Manage Nurses</a>
+  </div>
+
+</main>
+
+<%- include('../partials/footer') %>

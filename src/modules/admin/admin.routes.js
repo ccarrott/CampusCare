@@ -31,4 +31,7 @@ router.post('/nurses/:id/delete', requireRole(ROLES.ADMIN), AdminController.hand
 router.post('/review/approve', requireRole(ROLES.ADMIN), AdminController.approveNurseReview);
 router.post('/review/reject', requireRole(ROLES.ADMIN), AdminController.rejectNurseReview);
 
+// Nurse Detail (drill-down from feedback overview)
+router.get('/nurse/:staffNumber', requireRole(ROLES.ADMIN), AdminController.showNurseDetail);
+
 export default router;

@@ -28,4 +28,7 @@ router.post('/change-password', requireAuth, ProfileController.changePassword);
 router.get('/location', requireRole(ROLES.STUDENT), ProfileController.showLocationPicker);
 router.post('/location', requireRole(ROLES.STUDENT), ProfileController.saveLocation);
 
+// Update nurse bio (nurses only)
+router.post('/update-bio', requireRole(ROLES.NURSE), ProfileController.updateNurseBio);
+
 export default router;

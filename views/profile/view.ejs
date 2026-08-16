@@ -33,7 +33,6 @@
         <% } else if (user.role === 'admin') { %>
           <li><span class="detail-label">Staff Number</span><span class="detail-value"><%= profile.StaffNumber %></span></li>
           <li><span class="detail-label">Name</span><span class="detail-value"><%= profile.Name %></span></li>
-          <li><span class="detail-label">Email</span><span class="detail-value"><%= profile.Email || 'Not set' %></span></li>
           <li><span class="detail-label">Role</span><span class="detail-value">Administrator</span></li>
         <% } %>
       </ul>
@@ -50,6 +49,31 @@
           </form>
         </div>
       </section>
+    <% } %>
+
+    <% if (user.role === 'nurse') { %>
+      <section class="content-card">
+        <h2>Public Profile</h2>
+        <p class="text-muted mb-2">This info is visible to students on the "Meet Our Staff" page.</p>
+        <form action="/profile/update-bio" method="POST">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="form-group">
+            <label for="bio">Bio <span class="text-muted" style="font-weight:normal;">(max 300 characters)</span></label>
+            <textarea id="bio" name="bio" class="form-control" rows="3" maxlength="300" placeholder="Tell students about yourself..."><%= profile.Bio || '' %></textarea>
+            <p class="text-muted" style="font-size:0.8rem; margin-top:4px;"><span id="bioCharCount"><%= (profile.Bio || '').length %></span> / 300</p>
+          </div>
+          <div class="form-group">
+            <label for="yearsExperience">Years of Experience</label>
+            <input type="number" id="yearsExperience" name="yearsExperience" class="form-control" min="0" max="50" value="<%= profile.YearsExperience || 0 %>" style="max-width: 120px;">
+          </div>
+          <button type="submit" class="btn btn-primary">Save Public Profile</button>
+        </form>
+      </section>
+      <script>
+        document.getElementById('bio').addEventListener('input', function() {
+          document.getElementById('bioCharCount').textContent = this.value.length;
+        });
+      </script>
     <% } %>
 
     <!-- Password Change (all roles) -->

@@ -15,17 +15,9 @@
           <span class="sidebar-icon">&#127968;</span>
           <span class="sidebar-label">Home</span>
         </a>
-        <a href="/profile" class="sidebar-link">
-          <span class="sidebar-icon">&#128100;</span>
-          <span class="sidebar-label">Profile</span>
-        </a>
         <a href="/symptoms" class="sidebar-link">
           <span class="sidebar-icon">&#129657;</span>
           <span class="sidebar-label">Symptom Checker</span>
-        </a>
-        <a href="/symptoms/history" class="sidebar-link">
-          <span class="sidebar-icon">&#128196;</span>
-          <span class="sidebar-label">Symptom History</span>
         </a>
         <a href="/consultations/book" class="sidebar-link">
           <span class="sidebar-icon">&#128197;</span>
@@ -35,10 +27,6 @@
           <span class="sidebar-icon">&#128203;</span>
           <span class="sidebar-label">My Appointments</span>
         </a>
-        <a href="/consultations/nurse-reviews" class="sidebar-link">
-          <span class="sidebar-icon">&#11088;</span>
-          <span class="sidebar-label">Review Nurse</span>
-        </a>
         <a href="/trends" class="sidebar-link">
           <span class="sidebar-icon">&#128200;</span>
           <span class="sidebar-label">Health Trends</span>
@@ -47,6 +35,15 @@
           <span class="sidebar-icon">&#128101;</span>
           <span class="sidebar-label">Meet Our Staff</span>
         </a>
+        <a href="/consultations/nurse-reviews" class="sidebar-link">
+          <span class="sidebar-icon">&#11088;</span>
+          <span class="sidebar-label">Review Nurse</span>
+        </a>
+        <a href="/profile" class="sidebar-link">
+          <span class="sidebar-icon">&#128100;</span>
+          <span class="sidebar-label">Profile</span>
+        </a>
+
       <% } else if (user.role === 'nurse') { %>
         <a href="/" class="sidebar-link">
           <span class="sidebar-icon">&#127968;</span>
@@ -54,7 +51,7 @@
         </a>
         <a href="/management/nurse/dashboard" class="sidebar-link">
           <span class="sidebar-icon">&#128203;</span>
-          <span class="sidebar-label">Nurse Dashboard</span>
+          <span class="sidebar-label">Clinical Dashboard</span>
         </a>
         <a href="/management/nurse/availability" class="sidebar-link">
           <span class="sidebar-icon">&#128197;</span>
@@ -68,25 +65,16 @@
           <span class="sidebar-icon">&#128100;</span>
           <span class="sidebar-label">Profile</span>
         </a>
-        <a href="/management/nurse/edit-bio" class="sidebar-link">
-          <span class="sidebar-icon">&#9997;&#65039;</span>
-          <span class="sidebar-label">Edit Bio</span>
-        </a>
+
       <% } else if (user.role === 'admin') { %>
         <a href="/" class="sidebar-link">
           <span class="sidebar-icon">&#127968;</span>
           <span class="sidebar-label">Home</span>
         </a>
-        <a href="/management/admin/reports" class="sidebar-link sidebar-expandable" data-target="reports-sub">
+        <a href="/management/admin/reports" class="sidebar-link">
           <span class="sidebar-icon">&#128202;</span>
           <span class="sidebar-label">Reports</span>
-          <button class="sidebar-arrow-btn" data-target="reports-sub" onclick="event.preventDefault();event.stopPropagation();">&#9656;</button>
         </a>
-        <div class="sidebar-submenu" id="reports-sub">
-          <a href="/management/admin/reports#metrics" class="sidebar-link sidebar-sublink">Overview</a>
-          <a href="/management/admin/reports#appointments" class="sidebar-link sidebar-sublink">Appointments</a>
-          <a href="/management/admin/reports#ratings" class="sidebar-link sidebar-sublink">Ratings</a>
-        </div>
         <a href="/management/admin/students" class="sidebar-link">
           <span class="sidebar-icon">&#128101;</span>
           <span class="sidebar-label">Manage Students</span>
@@ -95,16 +83,14 @@
           <span class="sidebar-icon">&#129658;</span>
           <span class="sidebar-label">Manage Nurses</span>
         </a>
-        <a href="/trends" class="sidebar-link sidebar-expandable" data-target="trends-sub">
+        <a href="/trends" class="sidebar-link">
           <span class="sidebar-icon">&#128200;</span>
           <span class="sidebar-label">Health Trends</span>
-          <button class="sidebar-arrow-btn" data-target="trends-sub" onclick="event.preventDefault();event.stopPropagation();">&#9656;</button>
         </a>
-        <div class="sidebar-submenu" id="trends-sub">
-          <a href="/trends#healthMap" class="sidebar-link sidebar-sublink">Map</a>
-          <a href="/trends#categories" class="sidebar-link sidebar-sublink">By Category</a>
-          <a href="/trends#conditions" class="sidebar-link sidebar-sublink">Top Conditions</a>
-        </div>
+        <a href="/profile" class="sidebar-link">
+          <span class="sidebar-icon">&#128100;</span>
+          <span class="sidebar-label">Profile</span>
+        </a>
       <% } %>
 
       <div class="sidebar-spacer"></div>

@@ -12,10 +12,6 @@ const router = Router();
 // Dashboard
 router.get('/dashboard', requireRole(ROLES.NURSE), NurseController.showNurseDashboard);
 
-// Bio editor
-router.get('/edit-bio', requireRole(ROLES.NURSE), NurseController.showBioEditor);
-router.post('/edit-bio', requireRole(ROLES.NURSE), NurseController.updateBio);
-
 // Teams link
 router.post('/update-teams-link', requireRole(ROLES.NURSE), requireAssignedNurse, NurseController.updateTeamsLink);
 
