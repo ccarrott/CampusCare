@@ -167,6 +167,15 @@ export async function rescheduleAppointment(appointmentId, newTime) {
   return await query(sql, [newTime, appointmentId]);
 }
 
+/**
+ * Checks if a slot is available (no non-cancelled appointment at that nurse+time).
+ */
+export async function checkSlotAvailable(staffNumber, time) {
+  const sql = "SELECT AppointmentID FROM Appointment WHERE StaffNumber = ? AND Time = ? AND Status != 'Cancelled'";
+  const rows = await query(sql, [staffNumber, time]);
+  return rows.length === 0;
+}
+
 export async function updateAppointmentNotes(appointmentId, notes) {
   const sql = 'UPDATE Appointment SET Notes = ? WHERE AppointmentID = ?';
   return await query(sql, [notes, appointmentId]);

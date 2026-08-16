@@ -9,4 +9,7 @@ export function validateEnv() {
     console.error(`[FATAL] Missing required environment variables: ${missing.join(', ')}`);
     process.exit(1);
   }
+  if (!process.env.NODE_ENV) {
+    console.warn('[Env] NODE_ENV not set. Defaulting to development (session cookies will not use Secure flag).');
+  }
 }

@@ -160,6 +160,18 @@ export const handleRescheduleAppointment = catchAsync(async (req, res) => {
     return res.redirect('/consultations/my-appointments');
   }
 
+  // Weekend validation
+  const newDate = new Date(newTime);
+  if (newDate.getDay() === 0 || newDate.getDay() === 6) {
+    return res.redirect('/consultations/my-appointments?toast=Cannot+book+on+weekends');
+  }
+
+  // Atomic slot availability check (same protection as initial booking)
+  const slotFree = await AppointmentsModel.checkSlotAvailable(apt.StaffNumber, newTime);
+  if (!slotFree) {
+    return res.redirect('/consultations/my-appointments?toast=Slot+already+taken');
+  }
+
   await AppointmentsModel.rescheduleAppointment(appointmentId, newTime);
   res.redirect('/consultations/my-appointments?toast=Appointment+rescheduled');
 });

@@ -161,6 +161,10 @@ export const handleForgotPassword = catchAsync(async (req, res) => {
 
   await AuthModel.createPasswordResetToken({ userId: idNumber, userType, token, expiresAt });
 
+  // KNOWN LIMITATION: In production, this token would be sent via email to the user's
+  // registered address (e.g. studentNumber@mandela.ac.za). For this demo/capstone,
+  // the link is displayed on-screen as we have no mail server configured.
+  // This is an intentional shortcut — not a production pattern.
   const resetLink = `/auth/reset-password/${token}`;
   res.render('auth/forgot-password', {
     error: null,

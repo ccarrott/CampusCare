@@ -6,6 +6,8 @@ import * as ProfileModel from './profile.model.js';
 import { catchAsync } from '../../utils/catchAsync.js';
 import { sanitize } from '../../utils/sanitize.js';
 import { ROLES } from '../../constants.js';
+import { query } from '../../config/database.js';
+import { getZoneForPoint } from '../../utils/geo.js';
 
 // ============================================================================
 // VIEW PROFILE
@@ -89,9 +91,6 @@ export const changePassword = catchAsync(async (req, res) => {
 // ============================================================================
 // LOCATION PICKER (Pin Drop Map)
 // ============================================================================
-
-import { query } from '../../config/database.js';
-import { getZoneForPoint } from '../../utils/geo.js';
 
 export const showLocationPicker = catchAsync(async (req, res) => {
   const student = await ProfileModel.findStudentById(req.session.user.id);

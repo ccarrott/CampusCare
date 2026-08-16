@@ -71,8 +71,15 @@ app.use((req, res, next) => {
 // Validate CSRF on state-changing requests
 app.use((req, res, next) => {
   if (req.method === 'GET' || req.method === 'HEAD') return next();
-  if (req.path.includes('/api/')) return next();
 
+  // API endpoints: check header token (for browser console / fetch calls)
+  if (req.path.includes('/api/')) {
+    const headerToken = req.headers['x-csrf-token'];
+    if (headerToken && headerToken === req.session?.csrfToken) return next();
+    return res.status(403).json({ error: 'Invalid CSRF token. Pass x-csrf-token header.' });
+  }
+
+  // Form submissions: check body._csrf
   const token = req.body._csrf || req.headers['x-csrf-token'];
   if (!token || token !== req.session?.csrfToken) {
     return res.status(403).render('error', {
