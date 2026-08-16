@@ -94,29 +94,27 @@ export async function getAverageRatingForNurse(staffNumber) {
 }
 
 /**
- * Gets average rating for a nurse (only from Rating table — student-facing).
+ * Gets average rating for a nurse from approved NurseReviews (student-facing).
  */
 export async function getVerifiedAverageForNurse(staffNumber) {
   const sql = `
-    SELECT AVG(r.Score) AS average, COUNT(*) AS count
-    FROM Rating r
-    INNER JOIN Appointment a ON r.AppointmentID = a.AppointmentID
-    WHERE a.StaffNumber = ?
+    SELECT AVG(nr.Rating) AS average, COUNT(*) AS count
+    FROM NurseReviews nr
+    WHERE nr.StaffNumber = ? AND nr.Verified = 'Approved'
   `;
   const results = await query(sql, [staffNumber]);
   return results[0] || { average: null, count: 0 };
 }
 
 /**
- * Gets individual ratings for a nurse (for Meet Our Staff + booking card).
+ * Gets individual approved nurse reviews (for Meet Our Staff + booking card).
  */
 export async function getVerifiedRatingsForNurse(staffNumber, limit = 50) {
   const sql = `
-    SELECT r.Score, r.RatingDescription, r.CreatedAt
-    FROM Rating r
-    INNER JOIN Appointment a ON r.AppointmentID = a.AppointmentID
-    WHERE a.StaffNumber = ?
-    ORDER BY r.CreatedAt DESC
+    SELECT nr.Rating AS Score, nr.ReviewText AS RatingDescription, nr.CreatedAt
+    FROM NurseReviews nr
+    WHERE nr.StaffNumber = ? AND nr.Verified = 'Approved'
+    ORDER BY nr.CreatedAt DESC
     LIMIT ?
   `;
   return await query(sql, [staffNumber, String(limit)]);
