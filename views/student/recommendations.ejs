@@ -11,10 +11,110 @@
 
   <!-- Tier Escalation Banner -->
   <% if (maxTier >= 3) { %>
-    <div class="alert alert-danger" style="border-left: 4px solid var(--status-danger); font-size: 1rem;">
-      <strong>Urgent: Seek immediate medical attention.</strong><br>
-      One or more of your symptoms requires emergency care. Contact the campus clinic at <strong>041 504 1111</strong> or go to your nearest emergency room now.
-    </div>
+    <section class="content-card" style="border: 2px solid var(--status-danger);">
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+        <span style="font-size:2.5rem;">&#128680;</span>
+        <div>
+          <h2 style="color: var(--status-danger); border-bottom:none; margin:0; padding:0; font-size:1.4rem;">Go to Your Nearest Emergency Room</h2>
+          <p class="text-muted" style="margin:4px 0 0;">One or more of your symptoms requires immediate emergency care.</p>
+        </div>
+      </div>
+
+      <!-- Hospital Results -->
+      <div id="hospitalResult" style="display:none;">
+        <div class="content-card" style="margin-bottom:12px; border-left: 4px solid var(--status-danger);">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
+            <div>
+              <h3 style="margin:0;" id="hospitalName"></h3>
+              <p class="text-muted" style="margin:4px 0;" id="hospitalAddress"></p>
+              <p style="margin:4px 0; font-size:0.9rem;"><strong id="hospitalPhone"></strong></p>
+            </div>
+            <span class="status-badge status-danger" id="hospitalDistance"></span>
+          </div>
+          <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+            <a id="directionsLink" href="#" target="_blank" class="btn btn-danger">Get Directions</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Other hospitals -->
+      <details id="otherHospitals" style="display:none; margin-top:12px;">
+        <summary style="cursor:pointer; font-weight:600; font-size:0.9rem; color:var(--text-muted);">Other Emergency Rooms</summary>
+        <div id="hospitalList" style="margin-top:8px;"></div>
+      </details>
+
+      <!-- Loading / fallback -->
+      <p id="locationStatus" style="margin-top:12px; font-size:0.85rem; color:var(--text-muted);">
+        &#128205; Requesting your location...
+      </p>
+    </section>
+
+    <script>
+    (function() {
+      // Only REAL hospitals with emergency departments
+      var HOSPITALS = [
+        { name: 'Livingstone Hospital', type: 'Public', lat: -33.9580, lon: 25.6100, address: 'Standford Rd, Korsten', phone: '041 405 9111' },
+        { name: 'Provincial Hospital', type: 'Public', lat: -33.9470, lon: 25.6050, address: 'Buckingham Rd, Central', phone: '041 392 3911' },
+        { name: 'Dora Nginza Hospital', type: 'Public', lat: -33.8720, lon: 25.5640, address: 'Spondo St, Zwide', phone: '041 406 4111' },
+        { name: 'Life Mercantile Hospital', type: 'Private', lat: -33.9620, lon: 25.5890, address: 'Alfred Rd, Mill Park', phone: '041 395 2222' },
+        { name: 'Netcare Greenacres Hospital', type: 'Private', lat: -33.9530, lon: 25.5780, address: 'Cape Rd, Newton Park', phone: '041 390 7000' }
+      ];
+
+      function haversine(lat1, lon1, lat2, lon2) {
+        var R = 6371;
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLon = (lon2 - lon1) * Math.PI / 180;
+        var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+          Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) *
+          Math.sin(dLon/2) * Math.sin(dLon/2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      }
+
+      function renderHospitals(lat, lon, detected) {
+        var sorted = HOSPITALS.map(function(h) {
+          return Object.assign({}, h, { distance: haversine(lat, lon, h.lat, h.lon) });
+        }).sort(function(a, b) { return a.distance - b.distance; });
+
+        var nearest = sorted[0];
+
+        document.getElementById('hospitalResult').style.display = 'block';
+        document.getElementById('hospitalName').textContent = nearest.name;
+        document.getElementById('hospitalAddress').textContent = nearest.address;
+        document.getElementById('hospitalPhone').textContent = nearest.phone;
+        document.getElementById('hospitalDistance').textContent = nearest.distance.toFixed(1) + ' km away';
+        document.getElementById('directionsLink').href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(nearest.name + ', Gqeberha');
+
+        if (detected) {
+          document.getElementById('locationStatus').innerHTML = '&#9989; Based on your current location';
+        } else {
+          document.getElementById('locationStatus').innerHTML = '&#9888;&#65039; Location unavailable — showing hospitals nearest to NMU campus. <br>Call <strong>10177</strong> (national ambulance) if unsure where to go.';
+        }
+
+        // Other hospitals
+        if (sorted.length > 1) {
+          document.getElementById('otherHospitals').style.display = 'block';
+          document.getElementById('hospitalList').innerHTML = sorted.slice(1).map(function(h) {
+            return '<div style="padding:10px 0; border-bottom:1px solid var(--border-color);">' +
+              '<strong>' + h.name + '</strong> <span class="text-muted">(' + h.type + ')</span><br>' +
+              '<span class="text-muted" style="font-size:0.85rem;">' + h.address + '</span> — <strong>' + h.distance.toFixed(1) + ' km</strong> — ' +
+              '<a href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(h.name + ', Gqeberha') + '" target="_blank">Directions</a>' +
+              '</div>';
+          }).join('');
+        }
+      }
+
+      // Request geolocation
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          function(pos) { renderHospitals(pos.coords.latitude, pos.coords.longitude, true); },
+          function() { renderHospitals(-33.9860, 25.6600, false); },
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      } else {
+        renderHospitals(-33.9860, 25.6600, false);
+      }
+    })();
+    </script>
   <% } else if (maxTier >= 2) { %>
     <div class="alert alert-warning" style="border-left: 4px solid var(--status-warning);">
       <strong>You need to book a nurse consultation.</strong><br>
