@@ -8,18 +8,18 @@
  */
 (function() {
   function getCsrf() {
-    const el = document.querySelector('input[name="_csrf"]');
+    var el = document.querySelector('input[name="_csrf"]');
     return el ? el.value : '';
   }
 
   async function stateCall(endpoint, confirmMsg) {
     if (confirmMsg && !confirm(confirmMsg)) return;
-    const token = getCsrf();
+    var token = getCsrf();
     if (!token) { console.error('❌ No CSRF token found. Are you logged in?'); return; }
     console.log('⏳ Working...');
     try {
-      const r = await fetch(endpoint, { method: 'POST', headers: { 'x-csrf-token': token } });
-      const d = await r.json();
+      var r = await fetch(endpoint, { method: 'POST', headers: { 'x-csrf-token': token } });
+      var d = await r.json();
       console.log(d.success ? '✅ ' + d.message : '❌ ' + (d.error || d.message));
       return d;
     } catch (e) {
@@ -27,12 +27,12 @@
     }
   }
 
-  window.CampusCare = {
-    showcase: () => stateCall('/api/admin/state/showcase'),
-    outbreak: () => stateCall('/api/admin/state/outbreak'),
-    clear: () => stateCall('/api/admin/state/clear-outbreak'),
-    naked: () => stateCall('/api/admin/state/naked', 'This will DELETE ALL DATA. Are you sure?')
-  };
+  // Extend existing CampusCare object (don't overwrite — notifications.js adds demoNotifications)
+  window.CampusCare = window.CampusCare || {};
+  window.CampusCare.showcase = function() { return stateCall('/api/admin/state/showcase'); };
+  window.CampusCare.outbreak = function() { return stateCall('/api/admin/state/outbreak'); };
+  window.CampusCare.clear = function() { return stateCall('/api/admin/state/clear-outbreak'); };
+  window.CampusCare.naked = function() { return stateCall('/api/admin/state/naked', 'This will DELETE ALL DATA. Are you sure?'); };
 
-  console.log('🔧 CampusCare admin tools loaded. Try: CampusCare.showcase()');
+  console.log('🔧 CampusCare tools loaded. Try: CampusCare.showcase() or CampusCare.demoNotifications()');
 })();

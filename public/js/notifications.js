@@ -1,32 +1,32 @@
 /**
- * CampusCare - Browser Notification System
+ * CampusCare — Browser Notification System
  * 
- * Polls the server for upcoming appointments and fires browser notifications:
- * - 24 hours before
- * - 1 hour before
- * - When the meeting is starting (0 minutes)
+ * Polls /consultations/api/upcoming for appointments and fires notifications at:
+ * - 15 minutes before
+ * - 5 minutes before
+ * - 1 minute before
  * 
- * Uses the Web Notification API. Requires user permission grant.
+ * Uses Web Notification API. Requires user permission.
+ * 
+ * DEMO MODE: Run CampusCare.demoNotifications() in browser console to simulate.
  */
 
-(function () {
-  // Track which notifications have already been sent (prevent duplicates)
-  const sentNotifications = new Set();
-  const STORAGE_KEY = 'campuscare_sent_notifications';
+(function() {
+  var sentNotifications = new Set();
+  var STORAGE_KEY = 'campuscare_sent_notifications';
 
-  // Load previously sent notifications from localStorage
+  // Load sent history
   try {
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    stored.forEach(id => sentNotifications.add(id));
-  } catch (e) { /* ignore */ }
+    var stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    stored.forEach(function(id) { sentNotifications.add(id); });
+  } catch (e) {}
 
-  function saveSentNotifications() {
-    // Only keep last 50 entries to prevent unbounded growth
-    const arr = Array.from(sentNotifications).slice(-50);
+  function saveSent() {
+    var arr = Array.from(sentNotifications).slice(-100);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
   }
 
-  // Request notification permission on first load
+  // Request permission
   function requestPermission() {
     if (!('Notification' in window)) return;
     if (Notification.permission === 'default') {
@@ -34,76 +34,126 @@
     }
   }
 
-  // Send a browser notification
+  // Fire a notification
   function sendNotification(title, body, tag) {
-    if (Notification.permission !== 'granted') return;
-    if (sentNotifications.has(tag)) return; // already sent
+    if (!('Notification' in window)) { console.log('[Notification]', title, '-', body); return; }
+    if (Notification.permission !== 'granted') { console.log('[Notification blocked]', title); return; }
+    if (sentNotifications.has(tag)) return;
 
-    const notification = new Notification(title, {
+    var n = new Notification(title, {
       body: body,
-      icon: '/css/style.css', // no real icon, browser will use default
-      tag: tag, // prevents duplicate browser notifications
-      requireInteraction: true
+      tag: tag,
+      requireInteraction: true,
+      icon: '/images/nmu-logo.jpg'
     });
 
     sentNotifications.add(tag);
-    saveSentNotifications();
+    saveSent();
 
-    // Auto-close after 30 seconds
-    setTimeout(() => notification.close(), 30000);
+    setTimeout(function() { n.close(); }, 30000);
+    console.log('[Notification sent]', title, '-', body);
   }
 
-  // Check appointments and fire notifications
+  // Check appointments and fire at thresholds
   async function checkAppointments() {
     try {
-      const resp = await fetch('/consultations/api/upcoming');
+      var resp = await fetch('/consultations/api/upcoming');
       if (!resp.ok) return;
 
-      const data = await resp.json();
+      var data = await resp.json();
       if (!data.appointments || data.appointments.length === 0) return;
 
-      for (const apt of data.appointments) {
-        const mins = apt.minutesUntil;
-        const withPerson = apt.with;
-        const timeStr = new Date(apt.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const typeLabel = apt.type === 'Online' ? 'Online (Teams)' : 'In-Person';
+      data.appointments.forEach(function(apt) {
+        processAppointment(apt);
+      });
+    } catch (e) {}
+  }
 
-        // Starting now or just started (up to 15 min ago)
-        if (mins >= -15 && mins <= 5) {
-          sendNotification(
-            mins < 0 ? 'Your appointment has started!' : 'Your appointment is starting now!',
-            `${typeLabel} consultation with ${withPerson} at ${timeStr}`,
-            `start_${apt.id}`
-          );
-        }
-        // 1 hour before (55-65 minutes)
-        else if (mins >= 55 && mins <= 65) {
-          sendNotification(
-            'Appointment in 1 hour',
-            `${typeLabel} with ${withPerson} at ${timeStr}. Get ready!`,
-            `1h_${apt.id}`
-          );
-        }
-        // 24 hours before (1430-1450 minutes)
-        else if (mins >= 1430 && mins <= 1450) {
-          sendNotification(
-            'Appointment tomorrow',
-            `${typeLabel} with ${withPerson} tomorrow at ${timeStr}`,
-            `24h_${apt.id}`
-          );
-        }
-      }
-    } catch (e) {
-      // Silently fail - notifications are non-critical
+  function processAppointment(apt) {
+    var mins = apt.minutesUntil;
+    var withPerson = apt.with;
+    var timeStr = new Date(apt.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    var typeLabel = apt.type === 'Online' ? 'Online (Teams)' : 'In-Person';
+
+    // 1 minute before (0 to 2 min)
+    if (mins >= 0 && mins <= 2) {
+      sendNotification(
+        'Starting in 1 minute!',
+        typeLabel + ' with ' + withPerson + ' at ' + timeStr,
+        '1min_' + apt.id
+      );
     }
+    // 5 minutes before (4 to 6 min)
+    else if (mins >= 4 && mins <= 6) {
+      sendNotification(
+        'Appointment in 5 minutes',
+        typeLabel + ' with ' + withPerson + ' at ' + timeStr + '. Get ready!',
+        '5min_' + apt.id
+      );
+    }
+    // 15 minutes before (14 to 16 min)
+    else if (mins >= 14 && mins <= 16) {
+      sendNotification(
+        'Appointment in 15 minutes',
+        typeLabel + ' with ' + withPerson + ' at ' + timeStr + '. Prepare now.',
+        '15min_' + apt.id
+      );
+    }
+  }
+
+  // ========================================================================
+  // DEMO / SHOWCASE MODE
+  // Run: CampusCare.demoNotifications() from browser console
+  // ========================================================================
+
+  window.CampusCare = window.CampusCare || {};
+
+  window.CampusCare.demoNotifications = function() {
+    // Clear sent history so demos always fire
+    sentNotifications.clear();
+    localStorage.removeItem(STORAGE_KEY);
+
+    console.log('🔔 Demo: Simulating 3 notifications (15min → 5min → 1min)...');
+
+    // Simulate 15-minute notification
+    setTimeout(function() {
+      sendNotification(
+        'Appointment in 15 minutes',
+        'In-Person with Sarah Jenkins at ' + formatFutureTime(15) + '. Prepare now.',
+        'demo_15min'
+      );
+    }, 1000);
+
+    // Simulate 5-minute notification
+    setTimeout(function() {
+      sendNotification(
+        'Appointment in 5 minutes',
+        'Online (Teams) with David Khumalo at ' + formatFutureTime(5) + '. Get ready!',
+        'demo_5min'
+      );
+    }, 4000);
+
+    // Simulate 1-minute notification
+    setTimeout(function() {
+      sendNotification(
+        'Starting in 1 minute!',
+        'In-Person with Thandiwe Nkosi at ' + formatFutureTime(1),
+        'demo_1min'
+      );
+    }, 7000);
+
+    return '3 notifications will fire over the next 7 seconds.';
+  };
+
+  function formatFutureTime(minsFromNow) {
+    var d = new Date(Date.now() + minsFromNow * 60000);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
   // Initialize
   requestPermission();
-
-  // Check immediately on page load
   checkAppointments();
 
-  // Poll every 5 minutes
-  setInterval(checkAppointments, 5 * 60 * 1000);
+  // Poll every 60 seconds (more responsive for 1/5/15 min triggers)
+  setInterval(checkAppointments, 60 * 1000);
 })();
