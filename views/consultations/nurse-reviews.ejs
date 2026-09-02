@@ -105,7 +105,7 @@
     star.addEventListener('mouseenter', function() {
       const hoverVal = parseInt(this.dataset.value);
       stars.forEach(function(s) {
-        s.style.color = parseInt(s.dataset.value) <= hoverVal ? '#d4a843' : '#94a3b8';
+        s.style.color = parseInt(s.dataset.value) <= hoverVal ? '#ffcc00' : '#94a3b8';
       });
     });
   });
@@ -114,7 +114,7 @@
 
   function updateStars() {
     stars.forEach(function(s) {
-      s.style.color = parseInt(s.dataset.value) <= selectedRating ? '#d4a843' : '#94a3b8';
+      s.style.color = parseInt(s.dataset.value) <= selectedRating ? '#ffcc00' : '#94a3b8';
     });
   }
 

@@ -4,10 +4,18 @@
 
 /* ---------- CSS Custom Properties ---------- */
 :root {
-  --primary-navy: #1e293b;
-  --accent-cyan: #d4a843;
-  --accent-gold: #d4a843;
-  --accent-text: #a07c1e;
+  /* ---- Brand Palette (canonical) ---- */
+  --brand-blue: #141c2b;        /* primary brand navy */
+  --secondary-blue: #132e51;    /* deeper brand blue */
+  --brand-yellow: #ffcc00;      /* primary brand yellow */
+  --secondary-yellow: #f9b22a;  /* warm secondary yellow (used for hovers) */
+  --accent-text-yellow: #8a5a00; /* darkened yellow for text on light bg (contrast-safe) */
+
+  /* ---- Semantic aliases (map to brand) ---- */
+  --primary-navy: var(--brand-blue);
+  --accent-cyan: var(--brand-yellow);
+  --accent-gold: var(--brand-yellow);
+  --accent-text: var(--accent-text-yellow);
   --bg-canvas: #f8fafc;
   --surface-white: #ffffff;
   --text-dark: #0f172a;
@@ -116,7 +124,7 @@ img {
   justify-content: center;
   margin-bottom: 10px;
   flex-shrink: 0;
-  box-shadow: 0 0 12px rgba(212, 168, 67, 0.4);
+  box-shadow: 0 0 12px rgba(255, 204, 0, 0.4);
   transition: width 0.3s ease, height 0.3s ease;
 }
 
@@ -372,7 +380,7 @@ img {
 .form-control:focus {
   outline: none;
   border-color: var(--accent-cyan);
-  box-shadow: 0 0 0 3px rgba(212, 168, 67, 0.15);
+  box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.25);
 }
 
 textarea.form-control {
@@ -418,7 +426,7 @@ textarea.form-control {
 }
 
 .btn-primary:hover {
-  background-color: #b8922e;
+  background-color: var(--secondary-yellow);
 }
 
 .btn-success {
@@ -982,8 +990,8 @@ textarea.form-control {
    ========================================================================== */
 
 [data-theme="dark"] {
-  --primary-navy: #0f172a;
-  --bg-canvas: #1e293b;
+  --primary-navy: var(--brand-blue);
+  --bg-canvas: #0f1826;
   --surface-white: #2d3748;
   --text-dark: #f1f5f9;
   --text-muted: #94a3b8;
@@ -991,7 +999,7 @@ textarea.form-control {
 }
 
 [data-theme="dark"] .sidebar {
-  background-color: #0f172a;
+  background-color: var(--brand-blue);
 }
 
 [data-theme="dark"] .topbar {
@@ -1283,7 +1291,7 @@ textarea.form-control {
 }
 
 .action-btn-join { background-color: var(--accent-cyan); color: var(--primary-navy); }
-.action-btn-join:hover { background-color: #b8922e; color: var(--primary-navy); }
+.action-btn-join:hover { background-color: var(--secondary-yellow); color: var(--primary-navy); }
 
 .action-btn-cancel { background-color: var(--status-danger); color: #fff; }
 .action-btn-cancel:hover { background-color: #dc2626; color: #fff; }
@@ -1292,7 +1300,7 @@ textarea.form-control {
 .action-btn-rate:hover { background-color: #059669; color: #fff; }
 
 .action-btn-confirm { background-color: var(--accent-cyan); color: var(--primary-navy); }
-.action-btn-confirm:hover { background-color: #b8922e; color: var(--primary-navy); }
+.action-btn-confirm:hover { background-color: var(--secondary-yellow); color: var(--primary-navy); }
 
 .action-btn-complete { background-color: var(--status-success); color: #fff; }
 .action-btn-complete:hover { background-color: #059669; color: #fff; }
@@ -1384,7 +1392,7 @@ textarea.form-control {
   font-size: 1.2rem;
   display: inline-flex;
   gap: 2px;
-  color: #d4a843;
+  color: var(--brand-yellow);
 }
 
 .star-rating-static .star-empty {
@@ -1593,7 +1601,7 @@ textarea.form-control {
 
 /* ---------- Data Table Row Context ---------- */
 .row-today {
-  background-color: rgba(212, 168, 67, 0.06);
+  background-color: rgba(255, 204, 0, 0.10);
 }
 
 .row-upcoming {
@@ -1605,7 +1613,7 @@ textarea.form-control {
 }
 
 [data-theme="dark"] .row-today {
-  background-color: rgba(212, 168, 67, 0.08);
+  background-color: rgba(255, 204, 0, 0.12);
 }
 
 /* ---------- Kebab Menu (Admin Tables) ---------- */
@@ -1701,7 +1709,7 @@ textarea.form-control {
 
 /* ---------- Welcome Card ---------- */
 .welcome-card {
-  background: linear-gradient(135deg, var(--accent-cyan) 0%, #b8922e 100%);
+  background: linear-gradient(135deg, var(--brand-yellow) 0%, var(--secondary-yellow) 100%);
   color: var(--primary-navy);
   border-radius: var(--radius-lg);
   padding: 28px 32px;
@@ -1775,7 +1783,7 @@ textarea.form-control {
 
 .symptom-tag:hover {
   border-color: var(--accent-cyan);
-  background: rgba(212, 168, 67, 0.06);
+  background: rgba(255, 204, 0, 0.10);
 }
 
 .symptom-tag.selected {
@@ -1872,7 +1880,7 @@ textarea.form-control {
 
 [data-theme="dark"] .symptom-tag:hover {
   border-color: var(--accent-cyan);
-  background: rgba(212, 168, 67, 0.1);
+  background: rgba(255, 204, 0, 0.14);
 }
 
 [data-theme="dark"] .symptom-tag.selected {

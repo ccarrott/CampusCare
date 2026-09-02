@@ -1,0 +1,32 @@
+1. 	Implement Daily.co video chat feature
+1.1	Daily.co login campuscare email, pass: TechMasterDevs26
+1.2	Consultation type in booking -> remove (Microsoft Teams) and "4. Preferred Language for Teams Meeting" must change
+
+2. 	Change Student/Staff No. -> Username
+2.1 	Account for @mandela.ac.za input on signin
+
+3. 	UI Icons 
+
+4. 	Seperate (from meet our staff) nurse view page
+4.1	In booking link to this page correctly
+
+5.	Admin -> Edit Nurse -> Address -> Make pin drop
+5.1 	Admin -> Edit Student rather to become View Student
+
+6. 	Make the booking table legend make actual sense in terms of dark/light mode
+
+7.	Review nurse, make "Your Review" optional -> "Comment (Optional)"
+
+8.	"My symptom is not listed" section in the Symptom Checker -> Immediate tier 2
+8.1	Default all drop downs open
+8.2	Orange dot -> yellow empty/solid circle, and much bigger
+
+9.	Make profile indicator in top right correct yellow
+9.1 	brandblue - #141c2b
+	secondaryblue - #132e51
+	brandyellow - #ffcc00
+	secondaryyellow - #f9b22a
+
+10.	Make clinic addresses in DB make sense (2nd ave for north campus is wrong)
+	
+

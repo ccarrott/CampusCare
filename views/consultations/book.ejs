@@ -414,7 +414,7 @@
           const stars = Array.from({length: 5}, function(_, i) { return i < r.score ? '&#9733;' : '&#9734;'; }).join('');
           const ago = r.date ? new Date(r.date).toLocaleDateString('en-ZA', { dateStyle: 'medium' }) : '';
           return '<div style="padding:8px 0; border-top:1px solid var(--border-color); font-size:0.85rem;">' +
-            '<span style="color:#d4a843;">' + stars + '</span> ' +
+            '<span style="color:#ffcc00;">' + stars + '</span> ' +
             '<strong>' + r.patient + '</strong>' +
             (r.comment ? '<br><span class="text-muted">"' + r.comment + '"</span>' : '') +
             (ago ? '<br><span class="text-muted" style="font-size:0.75rem;">' + ago + '</span>' : '') +
