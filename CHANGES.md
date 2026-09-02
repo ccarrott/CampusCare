@@ -1,6 +1,6 @@
-# CampusCare — Development Changelog (Phases 3–20)
+# CampusCare — Development Changelog (Phases 3–28)
 
-Full-stack university health platform built across 18 development phases.
+Full-stack university health platform built across the development phases below.
 
 ---
 
@@ -291,3 +291,102 @@ Full-stack university health platform built across 18 development phases.
 - Tier 2 symptoms get NO OTC recommendations (instructive language: "You need to book a nurse")
 - CSV formula injection fix (CWE-1236)
 - Removed all remaining address text inputs (replaced by pin-drop)
+
+## Phase 25: Security Hardening & Vulnerability Fixes
+- Mounted `requireAssignedNurse` on nurse mutation routes to close IDOR gaps:
+  - `/appointment/status`, `/appointment/notes`, and the (then-current) `/update-teams-link` — previously only checked "is a nurse", not "is THIS nurse"
+- Reschedule flow hardened to match the atomic booking path:
+  - Weekend rejection + slot-availability check applied on reschedule (previously a bare `UPDATE Time`)
+- Password-reset flow reviewed (token disclosure + user-enumeration oracle noted for follow-up)
+- CSRF `/api/` handling reviewed; state-mutating admin endpoints confirmed session-gated
+- `NODE_ENV` boot warning surfaced (secure session cookie only in production)
+- Confirmed parameterised SQL everywhere, including dynamic `IN (?)` builders and hardcoded-map table-name password updates
+- Verified `atomicBookSlot`'s `SELECT ... FOR UPDATE` transaction and the appointment status state-machine guards
+
+## Phase 26: Redundancy Reduction & UX Consolidation
+- Removed duplicated user-query functions (findStudentById / findNurseById / findAdminById / updatePassword) — consolidated to a single source, eliminating the auth.model ↔ profile.model overlap
+- Merged the nurse "Edit Bio" flow INTO the nurse profile info view (removed the separate sidebar Edit Bio button)
+- Nurse reviews now persisted regardless of moderation outcome (approved AND rejected retained for admin audit)
+- Admin nurse-feedback overview: clicking a nurse surfaces their reviews + relevant data, packed into one view
+- Fixed admin "Manage User" 500 error caused by a dropped `Address` column still referenced in a query
+- Added a "Manage Nurses" button to the admin manage-profile block
+- Reorganised the sidebar ordering site-wide into a more logical grouping across all roles
+
+## Phase 27: Tier 3 Emergency — Nearest Hospital Locator
+- When a symptom evaluation resolves to Tier 3 (urgent), the recommendations page now escalates to emergency guidance
+- Browser Geolocation API prompt ("detect my location") on the Tier 3 recommendations page
+- Client-side Haversine distance computation to find the nearest hospital/ER
+- 5 real Nelson Mandela Bay hospitals (Livingstone, Dora Nginza, Provincial, Life Mercantile, Netcare Greenacres) with coordinates, addresses, phone numbers
+- "Get Directions" opens Google Maps searching by hospital name + Gqeberha (name-based search chosen over coordinate `dir/` links, which landed on wrong spots)
+- Removed the NMU Campus Clinic from the list (a clinic is not an ER) and removed the "Open in Waze" option
+- Geolocation-denied fallback: shows all hospitals sorted by proximity to campus
+- Dark-mode-correct styling for the emergency locator UI
+
+## Phase 28: Daily.co Video Consultations (Replacing Microsoft Teams)
+Replaced the manual "nurse pastes a Microsoft Teams link" flow with automated, secure, ephemeral Daily.co video rooms.
+
+### Config & API helper
+- Added `DAILY_API_KEY`, `DAILY_DOMAIN`, `DAILY_WEBHOOK_SECRET`, `APP_BASE_URL` to `.env` (gitignored); `DAILY_API_KEY` added to `environment.js` REQUIRED_VARS (fail-fast on boot)
+- `src/utils/daily.js`: thin server-side REST wrapper (`createRoom`, `createMeetingToken`, `getRoom`, `deleteRoom`) — API key used server-side only, never sent to the browser; Daily outages surface as clean `AppError(502)`, 404 treated as `{notFound:true}`
+- Added `constants.DAILY` (JOIN_WINDOW_BEFORE_MIN=15, ROOM_BUFFER_AFTER_MIN=60, API_BASE)
+
+### Database
+- Added `RoomName`, `RoomUrl`, `RoomExp` columns to `Appointment` (migrate.js)
+- New `ConsultationSession` table (webhook-driven attendance + duration audit)
+- `TeamsID` column retained but no longer written (non-destructive — preserves historical data)
+
+### Room lifecycle (`room.service.js`)
+- Rooms created lazily when a nurse CONFIRMS an online appointment (not at booking — rooms are short-lived)
+- Opaque, PHI-free room names (`consult-<uuid>`), not derivable from AppointmentID
+- Per-user meeting tokens: nurse = owner (admits knockers, ends call), student = guest; token `user_name` role-prefixed for reliable webhook attribution
+- Private rooms + knock-to-enter lobby (prevents consecutive-patient overlap)
+- Reschedule recreates the room so its expiry window tracks the new time
+- Cancel / complete / expiry tears the room down (no orphaned rooms)
+- `isWithinJoinWindow` helper: joinable only within [-15min, +60min] of the slot
+
+### Join flow
+- `GET /consultations/:id/join` — works for both roles, enforces ownership (student owner OR assigned nurse) + confirmed status + time window
+- `views/consultations/call.ejs` — embeds Daily Prebuilt; only a short-lived scoped token reaches the browser
+- Student view: raw Teams anchor replaced with stateful portal Join link ("Join Consultation" / "Join opens 15 min before" / "Awaiting confirmation")
+- Nurse dashboard: removed manual "Add Link" prompt; added a nurse Join button + room-ready indicator (nurses previously had no join path)
+
+### Webhook auditing
+- `POST /consultations/webhook/daily` — public endpoint, CSRF-exempt but secret-gated (shared secret via header/query, plus optional HMAC), verified with constant-time comparison
+- Records `meeting.started` / `participant.joined` / `meeting.ended` into `ConsultationSession` (start/end, duration, per-role join times)
+
+### Notifications
+- Upcoming-appointments API now returns `roomReady` + `joinUrl` (was `teamsId`)
+- 15/5/1-min browser reminders for online consultations are clickable → open the join screen
+- Type label updated "Online (Teams)" → "Online (Video)"
+
+### Admin analytics
+- Reports page gained a "Video Consultations" metrics row: completed calls, average duration, no-show count (from `ConsultationSession`)
+- Appointments CSV export gained `Duration` and `Attendance` (Both / Nurse-only / Student-only / No-show) columns
+
+### Teams retirement
+- Removed `POST /management/nurse/update-teams-link` route + `updateTeamsLink` controller + model function
+- Recoloured the former Teams-purple action button to brand yellow
+- Updated all copy (booking option, confirmation page, dashboard card) from "Teams" to "video consultation"
+- Installed `@daily-co/daily-js` client SDK
+
+## Post-Phase 28: Demo Tooling & Fixes
+
+### Colour scheme standardisation
+- Introduced canonical brand palette in `:root`: `--brand-blue #141c2b`, `--secondary-blue #132e51`, `--brand-yellow #ffcc00`, `--secondary-yellow #f9b22a`, plus contrast-safe `--accent-text-yellow #8a5a00`
+- Remapped semantic aliases (`--primary-navy`, `--accent-cyan`, `--accent-gold`, `--accent-text`) to the brand palette
+- Replaced all hardcoded gold hex (`#b8922e`, `rgba(212,168,67,…)`) and star-rating `#d4a843` in CSS + three EJS files with brand variables
+- Dark-mode sidebar/navy now derives from `--brand-blue`
+
+### Nurse-side demo tooling for the video feature
+- "Create Demo Video Consultation" button on the nurse Clinical Dashboard: instantly books + confirms an online consultation for student s227921577 with the logged-in nurse, scheduled ~5 min out so the join window is open immediately, and provisions the Daily room
+- "Clear Demo Consultations" button: deletes all `APT-DEMO-*` rows for the nurse, tearing down their Daily rooms first (scoped per-nurse)
+
+### Camera/microphone permission fix
+- Root cause: `Permissions-Policy: camera=(), microphone=(), geolocation=()` used an empty allowlist, hard-blocking media for the page AND all iframes — so the Daily iframe could never use a granted camera/mic
+- Fixed to `camera=(self "https://campuscare.daily.co"), microphone=(self "https://campuscare.daily.co"), geolocation=(self)` — delegates camera/mic to the Daily iframe and re-enables geolocation (which also unblocked the Phase 27 locator)
+
+### Video library load failure fix (teammate pull)
+- Root cause: the Daily SDK was served from `node_modules` (gitignored), so a teammate who pulled without `npm install` got a 404 → `window.DailyIframe` undefined → "Could not load the video library"
+- Vendored the pinned SDK into `public/vendor/daily/daily-iframe.js` (committed, ~275 KB) and removed the node_modules-based static mount
+- Added a CDN fallback in `call.ejs` (`onerror` loads `@daily-co/daily-js@0.92.2` from unpkg) as a safety net
+- Decision recorded: keep `node_modules/` gitignored (platform-specific native builds e.g. bcrypt, redundant with package-lock); vendor only the single required runtime asset instead
