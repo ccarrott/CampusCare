@@ -101,8 +101,6 @@ app.use((req, res, next) => {
 // ============================================================================
 
 app.use(express.static(path.join(__dirname, '../public')));
-// Serve the Daily.co Prebuilt SDK from our own origin (pinned, no third-party CDN at call time)
-app.use('/vendor/daily', express.static(path.join(__dirname, '../node_modules/@daily-co/daily-js/dist')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '../views'));
 
