@@ -1,13 +1,18 @@
 // src/modules/nurse/nurse.controller.js
-// Handles nurse dashboard, Teams link management, appointment status updates, notes, and patient history.
+// Handles nurse dashboard, appointment status updates (auto-provisions Daily rooms), notes, and patient history.
 
+import crypto from 'crypto';
 import * as NurseModel from './nurse.model.js';
 import * as AppointmentsModel from '../appointments/appointments.model.js';
 import * as ReviewsModel from '../reviews/reviews.model.js';
+import * as RoomService from '../appointments/room.service.js';
 import { catchAsync } from '../../utils/catchAsync.js';
 import { sanitize } from '../../utils/sanitize.js';
 import { isValidStatus } from '../../middleware/validate.js';
-import { APPOINTMENT_STATUS } from '../../constants.js';
+import { APPOINTMENT_STATUS, APPOINTMENT_TYPE } from '../../constants.js';
+
+// Demo/showcase student used by the "Create Demo Consultation" button.
+const DEMO_STUDENT_NUMBER = 's227921577';
 
 // ============================================================================
 // NURSE DASHBOARD
@@ -35,16 +40,51 @@ export const showNurseDashboard = catchAsync(async (req, res) => {
 });
 
 // ============================================================================
-// TEAMS LINK MANAGEMENT
+// DEMO: CREATE ONLINE CONSULTATION (showcase the Daily.co video feature)
 // ============================================================================
 
-export const updateTeamsLink = catchAsync(async (req, res) => {
-  const { appointmentId, teamsId } = req.body;
-  if (!appointmentId || !teamsId) return res.redirect('/management/nurse/dashboard');
+/**
+ * Creates a Confirmed online appointment for the demo student with THIS nurse,
+ * scheduled ~5 minutes from now so the join window is immediately open, then
+ * provisions the Daily video room. Purely for showcasing/testing.
+ */
+export const createDemoConsultation = catchAsync(async (req, res) => {
+  const staffNumber = req.session.user.id;
 
-  const cleanLink = sanitize(teamsId);
-  await NurseModel.updateTeamsLink(appointmentId, cleanLink);
-  res.redirect('/management/nurse/dashboard?toast=Teams+link+updated');
+  // Schedule 5 minutes from now → inside the [-15min, +60min] join window right away.
+  const when = new Date(Date.now() + 5 * 60 * 1000);
+  const pad = (n) => String(n).padStart(2, '0');
+  const sqlTime = `${when.getFullYear()}-${pad(when.getMonth() + 1)}-${pad(when.getDate())} ` +
+    `${pad(when.getHours())}:${pad(when.getMinutes())}:00`;
+
+  const appointmentId = 'APT-DEMO-' + crypto.randomBytes(3).toString('hex').toUpperCase();
+
+  const result = await AppointmentsModel.atomicBookSlot({
+    appointmentId,
+    appointmentType: APPOINTMENT_TYPE.ONLINE,
+    time: sqlTime,
+    teamsId: null,
+    studentNumber: DEMO_STUDENT_NUMBER,
+    staffNumber,
+    campus: null,
+    preferredLanguage: 'English'
+  });
+
+  if (!result.success) {
+    return res.redirect('/management/nurse/dashboard?toast=Demo+slot+busy,+try+again');
+  }
+
+  // Confirm it and provision the Daily room so "Join Consultation" appears instantly.
+  await AppointmentsModel.updateAppointmentStatus(appointmentId, APPOINTMENT_STATUS.CONFIRMED);
+  const apt = await AppointmentsModel.getAppointmentById(appointmentId);
+  try {
+    await RoomService.ensureRoomForAppointment(apt);
+  } catch (roomErr) {
+    console.error('[Phase28] Demo room provisioning failed:', roomErr.message);
+    return res.redirect('/management/nurse/dashboard?toast=Demo+created+but+room+failed');
+  }
+
+  res.redirect('/management/nurse/dashboard?toast=Demo+online+consultation+ready');
 });
 
 // ============================================================================
@@ -81,6 +121,22 @@ export const changeAppointmentStatus = catchAsync(async (req, res) => {
   }
 
   await AppointmentsModel.updateAppointmentStatus(appointmentId, status);
+
+  // Phase 28: auto-create the Daily video room when an online appointment is confirmed,
+  // and tear it down when the appointment is cancelled/completed.
+  if (apt.AppointmentType === APPOINTMENT_TYPE.ONLINE) {
+    try {
+      if (status === APPOINTMENT_STATUS.CONFIRMED) {
+        await RoomService.ensureRoomForAppointment(apt);
+      } else if (status === APPOINTMENT_STATUS.CANCELLED || status === APPOINTMENT_STATUS.COMPLETED) {
+        await RoomService.teardownRoom(apt);
+      }
+    } catch (roomErr) {
+      // Room provisioning must not block the status change; log and continue.
+      console.error('[Phase28] Room lifecycle error on status change:', roomErr.message);
+    }
+  }
+
   res.redirect('/management/nurse/dashboard?toast=Appointment+' + status.toLowerCase());
 });
 

@@ -12,8 +12,8 @@ const router = Router();
 // Dashboard
 router.get('/dashboard', requireRole(ROLES.NURSE), NurseController.showNurseDashboard);
 
-// Teams link
-router.post('/update-teams-link', requireRole(ROLES.NURSE), requireAssignedNurse, NurseController.updateTeamsLink);
+// Demo: create an online consultation to showcase the video feature
+router.post('/demo-consultation', requireRole(ROLES.NURSE), NurseController.createDemoConsultation);
 
 // Appointment status + notes
 router.post('/appointment/status', requireRole(ROLES.NURSE), requireAssignedNurse, NurseController.changeAppointmentStatus);

@@ -19,7 +19,7 @@
       <li><span class="detail-label">Nurse</span><span class="detail-value"><%= appointment.NurseFirstName %> <%= appointment.NurseLastName %></span></li>
       <li><span class="detail-label">Date & Time</span><span class="detail-value"><%= new Date(appointment.Time).toLocaleString('en-ZA', { dateStyle: 'full', timeStyle: 'short' }) %></span></li>
       <% if (appointment.AppointmentType === 'Online') { %>
-        <li><span class="detail-label">Teams Link</span><span class="detail-value">Your nurse will share the meeting link once confirmed.</span></li>
+        <li><span class="detail-label">Video Consultation</span><span class="detail-value">This is a secure video call. A <strong>Join Consultation</strong> button appears here and in My Appointments 15 minutes before your slot, once your nurse confirms.</span></li>
       <% } %>
       <li><span class="detail-label">Status</span><span class="detail-value">Pending (awaiting nurse confirmation)</span></li>
     </ul>

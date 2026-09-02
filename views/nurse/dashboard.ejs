@@ -11,6 +11,11 @@
   <header class="page-header">
     <h1>Clinical Dashboard</h1>
     <p class="subtitle">Manage patient appointments, update status, and record consultation notes.</p>
+    <form action="/management/nurse/demo-consultation" method="POST" style="margin-top:12px;">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button type="submit" class="btn btn-primary">&#127909; Create Demo Video Consultation</button>
+      <span class="text-muted" style="margin-left:8px; font-size:0.85rem;">Instantly books &amp; confirms an online consultation (joinable now) to showcase the video feature.</span>
+    </form>
   </header>
 
   <!-- Rating Summary -->
@@ -99,8 +104,16 @@
                       <input type="hidden" name="status" value="Cancelled">
                       <button type="submit" class="action-btn action-btn-cancel">Cancel</button>
                     </form>
-                    <% if (apt.AppointmentType === 'Online' && !apt.TeamsID) { %>
-                      <button type="button" class="action-btn action-btn-teams" onclick="promptTeamsLink('<%= apt.AppointmentID %>')">Add Link</button>
+                    <% if (apt.AppointmentType === 'Online') { %>
+                      <%
+                        var t = new Date(apt.Time).getTime();
+                        var withinWindow = Date.now() >= (t - 15 * 60 * 1000) && Date.now() <= (t + 60 * 60 * 1000);
+                      %>
+                      <% if (withinWindow) { %>
+                        <a href="/consultations/<%= apt.AppointmentID %>/join" class="action-btn action-btn-teams">Join Consultation</a>
+                      <% } else { %>
+                        <span class="action-btn action-btn-disabled"><%= apt.RoomName ? 'Room ready' : 'Room pending' %></span>
+                      <% } %>
                     <% } %>
                   <% } %>
 
@@ -150,21 +163,5 @@
   <% } %>
 
 </main>
-
-<script>
-function promptTeamsLink(appointmentId) {
-  const link = prompt('Paste the Microsoft Teams meeting link:');
-  if (link && link.trim()) {
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '/management/nurse/update-teams-link';
-    form.innerHTML = '<input type="hidden" name="_csrf" value="<%= csrfToken %>">' +
-      '<input type="hidden" name="appointmentId" value="' + appointmentId + '">' +
-      '<input type="hidden" name="teamsId" value="' + link.trim().replace(/[<>]/g, '') + '">';
-    document.body.appendChild(form);
-    form.submit();
-  }
-}
-</script>
 
 <%- include('../partials/footer') %>

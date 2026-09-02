@@ -38,11 +38,22 @@
                 <div class="action-btns">
 
                   <% if (status === 'Pending' || status === 'Confirmed') { %>
-                    <%/* Online + has link + Confirmed = Join button */%>
-                    <% if (apt.AppointmentType === 'Online' && apt.TeamsID && status === 'Confirmed') { %>
-                      <a href="<%= apt.TeamsID %>" target="_blank" class="action-btn action-btn-teams">Join</a>
-                    <% } else if (apt.AppointmentType === 'Online' && !apt.TeamsID) { %>
-                      <span class="action-btn action-btn-disabled">Awaiting Link</span>
+                    <%/* Online video consultation join states (Phase 28) */%>
+                    <% if (apt.AppointmentType === 'Online') { %>
+                      <%
+                        var t = new Date(apt.Time).getTime();
+                        var opensAt = t - 15 * 60 * 1000;
+                        var closesAt = t + 60 * 60 * 1000;
+                        var nowMs = Date.now();
+                        var withinWindow = nowMs >= opensAt && nowMs <= closesAt;
+                      %>
+                      <% if (status === 'Confirmed' && withinWindow) { %>
+                        <a href="/consultations/<%= apt.AppointmentID %>/join" class="action-btn action-btn-teams">Join Consultation</a>
+                      <% } else if (status === 'Confirmed') { %>
+                        <span class="action-btn action-btn-disabled">Join opens 15 min before</span>
+                      <% } else { %>
+                        <span class="action-btn action-btn-disabled">Awaiting confirmation</span>
+                      <% } %>
                     <% } %>
                     <%/* Cancel button for Pending/Confirmed */%>
                     <form action="/consultations/cancel" method="POST" style="display:inline;" onsubmit="return confirm('Cancel this appointment?');">

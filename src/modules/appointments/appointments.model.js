@@ -104,7 +104,7 @@ export async function getAppointmentsByStudentWithStatus(studentNumber) {
 export async function getAppointmentsForNurseWithStatus(staffNumber) {
   const sql = `
     SELECT
-      a.AppointmentID, a.AppointmentType, a.Time, a.TeamsID,
+      a.AppointmentID, a.AppointmentType, a.Time, a.TeamsID, a.RoomName, a.RoomExp,
       a.Status, a.Notes, a.StudentNumber,
       s.FirstName AS StudentFirstName, s.LastName AS StudentLastName, s.MedicalHistory
     FROM Appointment a
@@ -179,4 +179,66 @@ export async function checkSlotAvailable(staffNumber, time) {
 export async function updateAppointmentNotes(appointmentId, notes) {
   const sql = 'UPDATE Appointment SET Notes = ? WHERE AppointmentID = ?';
   return await query(sql, [notes, appointmentId]);
+}
+
+
+// ============================================================================
+// PHASE 28: DAILY.CO VIDEO ROOM PERSISTENCE
+// ============================================================================
+
+/**
+ * Persists the Daily room details onto an appointment.
+ * roomExp is stored as a JS Date / SQL datetime.
+ */
+export async function setAppointmentRoom(appointmentId, { roomName, roomUrl, roomExp }) {
+  const sql = 'UPDATE Appointment SET RoomName = ?, RoomUrl = ?, RoomExp = ? WHERE AppointmentID = ?';
+  return await query(sql, [roomName, roomUrl, roomExp, appointmentId]);
+}
+
+/** Clears room details (on cancel/complete/expire teardown). */
+export async function clearAppointmentRoom(appointmentId) {
+  const sql = 'UPDATE Appointment SET RoomName = NULL, RoomUrl = NULL, RoomExp = NULL WHERE AppointmentID = ?';
+  return await query(sql, [appointmentId]);
+}
+
+/** Finds an appointment by its Daily room name (used by the webhook auditor). */
+export async function getAppointmentByRoomName(roomName) {
+  const sql = 'SELECT * FROM Appointment WHERE RoomName = ?';
+  const rows = await query(sql, [roomName]);
+  return rows[0];
+}
+
+/** Online appointments that are past their room expiry but still hold a room (cleanup sweep). */
+export async function getExpiredRoomAppointments() {
+  const sql = `SELECT AppointmentID, RoomName FROM Appointment
+               WHERE RoomName IS NOT NULL AND RoomExp IS NOT NULL AND RoomExp < NOW()`;
+  return await query(sql);
+}
+
+// ============================================================================
+// PHASE 28: CONSULTATION SESSION (webhook-driven attendance/audit)
+// ============================================================================
+
+/** Upserts a session row for a room, creating it on first event. */
+export async function upsertConsultationSession(sessionId, appointmentId, roomName) {
+  const sql = `INSERT INTO ConsultationSession (SessionID, AppointmentID, RoomName)
+               VALUES (?, ?, ?)
+               ON DUPLICATE KEY UPDATE AppointmentID = VALUES(AppointmentID)`;
+  return await query(sql, [sessionId, appointmentId, roomName]);
+}
+
+export async function markSessionStarted(sessionId, startedAt) {
+  const sql = 'UPDATE ConsultationSession SET StartedAt = ? WHERE SessionID = ?';
+  return await query(sql, [startedAt, sessionId]);
+}
+
+export async function markParticipantJoined(sessionId, column, joinedAt) {
+  // column is one of 'NurseJoinedAt' | 'StudentJoinedAt' — validated by caller against a whitelist.
+  const sql = `UPDATE ConsultationSession SET ${column} = COALESCE(${column}, ?) WHERE SessionID = ?`;
+  return await query(sql, [joinedAt, sessionId]);
+}
+
+export async function markSessionEnded(sessionId, endedAt, durationSeconds) {
+  const sql = 'UPDATE ConsultationSession SET EndedAt = ?, DurationSeconds = ? WHERE SessionID = ?';
+  return await query(sql, [endedAt, durationSeconds, sessionId]);
 }

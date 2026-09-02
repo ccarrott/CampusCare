@@ -4,14 +4,6 @@
 import { query } from '../../config/database.js';
 
 /**
- * Updates the MS Teams link for an online appointment.
- */
-export async function updateTeamsLink(appointmentId, teamsId) {
-  const sql = 'UPDATE Appointment SET TeamsID = ? WHERE AppointmentID = ?';
-  return await query(sql, [teamsId, appointmentId]);
-}
-
-/**
  * Fetches a patient's profile by student number.
  */
 export async function getPatientProfile(studentNumber) {

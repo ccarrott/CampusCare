@@ -19,6 +19,13 @@ export const APPOINTMENT_TYPE = Object.freeze({
   ONLINE: 'Online'
 });
 
+// Daily.co room lifecycle timing (minutes relative to appointment Time)
+export const DAILY = Object.freeze({
+  JOIN_WINDOW_BEFORE_MIN: 15,   // earliest a user can join before the slot
+  ROOM_BUFFER_AFTER_MIN: 60,    // room/token stays valid this long past the slot
+  API_BASE: 'https://api.daily.co/v1'
+});
+
 export const SEVERITY = Object.freeze({
   LOW: 'Low',
   MODERATE: 'Moderate',

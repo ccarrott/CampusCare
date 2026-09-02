@@ -27,6 +27,7 @@
   },
   "homepage": "https://github.com/ccarrott/CampusCare#readme",
   "dependencies": {
+    "@daily-co/daily-js": "^0.92.2",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.4.2",

@@ -22,6 +22,7 @@ export const showAdminReport = catchAsync(async (req, res) => {
   const dailyAppointments = await AdminModel.getDailyAppointmentCounts(days);
   const pendingNurseReviews = await ReviewsModel.getPendingNurseReviews();
   const nurseAverages = await ReviewsModel.getAllNurseAverages();
+  const videoStats = await AdminModel.getVideoConsultationStats();
 
   res.render('admin/reports', {
     user: req.session.user,
@@ -31,6 +32,7 @@ export const showAdminReport = catchAsync(async (req, res) => {
     dailyAppointments: JSON.stringify(dailyAppointments),
     pendingNurseReviews,
     nurseAverages,
+    videoStats,
     period,
     error: null
   });

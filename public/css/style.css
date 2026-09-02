@@ -1305,8 +1305,8 @@ textarea.form-control {
 .action-btn-complete { background-color: var(--status-success); color: #fff; }
 .action-btn-complete:hover { background-color: #059669; color: #fff; }
 
-.action-btn-teams { background-color: #5b5fc7; color: #fff; }
-.action-btn-teams:hover { background-color: #4b4fb7; color: #fff; }
+.action-btn-teams { background-color: var(--brand-yellow); color: var(--primary-navy); }
+.action-btn-teams:hover { background-color: var(--secondary-yellow); color: var(--primary-navy); }
 
 .action-btns {
   display: flex;

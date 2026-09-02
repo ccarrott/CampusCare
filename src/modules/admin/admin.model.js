@@ -27,6 +27,28 @@ export async function getAppointmentsByType() {
   return await query(sql);
 }
 
+/**
+ * Phase 28: video consultation analytics from webhook-logged ConsultationSession rows.
+ * Returns completed count, average duration (minutes), and a no-show count.
+ */
+export async function getVideoConsultationStats() {
+  const sql = `
+    SELECT
+      (SELECT COUNT(*) FROM ConsultationSession WHERE EndedAt IS NOT NULL) AS CompletedSessions,
+      (SELECT ROUND(AVG(DurationSeconds) / 60, 1) FROM ConsultationSession WHERE DurationSeconds IS NOT NULL) AS AvgDurationMin,
+      (SELECT COUNT(*) FROM Appointment a
+         WHERE a.AppointmentType = 'Online' AND a.Status = 'Confirmed'
+           AND a.Time < NOW()
+           AND NOT EXISTS (
+             SELECT 1 FROM ConsultationSession cs
+             WHERE cs.AppointmentID = a.AppointmentID AND cs.StudentJoinedAt IS NOT NULL
+           )
+      ) AS NoShowCount
+  `;
+  const results = await query(sql);
+  return results[0];
+}
+
 export async function getAllRatings() {
   const sql = `
     SELECT r.RatingID, r.Score, r.RatingDescription, r.AppointmentID,

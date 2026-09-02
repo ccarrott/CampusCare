@@ -38,6 +38,23 @@
       </section>
     </div>
 
+    <!-- Video Consultation Analytics (Phase 28) -->
+    <h2 class="mt-3">Video Consultations</h2>
+    <div class="metrics-grid">
+      <section class="content-card text-center">
+        <h2>Completed Video Calls</h2>
+        <p class="metric-value"><%= (videoStats && videoStats.CompletedSessions) || 0 %></p>
+      </section>
+      <section class="content-card text-center">
+        <h2>Avg. Duration</h2>
+        <p class="metric-value"><%= (videoStats && videoStats.AvgDurationMin != null) ? videoStats.AvgDurationMin + ' min' : 'N/A' %></p>
+      </section>
+      <section class="content-card text-center">
+        <h2>No-Shows</h2>
+        <p class="metric-value"><%= (videoStats && videoStats.NoShowCount) || 0 %></p>
+      </section>
+    </div>
+
     <!-- Appointments by Type -->
     <section class="content-card mt-3" id="appointments">
       <h2>Appointments by Type</h2>

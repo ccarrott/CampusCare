@@ -32,7 +32,7 @@
           <select id="appointmentType" name="appointmentType" class="form-control" required>
             <option value="" disabled selected>-- Select type --</option>
             <option value="Physical">Physical (In-Person)</option>
-            <option value="Online">Online (Microsoft Teams)</option>
+            <option value="Online">Online (Video Consultation)</option>
           </select>
         </div>
       </div>
@@ -112,7 +112,7 @@
 
       <!-- Step: Preferred Language (only for Online) -->
       <div class="booking-step" id="stepLanguage" style="display: none;">
-        <h2 id="stepLanguageTitle">4. Preferred Language for Teams Meeting</h2>
+        <h2 id="stepLanguageTitle">4. Preferred Language for Video Consultation</h2>
         <div class="form-group">
           <label for="preferredLanguage">Select your preferred language</label>
           <select id="preferredLanguage" name="preferredLanguage" class="form-control">
@@ -185,7 +185,7 @@
     } else {
       document.getElementById('stepNurseTitle').textContent = '2. Select a Nurse';
       document.getElementById('stepSlotTitle').textContent = '3. Select a Time Slot';
-      document.getElementById('stepLanguageTitle').textContent = '4. Preferred Language for Teams Meeting';
+      document.getElementById('stepLanguageTitle').textContent = '4. Preferred Language for Video Consultation';
     }
   }
 

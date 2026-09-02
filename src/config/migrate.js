@@ -171,6 +171,33 @@ const migrations = [
   {
     name: 'Drop Student.Address column',
     sql: `ALTER TABLE Student DROP COLUMN Address`
+  },
+  // Phase 28: Daily.co video consultations (replaces manual Teams links)
+  {
+    name: 'Add RoomName to Appointment',
+    sql: `ALTER TABLE Appointment ADD COLUMN RoomName varchar(80) NULL`
+  },
+  {
+    name: 'Add RoomUrl to Appointment',
+    sql: `ALTER TABLE Appointment ADD COLUMN RoomUrl varchar(255) NULL`
+  },
+  {
+    name: 'Add RoomExp to Appointment',
+    sql: `ALTER TABLE Appointment ADD COLUMN RoomExp datetime NULL`
+  },
+  {
+    name: 'Create ConsultationSession table',
+    sql: `CREATE TABLE IF NOT EXISTS ConsultationSession (
+      SessionID varchar(50) PRIMARY KEY,
+      AppointmentID varchar(50) NOT NULL,
+      RoomName varchar(80) NOT NULL,
+      StartedAt datetime NULL,
+      EndedAt datetime NULL,
+      DurationSeconds int NULL,
+      NurseJoinedAt datetime NULL,
+      StudentJoinedAt datetime NULL,
+      CreatedAt datetime DEFAULT CURRENT_TIMESTAMP
+    )`
   }
 ];
 

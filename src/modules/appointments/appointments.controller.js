@@ -5,10 +5,11 @@ import crypto from 'crypto';
 import * as AppointmentsModel from './appointments.model.js';
 import * as AvailabilityModel from '../availability/availability.model.js';
 import * as ReviewsModel from '../reviews/reviews.model.js';
+import * as RoomService from './room.service.js';
 import { catchAsync } from '../../utils/catchAsync.js';
 import { AppError } from '../../utils/AppError.js';
 import { getUpcomingWeekDays } from '../../utils/dates.js';
-import { APPOINTMENT_TYPE, APPOINTMENT_STATUS } from '../../constants.js';
+import { APPOINTMENT_TYPE, APPOINTMENT_STATUS, ROLES } from '../../constants.js';
 
 // ============================================================================
 // BOOKING FORM
@@ -65,7 +66,7 @@ export const handleBooking = catchAsync(async (req, res) => {
   if (appointmentType === APPOINTMENT_TYPE.ONLINE && !preferredLanguage) {
     const nurses = await AppointmentsModel.getAvailableNurses();
     return res.status(400).render('consultations/book', {
-      user: req.session.user, nurses, error: 'Please select your preferred language for the Teams meeting.'
+      user: req.session.user, nurses, error: 'Please select your preferred language for the video consultation.'
     });
   }
 
@@ -138,6 +139,16 @@ export const handleCancelAppointment = catchAsync(async (req, res) => {
   }
 
   await AppointmentsModel.cancelAppointment(appointmentId);
+
+  // Phase 28: tear down the video room so no orphaned/joinable room lingers.
+  if (apt.AppointmentType === APPOINTMENT_TYPE.ONLINE && apt.RoomName) {
+    try {
+      await RoomService.teardownRoom(apt);
+    } catch (roomErr) {
+      console.error('[Phase28] Room teardown error on cancel:', roomErr.message);
+    }
+  }
+
   res.redirect('/consultations/my-appointments?toast=Appointment+cancelled');
 });
 
@@ -173,6 +184,16 @@ export const handleRescheduleAppointment = catchAsync(async (req, res) => {
   }
 
   await AppointmentsModel.rescheduleAppointment(appointmentId, newTime);
+
+  // Phase 28: if an online room already exists, move its expiry window to the new time.
+  if (apt.AppointmentType === APPOINTMENT_TYPE.ONLINE && apt.RoomName) {
+    try {
+      await RoomService.refreshRoomExpiry(apt, newTime);
+    } catch (roomErr) {
+      console.error('[Phase28] Room refresh error on reschedule:', roomErr.message);
+    }
+  }
+
   res.redirect('/consultations/my-appointments?toast=Appointment+rescheduled');
 });
 
@@ -218,5 +239,58 @@ export const getNurseProfileAPI = catchAsync(async (req, res) => {
       comment: r.RatingDescription,
       date: r.CreatedAt
     }))
+  });
+});
+
+// ============================================================================
+// PHASE 28: JOIN VIDEO CONSULTATION (student or assigned nurse)
+// ============================================================================
+
+export const showJoinConsultation = catchAsync(async (req, res) => {
+  const appointmentId = req.params.id;
+  const user = req.session.user;
+
+  const apt = await AppointmentsModel.getAppointmentById(appointmentId);
+  if (!apt) throw new AppError('Appointment not found', 404);
+
+  // Ownership: the student who booked it, or the nurse assigned to it.
+  const isStudentOwner = user.role === ROLES.STUDENT && apt.StudentNumber === user.id;
+  const isAssignedNurse = user.role === ROLES.NURSE && apt.StaffNumber === user.id;
+  if (!isStudentOwner && !isAssignedNurse) {
+    throw new AppError('Access denied', 403);
+  }
+
+  // Must be an online, confirmed consultation.
+  if (apt.AppointmentType !== APPOINTMENT_TYPE.ONLINE) {
+    throw new AppError('This is not an online consultation.', 400);
+  }
+  if (apt.Status !== APPOINTMENT_STATUS.CONFIRMED) {
+    throw new AppError('This consultation is not confirmed yet.', 403);
+  }
+
+  // Time window guard — no joining a week early or long after the slot.
+  if (!RoomService.isWithinJoinWindow(apt.Time)) {
+    return res.status(403).render('error', {
+      user,
+      statusCode: 403,
+      message: 'The consultation room opens 15 minutes before your scheduled time.'
+    });
+  }
+
+  // Ensure a live room exists (covers nurse joining before an explicit confirm-side create,
+  // or a room that expired and needs recreating), then mint a per-user token.
+  await RoomService.ensureRoomForAppointment(apt);
+  const { url, token } = await RoomService.mintTokenForUser(apt, user);
+
+  const returnUrl = user.role === ROLES.NURSE
+    ? '/management/nurse/dashboard'
+    : '/consultations/my-appointments';
+
+  res.render('consultations/call', {
+    user,
+    appointment: apt,
+    roomUrl: url,
+    meetingToken: token,
+    returnUrl
   });
 });

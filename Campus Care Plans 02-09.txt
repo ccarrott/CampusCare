@@ -29,4 +29,13 @@
 
 10.	Make clinic addresses in DB make sense (2nd ave for north campus is wrong)
 	
+11. 	Implement Resend API, use for:
+	Consultation notifications (reject/accept, upcoming accepted meeting, new potential booking nurses side)
+	Sign up verification
+	Forgot password flow
+
+12. 	Upgrade to tier 2 if they:
+	Have similar symptoms within week of last symptom check
+	OR
+	Making booking within a week of last booking
 

@@ -1,0 +1,75 @@
+<%- include('../partials/header', { title: 'Video Consultation' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="container page-wrapper">
+
+  <header class="page-header">
+    <h1>Video Consultation</h1>
+    <p class="subtitle">
+      <% if (user.role === 'nurse') { %>
+        With <%= appointment.StudentFirstName ? (appointment.StudentFirstName + ' ' + appointment.StudentLastName) : 'your patient' %>
+      <% } else { %>
+        With <%= appointment.NurseFirstName ? ('Nurse ' + appointment.NurseFirstName + ' ' + appointment.NurseLastName) : 'your nurse' %>
+      <% } %>
+      &middot; <%= new Date(appointment.Time).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }) %>
+    </p>
+  </header>
+
+  <section class="content-card">
+    <div id="call-status" class="alert alert-warning" style="margin-bottom:16px;">Connecting to your consultation room&hellip;</div>
+    <div id="video-container" style="width:100%; height:70vh; min-height:480px; border-radius:12px; overflow:hidden; background:var(--primary-navy);"></div>
+    <div class="profile-actions mt-3">
+      <a href="<%= returnUrl %>" class="btn btn-secondary" id="leaveBtn">Leave &amp; Return</a>
+    </div>
+  </section>
+
+</main>
+
+<!-- Daily.co Prebuilt SDK (client library — no API key involved) -->
+<script src="https://unpkg.com/@daily-co/daily-js"></script>
+<script>
+  (function () {
+    // Server-provided values: a room URL and a SHORT-LIVED, per-user token.
+    // The secret DAILY_API_KEY is never sent to the browser.
+    var ROOM_URL = <%- JSON.stringify(roomUrl) %>;
+    var MEETING_TOKEN = <%- JSON.stringify(meetingToken) %>;
+    var RETURN_URL = <%- JSON.stringify(returnUrl) %>;
+
+    var statusEl = document.getElementById('call-status');
+    var container = document.getElementById('video-container');
+
+    if (!window.DailyIframe) {
+      statusEl.className = 'alert alert-danger';
+      statusEl.textContent = 'Could not load the video library. Check your connection and refresh.';
+      return;
+    }
+
+    var callFrame = window.DailyIframe.createFrame(container, {
+      iframeStyle: { width: '100%', height: '100%', border: '0' },
+      showLeaveButton: true
+    });
+
+    callFrame.join({ url: ROOM_URL, token: MEETING_TOKEN })
+      .then(function () {
+        statusEl.className = 'alert alert-success';
+        statusEl.textContent = 'Connected. If your nurse has not admitted you yet, please wait in the lobby.';
+      })
+      .catch(function (err) {
+        statusEl.className = 'alert alert-danger';
+        statusEl.textContent = 'Unable to join the consultation room. It may have expired. Please return and try again.';
+        console.error('[Daily] join failed:', err);
+      });
+
+    callFrame.on('left-meeting', function () {
+      try { callFrame.destroy(); } catch (e) {}
+      window.location.href = RETURN_URL;
+    });
+
+    // Manual leave via our button also tears down the frame.
+    document.getElementById('leaveBtn').addEventListener('click', function () {
+      try { callFrame.destroy(); } catch (e) {}
+    });
+  })();
+</script>
+
+<%- include('../partials/footer') %>

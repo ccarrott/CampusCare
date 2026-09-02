@@ -32,6 +32,8 @@ import staffRoutes from './modules/staff/staff.routes.js';
 
 // Cross-module controllers (mounted on other module prefixes)
 import { getUpcomingAppointmentsAPI } from './modules/notifications/notifications.controller.js';
+import { showJoinConsultation } from './modules/appointments/appointments.controller.js';
+import { handleDailyWebhook } from './modules/appointments/webhook.controller.js';
 import { exportAppointmentsCSV, exportTrendsCSV } from './modules/export/export.controller.js';
 import statesApi from './config/states/states-api.js';
 
@@ -71,6 +73,9 @@ app.use((req, res, next) => {
 // Validate CSRF on state-changing requests
 app.use((req, res, next) => {
   if (req.method === 'GET' || req.method === 'HEAD') return next();
+
+  // Machine-to-machine webhook (Daily.co): no session/CSRF; verified by its own shared secret.
+  if (req.path === '/consultations/webhook/daily') return next();
 
   // API endpoints: check header token (for browser console / fetch calls)
   if (req.path.includes('/api/')) {
@@ -126,6 +131,12 @@ app.use('/consultations', reviewsRoutes);
 // Notifications API (upcoming appointments for browser notifications)
 app.get('/consultations/api/upcoming', requireAuth, getUpcomingAppointmentsAPI);
 
+// Phase 28: Join video consultation (student owner OR assigned nurse — ownership checked in controller)
+app.get('/consultations/:id/join', requireAuth, showJoinConsultation);
+
+// Phase 28: Daily.co webhook auditor (public; verified by shared secret, not session/CSRF)
+app.post('/consultations/webhook/daily', handleDailyWebhook);
+
 // Health Trends (dashboard, map data API)
 app.use('/trends', trendsRoutes);
 
@@ -135,7 +146,7 @@ app.use('/staff', staffRoutes);
 // Trends CSV export
 app.get('/trends/export-csv', requireAuth, exportTrendsCSV);
 
-// Nurse management (dashboard, teams links, status, notes, patient history)
+// Nurse management (dashboard, appointment status, notes, patient history)
 app.use('/management/nurse', nurseRoutes);
 
 // Nurse availability (grid view + save)

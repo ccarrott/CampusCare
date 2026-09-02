@@ -34,18 +34,26 @@
     }
   }
 
-  // Fire a notification
-  function sendNotification(title, body, tag) {
+  // Fire a notification. If joinUrl is provided, clicking the notification opens it.
+  function sendNotification(title, body, tag, joinUrl) {
     if (!('Notification' in window)) { console.log('[Notification]', title, '-', body); return; }
     if (Notification.permission !== 'granted') { console.log('[Notification blocked]', title); return; }
     if (sentNotifications.has(tag)) return;
 
     var n = new Notification(title, {
-      body: body,
+      body: body + (joinUrl ? ' — click to join.' : ''),
       tag: tag,
       requireInteraction: true,
       icon: '/images/nmu-logo.jpg'
     });
+
+    if (joinUrl) {
+      n.onclick = function() {
+        window.focus();
+        window.open(joinUrl, '_blank');
+        n.close();
+      };
+    }
 
     sentNotifications.add(tag);
     saveSent();
@@ -73,14 +81,17 @@
     var mins = apt.minutesUntil;
     var withPerson = apt.with;
     var timeStr = new Date(apt.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    var typeLabel = apt.type === 'Online' ? 'Online (Teams)' : 'In-Person';
+    var typeLabel = apt.type === 'Online' ? 'Online (Video)' : 'In-Person';
+    // Offer a clickable join link only for online appointments with a ready room.
+    var joinUrl = (apt.type === 'Online' && apt.joinUrl) ? apt.joinUrl : null;
 
     // 1 minute before (0 to 2 min)
     if (mins >= 0 && mins <= 2) {
       sendNotification(
         'Starting in 1 minute!',
         typeLabel + ' with ' + withPerson + ' at ' + timeStr,
-        '1min_' + apt.id
+        '1min_' + apt.id,
+        joinUrl
       );
     }
     // 5 minutes before (4 to 6 min)
@@ -88,7 +99,8 @@
       sendNotification(
         'Appointment in 5 minutes',
         typeLabel + ' with ' + withPerson + ' at ' + timeStr + '. Get ready!',
-        '5min_' + apt.id
+        '5min_' + apt.id,
+        joinUrl
       );
     }
     // 15 minutes before (14 to 16 min)
@@ -96,7 +108,8 @@
       sendNotification(
         'Appointment in 15 minutes',
         typeLabel + ' with ' + withPerson + ' at ' + timeStr + '. Prepare now.',
-        '15min_' + apt.id
+        '15min_' + apt.id,
+        joinUrl
       );
     }
   }
@@ -128,7 +141,7 @@
     setTimeout(function() {
       sendNotification(
         'Appointment in 5 minutes',
-        'Online (Teams) with David Khumalo at ' + formatFutureTime(5) + '. Get ready!',
+        'Online (Video) with David Khumalo at ' + formatFutureTime(5) + '. Get ready!',
         'demo_5min'
       );
     }, 4000);
