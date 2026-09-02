@@ -201,6 +201,21 @@ export async function clearAppointmentRoom(appointmentId) {
   return await query(sql, [appointmentId]);
 }
 
+/** Demo appointments (APT-DEMO-*) for a nurse — used by the demo cleanup button. */
+export async function getDemoAppointmentsForNurse(staffNumber) {
+  const sql = `SELECT AppointmentID, RoomName FROM Appointment
+               WHERE StaffNumber = ? AND AppointmentID LIKE 'APT-DEMO-%'`;
+  return await query(sql, [staffNumber]);
+}
+
+/** Deletes all demo appointments (APT-DEMO-*) for a nurse. Returns affected row count. */
+export async function deleteDemoAppointmentsForNurse(staffNumber) {
+  const sql = `DELETE FROM Appointment
+               WHERE StaffNumber = ? AND AppointmentID LIKE 'APT-DEMO-%'`;
+  const result = await query(sql, [staffNumber]);
+  return result.affectedRows || 0;
+}
+
 /** Finds an appointment by its Daily room name (used by the webhook auditor). */
 export async function getAppointmentByRoomName(roomName) {
   const sql = 'SELECT * FROM Appointment WHERE RoomName = ?';

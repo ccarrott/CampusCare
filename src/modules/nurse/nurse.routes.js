@@ -15,6 +15,9 @@ router.get('/dashboard', requireRole(ROLES.NURSE), NurseController.showNurseDash
 // Demo: create an online consultation to showcase the video feature
 router.post('/demo-consultation', requireRole(ROLES.NURSE), NurseController.createDemoConsultation);
 
+// Demo: clear all demo consultations for this nurse
+router.post('/demo-consultation/clear', requireRole(ROLES.NURSE), NurseController.clearDemoConsultations);
+
 // Appointment status + notes
 router.post('/appointment/status', requireRole(ROLES.NURSE), requireAssignedNurse, NurseController.changeAppointmentStatus);
 router.post('/appointment/notes', requireRole(ROLES.NURSE), requireAssignedNurse, NurseController.saveAppointmentNotes);

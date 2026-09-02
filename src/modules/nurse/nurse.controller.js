@@ -87,6 +87,30 @@ export const createDemoConsultation = catchAsync(async (req, res) => {
   res.redirect('/management/nurse/dashboard?toast=Demo+online+consultation+ready');
 });
 
+/**
+ * Deletes all demo consultations (APT-DEMO-*) for this nurse, tearing down their
+ * Daily rooms first so nothing is left dangling.
+ */
+export const clearDemoConsultations = catchAsync(async (req, res) => {
+  const staffNumber = req.session.user.id;
+
+  const demos = await AppointmentsModel.getDemoAppointmentsForNurse(staffNumber);
+
+  // Best-effort delete each Daily room (ignore rooms already expired/gone).
+  for (const d of demos) {
+    if (d.RoomName) {
+      try {
+        await RoomService.teardownRoom({ AppointmentID: d.AppointmentID, RoomName: d.RoomName });
+      } catch (roomErr) {
+        console.error('[Phase28] Demo room teardown failed:', roomErr.message);
+      }
+    }
+  }
+
+  const removed = await AppointmentsModel.deleteDemoAppointmentsForNurse(staffNumber);
+  res.redirect('/management/nurse/dashboard?toast=Cleared+' + removed + '+demo+consultation' + (removed === 1 ? '' : 's'));
+});
+
 // ============================================================================
 // APPOINTMENT STATUS UPDATE
 // ============================================================================
