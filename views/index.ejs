@@ -3,11 +3,11 @@
 
 <% if (user.role === 'student') { %><span id="requestLocationFlag" hidden></span><% } %>
 
-<main class="container page-wrapper">
+<main class="container page-wrapper layout-dashboard">
   <%- include('./partials/alerts') %>
 
-  <header class="page-header">
-    <h1 id="dashboardGreeting"
+  <header class="dash-hero">
+    <h1 class="shimmer-text" id="dashboardGreeting"
       data-firstname="<%= user.firstName || '' %>"
       data-lastname="<%= user.lastName || '' %>"
       data-role="<%= user.role %>"
@@ -46,28 +46,28 @@
     </script>
 
     <div class="dashboard-grid">
-      <section class="content-card">
+      <section class="content-card reveal">
         <div class="card-icon">&#129657;</div>
         <h2>Symptom Checker</h2>
         <p class="text-muted">Check your symptoms and get instant OTC medication recommendations.</p>
         <a href="/symptoms" class="btn btn-primary">Check Symptoms</a>
       </section>
 
-      <section class="content-card">
+      <section class="content-card reveal">
         <div class="card-icon">&#128197;</div>
         <h2>Book Consultation</h2>
         <p class="text-muted">Schedule a 15-minute in-person or online appointment with a campus nurse.</p>
         <a href="/consultations/book" class="btn btn-primary">Book Now</a>
       </section>
 
-      <section class="content-card">
+      <section class="content-card reveal">
         <div class="card-icon">&#128203;</div>
         <h2>My Appointments</h2>
         <p class="text-muted">View your upcoming and past consultations, and rate completed visits.</p>
         <a href="/consultations/my-appointments" class="btn btn-primary">View Appointments</a>
       </section>
 
-      <section class="content-card">
+      <section class="content-card reveal">
         <div class="card-icon">&#128200;</div>
         <h2>Campus Health Trends</h2>
         <p class="text-muted">See what's going around campus — aggregated health data and facility info.</p>
@@ -78,28 +78,28 @@
   <% } else if (user.role === 'nurse') { %>
 
     <div class="dashboard-grid">
-      <section class="content-card">
+      <section class="content-card reveal">
         <div class="card-icon">&#128203;</div>
         <h2>Clinical Dashboard</h2>
         <p class="text-muted">Manage your patient schedule, view appointments, and start video consultations.</p>
         <a href="/management/nurse/dashboard" class="btn btn-primary">View Schedule</a>
       </section>
 
-      <section class="content-card">
+      <section class="content-card reveal">
         <div class="card-icon">&#128200;</div>
         <h2>Health Trends</h2>
         <p class="text-muted">Review campus-wide health analytics and symptom distribution data.</p>
         <a href="/trends" class="btn btn-primary">View Trends</a>
       </section>
 
-      <section class="content-card">
+      <section class="content-card reveal">
         <div class="card-icon">&#128100;</div>
         <h2>My Profile</h2>
         <p class="text-muted">View and manage your account details and clinic assignment.</p>
         <a href="/profile" class="btn btn-primary">View Profile</a>
       </section>
 
-      <section class="content-card">
+      <section class="content-card reveal">
         <div class="card-icon">&#128197;</div>
         <h2>Manage Availability</h2>
         <p class="text-muted">Set your weekly available time slots for student bookings.</p>
@@ -110,35 +110,35 @@
   <% } else if (user.role === 'admin') { %>
 
     <div class="dashboard-grid">
-      <section class="content-card">
+      <section class="content-card reveal">
         <div class="card-icon">&#128202;</div>
         <h2>Operational Reports</h2>
         <p class="text-muted">View system-wide analytics: appointments, ratings, and staff performance.</p>
         <a href="/management/admin/reports" class="btn btn-primary">View Reports</a>
       </section>
 
-      <section class="content-card">
+      <section class="content-card reveal">
         <div class="card-icon">&#128200;</div>
         <h2>Health Trends</h2>
         <p class="text-muted">Campus health overview with aggregated symptom data and zone mapping.</p>
         <a href="/trends" class="btn btn-primary">View Trends</a>
       </section>
 
-      <section class="content-card">
+      <section class="content-card reveal">
         <div class="card-icon">&#128101;</div>
         <h2>Manage Students</h2>
         <p class="text-muted">View, add, or remove student accounts from the system.</p>
         <a href="/management/admin/students" class="btn btn-primary">Manage Students</a>
       </section>
 
-      <section class="content-card">
+      <section class="content-card reveal">
         <div class="card-icon">&#129658;</div>
         <h2>Manage Nurses</h2>
         <p class="text-muted">Add, edit, or remove nurse staff accounts and clinic assignments.</p>
         <a href="/management/admin/nurses" class="btn btn-primary">Manage Nurses</a>
       </section>
 
-      <section class="content-card">
+      <section class="content-card reveal">
         <div class="card-icon">&#128100;</div>
         <h2>My Profile</h2>
         <p class="text-muted">View your admin account details.</p>

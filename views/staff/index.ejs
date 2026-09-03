@@ -22,9 +22,12 @@
 
     <div class="staff-grid" id="staffGrid">
       <% staffData.forEach(function(nurse) { %>
-        <section class="staff-card" data-campus="<%= nurse.campus || '' %>">
+        <% var _photo = '/images/nurses/' + ((nurse.firstName || '') + '.' + (nurse.lastName || '')).toLowerCase() + '.PNG'; %>
+        <% var _initial = (nurse.firstName || '?').charAt(0).toUpperCase(); %>
+        <section class="staff-card reveal" data-campus="<%= nurse.campus || '' %>">
           <div class="staff-card-head">
-            <div class="staff-avatar"><%= (nurse.firstName || '?').charAt(0).toUpperCase() %></div>
+            <img src="<%= _photo %>" alt="<%= nurse.firstName %> <%= nurse.lastName %>" class="staff-photo"
+              onerror="this.onerror=null; var f=document.createElement('div'); f.className='staff-avatar'; f.textContent='<%= _initial %>'; this.replaceWith(f);">
             <div class="staff-head-info">
               <h2 class="staff-name"><%= nurse.firstName %> <%= nurse.lastName %></h2>
               <% if (nurse.campus) { %><span class="staff-campus-badge"><%= nurse.campus %></span><% } %>

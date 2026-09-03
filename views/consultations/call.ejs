@@ -1,29 +1,37 @@
 <%- include('../partials/header', { title: 'Video Consultation' }) %>
 <%- include('../partials/navbar') %>
 
-<main class="container page-wrapper">
+<script>document.body.classList.add('immersive-page');</script>
 
-  <header class="page-header">
-    <h1>Video Consultation</h1>
-    <p class="subtitle">
-      <% if (user.role === 'nurse') { %>
-        With <%= appointment.StudentFirstName ? (appointment.StudentFirstName + ' ' + appointment.StudentLastName) : 'your patient' %>
-      <% } else { %>
-        With <%= appointment.NurseFirstName ? ('Nurse ' + appointment.NurseFirstName + ' ' + appointment.NurseLastName) : 'your nurse' %>
-      <% } %>
-      &middot; <%= new Date(appointment.Time).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }) %>
-    </p>
-  </header>
+<main>
+  <div class="layout-immersive">
 
-  <section class="content-card">
-    <p class="text-muted" style="font-size:0.85rem; margin-bottom:8px;">&#128247; Your browser will ask for camera &amp; microphone access when you join — please choose <strong>Allow</strong>.</p>
-    <div id="call-status" class="alert alert-warning" style="margin-bottom:16px;">Connecting to your consultation room&hellip;</div>
-    <div id="video-container" style="width:100%; height:70vh; min-height:480px; border-radius:12px; overflow:hidden; background:var(--primary-navy);"></div>
-    <div class="profile-actions mt-3">
-      <a href="<%= returnUrl %>" class="btn btn-secondary" id="leaveBtn">Leave &amp; Return</a>
+    <!-- The video fills the whole stage -->
+    <div id="video-container" class="immersive-stage"></div>
+
+    <!-- Top-left: who + when, as a floating glass pill -->
+    <div class="immersive-overlay overlay-top-left immersive-context">
+      <strong>
+        <% if (user.role === 'nurse') { %>
+          <%= appointment.StudentFirstName ? (appointment.StudentFirstName + ' ' + appointment.StudentLastName) : 'Your patient' %>
+        <% } else { %>
+          <%= appointment.NurseFirstName ? ('Nurse ' + appointment.NurseFirstName + ' ' + appointment.NurseLastName) : 'Your nurse' %>
+        <% } %>
+      </strong>
+      <span class="ctx-sub">&middot; <%= new Date(appointment.Time).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }) %></span>
     </div>
-  </section>
 
+    <!-- Top-center: connection status + cam/mic readiness (glass toast) -->
+    <div id="call-status" class="immersive-overlay overlay-top-center immersive-toast">
+      &#128247; Connecting&hellip; your browser will ask for camera &amp; microphone access — please choose <strong>Allow</strong>.
+    </div>
+
+    <!-- Bottom-right: leave control -->
+    <div class="immersive-overlay overlay-bottom-right">
+      <a href="<%= returnUrl %>" class="immersive-leave" id="leaveBtn">&#10005; Leave &amp; Return</a>
+    </div>
+
+  </div>
 </main>
 
 <!-- Daily.co Prebuilt SDK: local (committed) first, CDN fallback if it fails to load -->
@@ -40,9 +48,15 @@
     var statusEl = document.getElementById('call-status');
     var container = document.getElementById('video-container');
 
+    // Update the floating status toast while preserving its glass overlay styling.
+    var STATUS_BASE = 'immersive-overlay overlay-top-center immersive-toast';
+    function setStatus(html, state) {
+      statusEl.className = STATUS_BASE + (state ? ' status-' + state : '');
+      statusEl.innerHTML = html;
+    }
+
     if (!window.DailyIframe) {
-      statusEl.className = 'alert alert-danger';
-      statusEl.textContent = 'Could not load the video library. Check your connection and refresh.';
+      setStatus('Could not load the video library. Check your connection and refresh.', 'error');
       return;
     }
 
@@ -53,12 +67,12 @@
 
     callFrame.join({ url: ROOM_URL, token: MEETING_TOKEN })
       .then(function () {
-        statusEl.className = 'alert alert-success';
-        statusEl.textContent = 'Connected. If your nurse has not admitted you yet, please wait in the lobby.';
+        setStatus('&#9989; Connected. If your nurse has not admitted you yet, please wait in the lobby.', 'ok');
+        // Fade the toast away shortly after a successful connect so it doesn't linger.
+        setTimeout(function () { statusEl.style.display = 'none'; }, 5000);
       })
       .catch(function (err) {
-        statusEl.className = 'alert alert-danger';
-        statusEl.textContent = 'Unable to join the consultation room. It may have expired. Please return and try again.';
+        setStatus('Unable to join the consultation room. It may have expired. Please return and try again.', 'error');
         console.error('[Daily] join failed:', err);
       });
 

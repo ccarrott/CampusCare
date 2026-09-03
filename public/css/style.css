@@ -158,36 +158,44 @@ img {
    SIDEBAR NAVIGATION
    ========================================================================== */
 
+/* Floating glass rail (Phase 30B) — detached from the edge, floats over the aurora */
 .sidebar {
   position: fixed;
-  top: 0;
-  left: 0;
+  top: var(--space-4);
+  left: var(--space-4);
   width: var(--sidebar-width);
-  height: 100vh;
-  background-color: var(--primary-navy);
+  height: calc(100vh - var(--space-4) * 2);
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+  backdrop-filter: blur(var(--glass-blur-strong));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-glass);
+  box-shadow: var(--glass-shadow);
   display: flex;
   flex-direction: column;
   z-index: 1000;
-  transition: width 0.3s ease, transform 0.3s ease;
+  transition: width 0.32s var(--ease-soft), transform 0.3s var(--ease-soft), box-shadow 0.3s ease;
   overflow-x: hidden;
   overflow-y: auto;
-  box-shadow: -10px 0 0 0 var(--primary-navy);
+}
+
+/* Specular top highlight on the rail */
+.sidebar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: var(--glass-highlight);
+  z-index: 0;
 }
 
 .sidebar:hover {
-  animation: sidebarBounce 0.4s ease forwards;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.16);
 }
 
 .sidebar.navigating {
   animation: none !important;
-}
-
-@keyframes sidebarBounce {
-  0%   { transform: translateX(0); }
-  25%  { transform: translateX(3px); }
-  50%  { transform: translateX(1px); }
-  75%  { transform: translateX(2px); }
-  100% { transform: translateX(2px); }
 }
 
 .sidebar.collapsed {
@@ -200,6 +208,7 @@ img {
   flex-direction: column;
   align-items: center;
   position: relative;
+  z-index: 1;
 }
 
 .sidebar-logo {
@@ -225,8 +234,8 @@ img {
 
 .sidebar-brand {
   font-size: 1.1rem;
-  font-weight: 600;
-  color: #ffffff;
+  font-weight: 700;
+  color: var(--text-dark);
   white-space: nowrap;
   overflow: hidden;
   transition: opacity 0.2s;
@@ -257,24 +266,34 @@ img {
   gap: 4px;
   overflow-x: hidden;
   overflow-y: auto;
+  position: relative;
+  z-index: 1;
 }
 
 .sidebar-link {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 13px 16px;
   border-radius: var(--radius-md);
-  color: #cbd5e1;
+  color: var(--text-dark);
   text-decoration: none;
-  transition: background-color 0.2s, color 0.2s;
+  transition: background-color var(--motion-fast) var(--ease-soft), color var(--motion-fast) var(--ease-soft), transform var(--motion-fast) var(--ease-soft);
   white-space: nowrap;
 }
 
 .sidebar-link:hover {
-  background-color: #334155;
-  color: #ffffff;
+  background-color: rgba(19, 46, 81, 0.08);
+  color: var(--text-dark);
   text-decoration: none;
+}
+
+/* Active link — brand accent */
+.sidebar-link.active {
+  background: rgba(255, 204, 0, 0.16);
+  color: var(--text-dark);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 0 var(--brand-yellow);
 }
 
 .sidebar-icon {
@@ -313,44 +332,20 @@ img {
 /* ---------- Sidebar (no burger — toggle via click on empty space) ---------- */
 
 /* ==========================================================================
-   TOP BAR
+   FLOATING CONTROLS (Phase 30B) — topbar removed; identity + theme float top-right
    ========================================================================== */
 
-.topbar {
+.floating-controls {
   position: fixed;
-  top: 0;
-  left: var(--sidebar-width);
-  right: 0;
-  height: var(--topbar-height);
-  background: var(--surface-white);
-  border-bottom: 1px solid var(--border-color);
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 1001;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  z-index: 999;
-  transition: left 0.3s ease;
+  gap: var(--space-2);
 }
 
-.sidebar.collapsed ~ #topbar {
-  left: var(--sidebar-collapsed);
-}
-
-.topbar-welcome {
-  font-size: 0.9rem;
-  color: var(--text-dark);
-}
-
-.topbar-role {
-  font-size: 0.8rem;
-  background: var(--accent-cyan);
-  color: var(--primary-navy);
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-weight: 600;
-}
-
-/* ---------- Top-bar Identity Chip (Phase 29A) ---------- */
+/* ---------- Identity Chip → floating glass control ---------- */
 .topbar-identity {
   position: relative;
 }
@@ -359,20 +354,27 @@ img {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: transparent;
-  border: 1px solid var(--border-color);
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+  backdrop-filter: blur(var(--glass-blur-strong));
+  border: 1px solid var(--glass-border);
   border-radius: 999px;
-  padding: 4px 10px 4px 4px;
+  padding: 5px 12px 5px 5px;
   cursor: pointer;
   color: var(--text-dark);
   font-size: 0.85rem;
   font-weight: 600;
-  transition: background-color 0.15s, border-color 0.15s;
+  box-shadow: var(--glass-shadow);
+  transition: box-shadow var(--motion-fast) var(--ease-soft), transform var(--motion-fast) var(--ease-soft);
 }
 
 .identity-btn:hover {
-  background: var(--bg-canvas);
-  border-color: var(--accent-cyan);
+  box-shadow: 0 10px 32px rgba(15, 23, 42, 0.16);
+  transform: translateY(-1px);
+}
+
+.identity-btn:active {
+  transform: translateY(0) scale(0.98);
 }
 
 .identity-avatar {
@@ -408,10 +410,12 @@ img {
   top: calc(100% + 8px);
   right: 0;
   min-width: 200px;
-  background: var(--surface-white);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+  backdrop-filter: blur(var(--glass-blur-strong));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-glass);
+  box-shadow: var(--glass-shadow);
   padding: 6px;
   display: none;
   z-index: 1200;
@@ -472,7 +476,6 @@ img {
 }
 
 [data-theme="dark"] .identity-btn { color: #e2e8f0; }
-[data-theme="dark"] .identity-btn:hover { background: #2d3748; }
 [data-theme="dark"] .identity-menu-item { color: #e2e8f0; }
 [data-theme="dark"] .identity-menu-item:hover,
 [data-theme="dark"] .identity-menu-item:focus-visible { background: #2d3748; }
@@ -482,16 +485,18 @@ img {
    ========================================================================== */
 
 .main-content {
-  margin-left: var(--sidebar-width);
-  margin-top: var(--topbar-height);
-  min-height: calc(100vh - var(--topbar-height));
+  /* Clear the floating rail: left gap + rail width + right gap */
+  margin-left: calc(var(--space-4) + var(--sidebar-width) + var(--space-4));
+  /* Top space so content clears the floating controls cluster */
+  padding-top: calc(var(--space-4) + 44px);
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  transition: margin-left 0.3s ease;
+  transition: margin-left 0.32s var(--ease-soft);
 }
 
-.sidebar.collapsed ~ #topbar ~ .main-content {
-  margin-left: var(--sidebar-collapsed);
+.sidebar.collapsed ~ .main-content {
+  margin-left: calc(var(--space-4) + var(--sidebar-collapsed) + var(--space-4));
 }
 
 /* ---------- Layout Containers ---------- */
@@ -522,6 +527,310 @@ img {
 .page-header .subtitle {
   color: var(--text-muted);
   font-size: 0.95rem;
+}
+
+/* ==========================================================================
+   DASHBOARD ARCHETYPE (Phase 30C) — hero zone + glass card grid
+   ========================================================================== */
+
+/* Hero band: greeting / key metric, floating glass */
+.dash-hero {
+  margin-bottom: var(--space-5);
+  padding: var(--space-6) var(--space-6);
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+  backdrop-filter: blur(var(--glass-blur-strong));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-glass);
+  box-shadow: var(--glass-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.dash-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: var(--glass-highlight);
+}
+
+.dash-hero > * { position: relative; z-index: 1; }
+
+.dash-hero h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text-dark);
+  margin-bottom: 6px;
+  letter-spacing: -0.01em;
+}
+
+.dash-hero .subtitle {
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+/* Optional shimmer heading — subtle brand sweep, reduced-motion safe */
+.shimmer-text {
+  background: linear-gradient(100deg,
+    var(--text-dark) 0%, var(--text-dark) 40%,
+    var(--accent-text-yellow) 50%,
+    var(--text-dark) 60%, var(--text-dark) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmerSweep 6s linear infinite;
+}
+[data-theme="dark"] .shimmer-text {
+  background: linear-gradient(100deg,
+    #f1f5f9 0%, #f1f5f9 40%,
+    var(--brand-yellow) 50%,
+    #f1f5f9 60%, #f1f5f9 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+@keyframes shimmerSweep {
+  to { background-position: -200% center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shimmer-text { animation: none; }
+}
+
+/* Glass stat tiles (admin reports metrics, nurse rating) */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: var(--space-5);
+}
+
+.stat-tile {
+  padding: var(--space-5) var(--space-4);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-glass);
+  box-shadow: var(--elev-raised);
+  text-align: center;
+  transition: transform var(--motion-fast) var(--ease-soft), box-shadow var(--motion-fast) var(--ease-soft);
+}
+
+.stat-tile:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--glass-shadow);
+}
+
+.stat-tile .stat-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+
+.stat-tile .stat-value {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--text-dark);
+  line-height: 1.1;
+}
+
+.stat-tile .stat-value .stat-unit {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .stat-tile .stat-value { color: var(--accent-cyan); }
+
+/* Nurse dashboard hero: greeting + rating side by side */
+.nurse-hero-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+}
+
+.nurse-hero-rating {
+  text-align: right;
+  min-width: 160px;
+}
+
+.nurse-hero-rating .stat-value {
+  font-weight: 800;
+  color: var(--text-dark);
+}
+[data-theme="dark"] .nurse-hero-rating .stat-value { color: var(--accent-cyan); }
+
+@media (max-width: 640px) {
+  .nurse-hero-rating { text-align: left; }
+}
+
+/* ==========================================================================
+   FOCUSED-FLOW ARCHETYPE (Phase 30D) — centered single-column glass sheet
+   ========================================================================== */
+.layout-focused {
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+}
+
+/* Generous vertical rhythm between stacked glass sections */
+.layout-focused > .content-card,
+.layout-focused > section.content-card,
+.layout-focused > form,
+.layout-focused > .booking-step {
+  margin-bottom: var(--space-5);
+}
+
+/* Focused page header sits centered and airy */
+.layout-focused .page-header {
+  text-align: center;
+  margin-bottom: var(--space-6);
+}
+
+/* Form fields stay near-solid inside glass for contrast + a brand focus ring */
+.layout-focused .form-control:focus {
+  border-color: var(--brand-yellow);
+  box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.25);
+}
+
+/* ==========================================================================
+   FEED & SPLIT ARCHETYPES (Phase 30E)
+   ========================================================================== */
+/* Feed: a vertical stack of glass sections, comfortably centered */
+.layout-feed {
+  max-width: 920px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+}
+
+.layout-feed > .content-card { margin-bottom: var(--space-5); }
+
+/* Split: sticky master list + detail pane on desktop, stacked on mobile */
+.layout-split {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) 1fr;
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.layout-split > .split-master {
+  position: sticky;
+  top: calc(var(--space-4) + 56px);
+}
+
+@media (max-width: 768px) {
+  .layout-split {
+    grid-template-columns: 1fr;
+  }
+  .layout-split > .split-master { position: static; }
+}
+
+/* ==========================================================================
+   IMMERSIVE ARCHETYPE (Phase 30F) — edge-to-edge, chrome floats over content
+   ========================================================================== */
+/* The immersive surface fills the viewport to the right of the floating rail.
+   No card, no page padding — the content (video/map) IS the page. */
+.layout-immersive {
+  position: fixed;
+  top: var(--space-4);
+  right: var(--space-4);
+  bottom: var(--space-4);
+  left: calc(var(--space-4) + var(--sidebar-width) + var(--space-4));
+  padding: 0;
+  margin: 0;
+  border-radius: var(--radius-glass);
+  overflow: hidden;
+  transition: left 0.32s var(--ease-soft);
+}
+
+/* When the rail is collapsed, the immersive surface widens to match */
+.sidebar.collapsed ~ .main-content .layout-immersive {
+  left: calc(var(--space-4) + var(--sidebar-collapsed) + var(--space-4));
+}
+
+/* The media surface (iframe / map) fills the whole immersive area */
+.immersive-stage {
+  position: absolute;
+  inset: 0;
+  background: var(--primary-navy);
+}
+.immersive-stage iframe { width: 100%; height: 100%; border: 0; display: block; }
+
+/* Floating glass overlays that sit on top of the media */
+.immersive-overlay {
+  position: absolute;
+  z-index: 5;
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+  backdrop-filter: blur(var(--glass-blur-strong));
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  box-shadow: var(--glass-shadow);
+  padding: 8px 16px;
+  color: var(--text-dark);
+  font-size: 0.88rem;
+}
+
+.immersive-overlay.overlay-top-left { top: var(--space-4); left: var(--space-4); }
+.immersive-overlay.overlay-bottom-right { bottom: var(--space-4); right: var(--space-4); padding: 0; }
+.immersive-overlay.overlay-top-center {
+  top: var(--space-4); left: 50%; transform: translateX(-50%);
+  max-width: 80%; text-align: center;
+}
+
+/* Context pill content */
+.immersive-context strong { color: var(--text-dark); }
+.immersive-context .ctx-sub { color: var(--text-muted); font-size: 0.8rem; }
+
+/* Leave control — a solid, obvious button as a floating glass control */
+.immersive-leave {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: var(--status-danger);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform var(--motion-fast) var(--ease-soft), box-shadow var(--motion-fast) var(--ease-soft);
+}
+.immersive-leave:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(239,68,68,0.4); color:#fff; text-decoration:none; }
+.immersive-leave:active { transform: scale(0.97); }
+
+/* Pre-join readiness toast (cam/mic note) */
+.immersive-toast {
+  animation: immToastIn 0.4s var(--ease-soft);
+}
+.immersive-toast.status-ok { border-color: rgba(16,185,129,0.5); }
+.immersive-toast.status-error {
+  border-color: rgba(239,68,68,0.6);
+  color: var(--status-danger);
+  font-weight: 600;
+}
+@keyframes immToastIn { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@media (prefers-reduced-motion: reduce) { .immersive-toast { animation: none; } }
+
+/* Hide the footer on immersive pages */
+body.immersive-page .site-footer { display: none; }
+
+/* Mobile: immersive fills the screen; rail is a drawer so no left offset */
+@media (max-width: 768px) {
+  .layout-immersive {
+    top: 0; right: 0; bottom: 0; left: 0;
+    border-radius: 0;
+  }
+  .immersive-overlay.overlay-top-left { top: 64px; left: 10px; }
+  .immersive-overlay.overlay-bottom-right { bottom: 14px; right: 14px; }
 }
 
 /* ---------- Glass utility (Phase 30) ---------- */
@@ -756,7 +1065,7 @@ textarea.form-control {
 /* ---------- Dashboard Grid ---------- */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 24px;
 }
 
@@ -771,6 +1080,14 @@ textarea.form-control {
 .dashboard-grid .content-card .card-icon {
   font-size: 2rem;
   margin-bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(255, 204, 0, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(255, 204, 0, 0.25);
 }
 
 .dashboard-grid .content-card h2 {
@@ -905,12 +1222,17 @@ textarea.form-control {
 .mb-2 { margin-bottom: 16px; }
 .mb-3 { margin-bottom: 24px; }
 
-/* ---------- Footer ---------- */
+/* ---------- Footer — minimal glass strip (Phase 30B) ---------- */
 .site-footer {
-  background-color: var(--primary-navy);
-  color: #94a3b8;
+  margin: var(--space-5) var(--space-4) var(--space-4);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-glass);
+  color: var(--text-muted);
   text-align: center;
-  padding: 16px 20px;
+  padding: 14px 20px;
   font-size: 0.85rem;
 }
 
@@ -924,26 +1246,8 @@ textarea.form-control {
    ========================================================================== */
 
 @media (max-width: 768px) {
-  .sidebar {
-    width: var(--sidebar-collapsed);
-  }
-
-  .sidebar .sidebar-label {
-    opacity: 0;
-    width: 0;
-  }
-
-  .sidebar .sidebar-brand {
-    opacity: 0;
-    height: 0;
-  }
-
-  .topbar {
-    left: var(--sidebar-collapsed);
-  }
-
   .main-content {
-    margin-left: var(--sidebar-collapsed);
+    margin-left: 0;
   }
 
   .form-row {
@@ -1011,17 +1315,32 @@ textarea.form-control {
 }
 
 .auth-card {
-  background: var(--surface-white);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+  backdrop-filter: blur(var(--glass-blur-strong));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-glass);
+  box-shadow: var(--glass-shadow);
   padding: 32px;
   width: 100%;
+  position: relative;
 }
+
+.auth-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: var(--glass-highlight);
+}
+
+.auth-card > * { position: relative; z-index: 1; }
 
 .auth-title {
   font-size: 1.4rem;
   font-weight: 700;
-  color: var(--primary-navy);
+  color: var(--text-dark);
   margin-bottom: 20px;
   text-align: center;
 }
@@ -1313,13 +1632,13 @@ textarea.form-control {
   --bg-base: #0b1120;
 }
 
-[data-theme="dark"] .sidebar {
-  background-color: var(--brand-blue);
+/* Dark glass rail — link contrast tuned for the darker translucent surface */
+[data-theme="dark"] .sidebar-link:hover {
+  background-color: rgba(255, 255, 255, 0.06);
 }
 
-[data-theme="dark"] .topbar {
-  background: #2d3748;
-  border-bottom-color: #475569;
+[data-theme="dark"] .sidebar-link.active {
+  background: rgba(255, 204, 0, 0.14);
 }
 
 [data-theme="dark"] .content-card--solid {
@@ -1369,8 +1688,9 @@ textarea.form-control {
   background: transparent; /* Phase 30A: breathing aurora shows through */
 }
 
-[data-theme="dark"] .auth-card {
-  background: #2d3748;
+.auth-card .form-control:focus {
+  border-color: var(--brand-yellow);
+  box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.25);
 }
 
 [data-theme="dark"] .auth-brand {
@@ -1386,28 +1706,32 @@ textarea.form-control {
   color: #94a3b8;
 }
 
-/* Dark Mode Toggle Button */
+/* Dark Mode Toggle Button — glass control in the floating top-right cluster (Phase 30B) */
 .theme-toggle {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  border: 1px solid var(--border-color);
-  background: var(--surface-white);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+  backdrop-filter: blur(var(--glass-blur-strong));
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
-  box-shadow: var(--shadow-md);
-  z-index: 9999;
-  transition: background-color 0.2s;
+  font-size: 1.15rem;
+  box-shadow: var(--glass-shadow);
+  transition: box-shadow var(--motion-fast) var(--ease-soft), transform var(--motion-fast) var(--ease-soft);
+  flex-shrink: 0;
 }
 
 .theme-toggle:hover {
-  background: var(--bg-canvas);
+  box-shadow: 0 10px 32px rgba(15, 23, 42, 0.16);
+  transform: translateY(-1px);
+}
+
+.theme-toggle:active {
+  transform: translateY(0) scale(0.95);
 }
 
 /* ---------- Dark Mode: Extended Text Readability ---------- */
@@ -1431,8 +1755,6 @@ textarea.form-control {
 [data-theme="dark"] .card-icon { opacity: 0.9; }
 [data-theme="dark"] select.form-control { color: #f1f5f9; }
 [data-theme="dark"] .metric-value { color: var(--accent-cyan); }
-[data-theme="dark"] .site-footer { background-color: #0f172a; }
-[data-theme="dark"] .topbar-welcome { color: #e2e8f0; }
 [data-theme="dark"] .severity-badge { border: 1px solid rgba(255,255,255,0.1); }
 
 /* Anchored sections scroll offset (topbar height) */
@@ -1499,10 +1821,11 @@ textarea.form-control {
 
 /* ---------- Print Stylesheet ---------- */
 @media print {
-  .sidebar, .topbar, .theme-toggle, .session-toast,
+  .sidebar, .floating-controls, .theme-toggle, .session-toast,
   .btn, .sidebar-toggle, nav, footer, .profile-actions { display: none !important; }
-  .main-content { margin-left: 0 !important; margin-top: 0 !important; }
+  .main-content { margin-left: 0 !important; margin-top: 0 !important; padding-top: 0 !important; }
   .content-card { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
+  #app-aurora { display: none !important; }
   body { background: white; color: black; font-size: 12pt; }
   .page-header h1 { color: black; }
 }
@@ -1511,7 +1834,12 @@ textarea.form-control {
    MOBILE RESPONSIVE: Sidebar Drawer
    ========================================================================== */
 @media (max-width: 768px) {
+  /* Rail becomes a full-height edge drawer on mobile (no floating margins) */
   .sidebar {
+    top: 0;
+    left: 0;
+    height: 100vh;
+    border-radius: 0;
     transform: translateX(-100%);
     width: var(--sidebar-width);
     z-index: 10001;
@@ -1524,13 +1852,10 @@ textarea.form-control {
   .sidebar .sidebar-label { opacity: 1; width: auto; }
   .sidebar .sidebar-brand { opacity: 1; height: auto; }
 
-  .topbar {
-    left: 0;
-    padding-left: 60px;
-  }
-
+  /* Floating controls sit top-right; the menu button is top-left, so no collision */
   .main-content {
     margin-left: 0;
+    padding-top: calc(var(--space-4) + 44px);
   }
 
   .mobile-menu-btn {
@@ -1568,6 +1893,10 @@ textarea.form-control {
   .mobile-backdrop.visible {
     display: block;
   }
+
+  /* Compact identity chip on mobile — avatar only, name hidden */
+  .floating-controls .identity-name { display: none; }
+  .floating-controls { top: 12px; right: 12px; }
 }
 
 @media (min-width: 769px) {
@@ -1751,16 +2080,16 @@ textarea.form-control {
 
 /* ---------- Dashboard Card Hover Lift ---------- */
 .dashboard-grid .content-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform var(--motion-base) var(--ease-soft), box-shadow var(--motion-base) var(--ease-soft);
 }
 
 .dashboard-grid .content-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  transform: translateY(-4px);
+  box-shadow: var(--glass-shadow);
 }
 
 [data-theme="dark"] .dashboard-grid .content-card:hover {
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
 }
 
 /* ---------- Star Rating Pulse on Click ---------- */
@@ -2291,18 +2620,20 @@ textarea.form-control {
 }
 
 .staff-pill {
-  border: 1px solid var(--border-color);
-  background: var(--surface-white);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
   color: var(--text-dark);
   padding: 6px 16px;
   border-radius: 999px;
   cursor: pointer;
   font-size: 0.85rem;
   font-weight: 500;
-  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+  transition: background-color var(--motion-fast) var(--ease-soft), color var(--motion-fast) var(--ease-soft), border-color var(--motion-fast) var(--ease-soft);
 }
 
-.staff-pill:hover { border-color: var(--accent-cyan); }
+.staff-pill:hover { border-color: var(--brand-yellow); }
 
 .staff-pill.active {
   background: var(--brand-yellow);
@@ -2317,19 +2648,21 @@ textarea.form-control {
 }
 
 .staff-card {
-  background: var(--surface-white);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-glass);
+  box-shadow: var(--elev-raised);
   padding: 20px;
   display: flex;
   flex-direction: column;
-  transition: box-shadow 0.2s, transform 0.2s;
+  transition: box-shadow var(--motion-base) var(--ease-soft), transform var(--motion-base) var(--ease-soft);
 }
 
 .staff-card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  box-shadow: var(--glass-shadow);
+  transform: translateY(-4px);
 }
 
 .staff-card-head {
@@ -2350,7 +2683,20 @@ textarea.form-control {
   font-weight: 700;
   font-size: 1.4rem;
   flex-shrink: 0;
+  overflow: hidden;
 }
+
+/* Real photo avatar (Phase 30E) — object-fit cover fills the circle */
+.staff-photo {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid var(--glass-border);
+}
+
+.staff-photo-lg { width: 88px; height: 88px; }
 
 .staff-avatar-lg { width: 72px; height: 72px; font-size: 2rem; }
 
@@ -2406,8 +2752,7 @@ textarea.form-control {
 }
 .staff-review-row:last-child { border-bottom: none; }
 
-[data-theme="dark"] .staff-card { background: #2d3748; border-color: #475569; }
-[data-theme="dark"] .staff-pill { background: #2d3748; color: #e2e8f0; border-color: #475569; }
+[data-theme="dark"] .staff-pill { color: #e2e8f0; }
 [data-theme="dark"] .staff-pill.active { background: var(--brand-yellow); color: var(--primary-navy); }
 
 /* ---------- Symptom Tier Dots (Phase 29B) — CSS circles, guaranteed equal size ---------- */

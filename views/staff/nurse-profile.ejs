@@ -1,14 +1,18 @@
 <%- include('../partials/header', { title: nurse.firstName + ' ' + nurse.lastName }) %>
 <%- include('../partials/navbar') %>
 
-<main class="container page-wrapper">
+<main class="container page-wrapper layout-feed">
   <%- include('../partials/alerts') %>
 
   <a href="/staff" class="text-muted" style="font-size:0.85rem;">&larr; Back to Meet Our Staff</a>
 
+  <% var _photo = '/images/nurses/' + ((nurse.firstName || '') + '.' + (nurse.lastName || '')).toLowerCase() + '.PNG'; %>
+  <% var _initial = (nurse.firstName || '?').charAt(0).toUpperCase(); %>
+
   <!-- Profile header -->
-  <section class="content-card staff-profile-header">
-    <div class="staff-avatar staff-avatar-lg"><%= (nurse.firstName || '?').charAt(0).toUpperCase() %></div>
+  <section class="content-card staff-profile-header reveal">
+    <img src="<%= _photo %>" alt="<%= nurse.firstName %> <%= nurse.lastName %>" class="staff-photo staff-photo-lg"
+      onerror="this.onerror=null; var f=document.createElement('div'); f.className='staff-avatar staff-avatar-lg'; f.textContent='<%= _initial %>'; this.replaceWith(f);">
     <div style="flex:1;">
       <h1 style="margin:0;"><%= nurse.firstName %> <%= nurse.lastName %></h1>
       <% if (nurse.campus) { %><span class="staff-campus-badge"><%= nurse.campus %></span><% } %>

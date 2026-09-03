@@ -1,7 +1,7 @@
 <%- include('../partials/header', { title: 'My Appointments' }) %>
 <%- include('../partials/navbar') %>
 
-<main class="container page-wrapper">
+<main class="container page-wrapper layout-feed">
   <%- include('../partials/alerts') %>
 
   <header class="page-header">
@@ -13,7 +13,7 @@
 
     <%- include('../partials/consult-progress-section', { appointments: appointments }) %>
 
-    <section class="content-card">
+    <section class="content-card reveal">
       <h2>Appointment History</h2>
       <table class="data-table">
         <thead>

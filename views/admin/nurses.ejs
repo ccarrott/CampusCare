@@ -13,7 +13,7 @@
     <p class="subtitle">View, add, edit, or remove nurse staff accounts.</p>
   </header>
 
-  <section class="content-card">
+  <section class="content-card reveal">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
       <form action="/management/admin/nurses" method="GET" style="display: flex; gap: 8px;">
         <input type="text" name="search" class="form-control" placeholder="Search by name, staff no, email, campus..." value="<%= typeof search !== 'undefined' ? search : '' %>" style="width: 280px;">

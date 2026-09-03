@@ -113,38 +113,35 @@
   </nav>
 </aside>
 
-<!-- Top Bar -->
-<header class="topbar" id="topbar">
-  <div class="topbar-left">
-  </div>
-  <div class="topbar-right">
-    <% if (typeof user !== 'undefined' && user) { %>
-      <%
-        // "F. Lastname" for students/nurses; admins have no first/last → use their name or "Admin".
-        var hasName = user.lastName && user.lastName.trim();
-        var chipLabel = hasName
-          ? ((user.firstName ? user.firstName.charAt(0).toUpperCase() + '. ' : '') + user.lastName)
-          : (user.name && user.name.trim() ? user.name : (user.role.charAt(0).toUpperCase() + user.role.slice(1)));
-        var chipInitial = (hasName ? user.firstName || user.lastName : (user.name || user.role)).charAt(0).toUpperCase();
-      %>
-      <div class="topbar-identity" id="identityChip">
-        <button type="button" class="identity-btn" aria-haspopup="true" aria-expanded="false" onclick="toggleIdentityMenu(this)">
-          <span class="identity-avatar"><%= chipInitial %></span>
-          <span class="identity-name"><%= chipLabel %></span>
-          <span class="identity-caret">&#9662;</span>
-        </button>
-        <div class="identity-menu" role="menu">
-          <a href="/profile" class="identity-menu-item" role="menuitem">
-            <span>&#128100;</span> Profile
-          </a>
-          <a href="/auth/logout" class="identity-menu-item identity-menu-danger" role="menuitem">
-            <span>&#128682;</span> Logout
-          </a>
-        </div>
+<!-- Floating glass controls (Phase 30B) — identity chip + theme toggle, top-right -->
+<div class="floating-controls">
+  <% if (typeof user !== 'undefined' && user) { %>
+    <%
+      // "F. Lastname" for students/nurses; admins have no first/last → use their name or "Admin".
+      var hasName = user.lastName && user.lastName.trim();
+      var chipLabel = hasName
+        ? ((user.firstName ? user.firstName.charAt(0).toUpperCase() + '. ' : '') + user.lastName)
+        : (user.name && user.name.trim() ? user.name : (user.role.charAt(0).toUpperCase() + user.role.slice(1)));
+      var chipInitial = (hasName ? user.firstName || user.lastName : (user.name || user.role)).charAt(0).toUpperCase();
+    %>
+    <div class="topbar-identity" id="identityChip">
+      <button type="button" class="identity-btn" aria-haspopup="true" aria-expanded="false" onclick="toggleIdentityMenu(this)">
+        <span class="identity-avatar"><%= chipInitial %></span>
+        <span class="identity-name"><%= chipLabel %></span>
+        <span class="identity-caret">&#9662;</span>
+      </button>
+      <div class="identity-menu" role="menu">
+        <a href="/profile" class="identity-menu-item" role="menuitem">
+          <span>&#128100;</span> Profile
+        </a>
+        <a href="/auth/logout" class="identity-menu-item identity-menu-danger" role="menuitem">
+          <span>&#128682;</span> Logout
+        </a>
       </div>
-    <% } %>
-  </div>
-</header>
+    </div>
+  <% } %>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode"></button>
+</div>
 
 <script>
 function toggleIdentityMenu(btn) {
