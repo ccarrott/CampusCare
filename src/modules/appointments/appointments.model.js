@@ -116,6 +116,20 @@ export async function getAppointmentsForNurseWithStatus(staffNumber) {
 }
 
 /**
+ * Phase 29B: has the student created a booking within the last `days` days?
+ * Used to nudge repeat bookers toward continued care.
+ */
+export async function hasRecentBooking(studentNumber, days = 7) {
+  const rows = await query(
+    `SELECT AppointmentID FROM Appointment
+     WHERE StudentNumber = ? AND Status != 'Cancelled'
+       AND CreatedAt >= DATE_SUB(NOW(), INTERVAL ? DAY) LIMIT 1`,
+    [studentNumber, days]
+  );
+  return rows.length > 0;
+}
+
+/**
  * Gets booked time slots for a nurse on a specific date.
  * Used by the booking grid to grey out taken slots.
  */

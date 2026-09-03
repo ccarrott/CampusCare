@@ -10,67 +10,61 @@
   </header>
 
   <% if (staffData.length > 0) { %>
-    <div class="dashboard-grid">
+
+    <% if (campuses.length > 1) { %>
+      <div class="staff-filter" id="campusFilter">
+        <button type="button" class="staff-pill active" data-campus="all">All</button>
+        <% campuses.forEach(function(c) { %>
+          <button type="button" class="staff-pill" data-campus="<%= c %>"><%= c %></button>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <div class="staff-grid" id="staffGrid">
       <% staffData.forEach(function(nurse) { %>
-        <section class="content-card" style="min-height: auto;">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
-            <div>
-              <h2 style="border-bottom:none; margin-bottom:4px; padding-bottom:0;"><%= nurse.firstName %> <%= nurse.lastName %></h2>
-              <p class="text-muted" style="margin:0; font-size:0.85rem;">
-                <% if (nurse.yearsExperience > 0) { %>
-                  <%= nurse.yearsExperience %> years as a registered nurse
-                <% } else { %>
-                  Campus Nurse
-                <% } %>
+        <section class="staff-card" data-campus="<%= nurse.campus || '' %>">
+          <div class="staff-card-head">
+            <div class="staff-avatar"><%= (nurse.firstName || '?').charAt(0).toUpperCase() %></div>
+            <div class="staff-head-info">
+              <h2 class="staff-name"><%= nurse.firstName %> <%= nurse.lastName %></h2>
+              <% if (nurse.campus) { %><span class="staff-campus-badge"><%= nurse.campus %></span><% } %>
+              <p class="staff-exp text-muted">
+                <%= nurse.yearsExperience > 0 ? nurse.yearsExperience + ' years experience' : 'Campus Nurse' %>
               </p>
-            </div>
-            <div style="text-align:right;">
-              <% if (nurse.averageRating) { %>
-                <div class="star-rating-static">
-                  <% for (let i = 1; i <= 5; i++) { %>
-                    <% if (i <= Math.round(nurse.averageRating)) { %><span>&#9733;</span><% } else { %><span class="star-empty">&#9734;</span><% } %>
-                  <% } %>
-                </div>
-                <span class="text-muted" style="font-size:0.8rem;"><%= nurse.averageRating %> from <%= nurse.ratingCount %> reviews</span>
-              <% } else { %>
-                <span class="text-muted" style="font-size:0.8rem;">No ratings yet</span>
-              <% } %>
             </div>
           </div>
 
-          <% if (nurse.bio) { %>
-            <p style="margin:12px 0 0; font-size:0.9rem;"><%= nurse.bio %></p>
-          <% } else { %>
-            <p class="text-muted" style="margin:12px 0 0; font-size:0.9rem; font-style:italic;">No bio available yet.</p>
-          <% } %>
+          <div class="staff-rating">
+            <span class="star-rating-static">
+              <% for (let i = 1; i <= 5; i++) { %><% if (nurse.averageRating && i <= Math.round(nurse.averageRating)) { %><span>&#9733;</span><% } else { %><span class="star-empty">&#9734;</span><% } %><% } %>
+            </span>
+            <span class="text-muted" style="font-size:0.8rem;">
+              <%= nurse.averageRating ? nurse.averageRating + ' (' + nurse.ratingCount + ' review' + (nurse.ratingCount !== 1 ? 's' : '') + ')' : 'No ratings yet' %>
+            </span>
+          </div>
+
+          <p class="staff-bio"><%= nurse.bio ? nurse.bio : 'No bio available yet.' %></p>
 
           <% if (nurse.reviews.length > 0) { %>
-            <div style="margin-top:16px; max-height:240px; overflow-y:auto; border-top:1px solid var(--border-color); padding-top:12px;">
+            <div class="staff-reviews-preview">
               <% nurse.reviews.forEach(function(review) { %>
-                <div style="padding:8px 0; border-bottom:1px solid var(--border-color);">
-                  <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <strong style="font-size:0.85rem;"><%= review.patient %></strong>
-                    <span class="star-rating-static" style="font-size:0.9rem;">
-                      <% for (let i = 1; i <= 5; i++) { %>
-                        <% if (i <= review.score) { %><span>&#9733;</span><% } else { %><span class="star-empty">&#9734;</span><% } %>
-                      <% } %>
-                    </span>
-                  </div>
-                  <% if (review.comment) { %>
-                    <p class="text-muted" style="margin:4px 0 0; font-size:0.85rem;">"<%= review.comment %>"</p>
-                  <% } %>
-                  <% if (review.date) { %>
-                    <span class="text-muted" style="font-size:0.7rem;"><%= new Date(review.date).toLocaleDateString('en-ZA', { dateStyle: 'medium' }) %></span>
-                  <% } %>
+                <div class="staff-review-snippet">
+                  <span class="star-rating-static" style="font-size:0.85rem;">
+                    <% for (let i = 1; i <= 5; i++) { %><% if (i <= review.score) { %><span>&#9733;</span><% } else { %><span class="star-empty">&#9734;</span><% } %><% } %>
+                  </span>
+                  <% if (review.comment) { %><span class="staff-review-text text-muted">"<%= review.comment %>"</span><% } %>
                 </div>
               <% }); %>
             </div>
-          <% } else { %>
-            <p class="text-muted" style="margin-top:12px; font-size:0.85rem;">No reviews yet — be the first after your consultation!</p>
           <% } %>
+
+          <a href="/staff/<%= nurse.staffNumber %>" class="btn btn-secondary btn-block staff-view-btn">View full profile &rarr;</a>
         </section>
       <% }); %>
     </div>
+
+    <p class="text-muted text-center" id="noStaffMatch" style="display:none; margin-top:20px;">No nurses on this campus.</p>
+
   <% } else { %>
     <section class="content-card">
       <div class="empty-state">
@@ -81,5 +75,28 @@
   <% } %>
 
 </main>
+
+<script>
+(function () {
+  var filter = document.getElementById('campusFilter');
+  if (!filter) return;
+  var cards = document.querySelectorAll('#staffGrid .staff-card');
+  var noMatch = document.getElementById('noStaffMatch');
+  filter.addEventListener('click', function (e) {
+    var btn = e.target.closest('.staff-pill');
+    if (!btn) return;
+    var campus = btn.dataset.campus;
+    filter.querySelectorAll('.staff-pill').forEach(function (b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    var shown = 0;
+    cards.forEach(function (card) {
+      var match = campus === 'all' || card.dataset.campus === campus;
+      card.style.display = match ? '' : 'none';
+      if (match) shown++;
+    });
+    if (noMatch) noMatch.style.display = shown === 0 ? 'block' : 'none';
+  });
+})();
+</script>
 
 <%- include('../partials/footer') %>

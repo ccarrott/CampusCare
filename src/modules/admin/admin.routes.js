@@ -15,8 +15,7 @@ router.get('/reports', requireRole(ROLES.ADMIN), AdminController.showAdminReport
 router.get('/students', requireRole(ROLES.ADMIN), AdminController.listStudents);
 router.get('/students/add', requireRole(ROLES.ADMIN), AdminController.showAddStudentForm);
 router.post('/students/add', requireRole(ROLES.ADMIN), AdminController.handleAddStudent);
-router.get('/students/:id/edit', requireRole(ROLES.ADMIN), AdminController.showEditStudentForm);
-router.post('/students/:id/update', requireRole(ROLES.ADMIN), AdminController.handleUpdateStudent);
+router.get('/students/:id/view', requireRole(ROLES.ADMIN), AdminController.showViewStudent);
 router.post('/students/:id/delete', requireRole(ROLES.ADMIN), AdminController.handleDeleteStudent);
 
 // Nurse CRUD

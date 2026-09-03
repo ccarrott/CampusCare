@@ -64,21 +64,39 @@ export async function getMedicationSymptomCoverage(medicationCode, symptomIds) {
 }
 
 /**
- * Creates a symptom log entry (multi-select).
+ * Creates a symptom log entry (multi-select). Phase 29B adds duration/trajectory/otherText.
  */
-export async function createSymptomLog(logId, studentNumber, severity, symptomIds) {
-  // Insert main log record
+export async function createSymptomLog(logId, studentNumber, severity, symptomIds, extra = {}) {
+  const { duration = null, trajectory = null, otherText = null } = extra;
   await query(
-    'INSERT INTO SymptomLog (LogID, StudentNumber, SymptomName, Severity, LogDate) VALUES (?, ?, ?, ?, NOW())',
-    [logId, studentNumber, symptomIds.join(','), severity]
+    `INSERT INTO SymptomLog (LogID, StudentNumber, SymptomName, Severity, Duration, Trajectory, OtherText, LogDate)
+     VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+    [logId, studentNumber, symptomIds.join(','), severity, duration, trajectory, otherText]
   );
-  // Insert individual symptom entries
   for (const symId of symptomIds) {
-    await query(
-      'INSERT INTO SymptomLogEntry (LogID, SymptomID) VALUES (?, ?)',
-      [logId, symId]
-    );
+    await query('INSERT INTO SymptomLogEntry (LogID, SymptomID) VALUES (?, ?)', [logId, symId]);
   }
+}
+
+/**
+ * Gets the student's most recent symptom check (within `days`) with its symptom IDs + severity.
+ * Used for recurrence escalation and the "same as last time" prefill.
+ */
+export async function getLastSymptomCheck(studentNumber, days = 7) {
+  const logs = await query(
+    `SELECT LogID, Severity, LogDate FROM SymptomLog
+     WHERE StudentNumber = ? AND LogDate >= DATE_SUB(NOW(), INTERVAL ? DAY)
+     ORDER BY LogDate DESC LIMIT 1`,
+    [studentNumber, days]
+  );
+  if (logs.length === 0) return null;
+  const entries = await query('SELECT SymptomID FROM SymptomLogEntry WHERE LogID = ?', [logs[0].LogID]);
+  return {
+    logId: logs[0].LogID,
+    severity: logs[0].Severity,
+    logDate: logs[0].LogDate,
+    symptomIds: entries.map(e => e.SymptomID)
+  };
 }
 
 /**

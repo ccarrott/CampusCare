@@ -14,20 +14,25 @@
   </header>
 
   <section class="content-card">
-    <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <form action="/management/admin/nurses" method="GET" style="display: flex; gap: 8px;">
+        <input type="text" name="search" class="form-control" placeholder="Search by name, staff no, email, campus..." value="<%= typeof search !== 'undefined' ? search : '' %>" style="width: 280px;">
+        <button type="submit" class="btn btn-secondary">Search</button>
+      </form>
       <a href="/management/admin/nurses/add" class="btn btn-primary">+ Add Nurse</a>
     </div>
 
     <% if (nurses.length > 0) { %>
-      <table class="data-table">
+      <table class="data-table sortable">
         <thead>
           <tr>
             <th>Staff No.</th>
             <th>Name</th>
             <th>Phone</th>
             <th>Email</th>
+            <th>Campus</th>
             <th>Clinic</th>
-            <th></th>
+            <th class="no-sort"></th>
           </tr>
         </thead>
         <tbody>
@@ -37,7 +42,8 @@
               <td><%= n.FirstName %> <%= n.LastName %></td>
               <td><%= n.PhoneNumber || '—' %></td>
               <td><%= n.Email || '—' %></td>
-              <td><%= n.ClinicID || '—' %></td>
+              <td><%= n.Campus || '—' %></td>
+              <td><%= n.ClinicName || '—' %></td>
               <td class="table-actions">
                 <button class="kebab-btn" aria-label="Actions menu" onclick="toggleKebab(this)">&#8942;</button>
                 <div class="kebab-menu">
@@ -53,7 +59,7 @@
         </tbody>
       </table>
     <% } else { %>
-      <p class="text-muted text-center">No nurses registered.</p>
+      <p class="text-muted text-center"><%= (typeof search !== 'undefined' && search) ? 'No nurses match your search.' : 'No nurses registered.' %></p>
     <% } %>
   </section>
 
@@ -71,5 +77,6 @@ document.addEventListener('click', function(e) {
   }
 });
 </script>
+<script src="/js/sortable-table.js"></script>
 
 <%- include('../partials/footer') %>

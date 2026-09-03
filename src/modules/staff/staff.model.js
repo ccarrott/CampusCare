@@ -8,11 +8,23 @@ import { query } from '../../config/database.js';
  */
 export async function getAllNursesWithProfiles() {
   const sql = `
-    SELECT StaffNumber, FirstName, LastName, Bio, YearsExperience
+    SELECT StaffNumber, FirstName, LastName, Bio, YearsExperience, Campus
     FROM Nurse
     ORDER BY LastName ASC
   `;
   return await query(sql);
+}
+
+/**
+ * Public-safe single nurse profile (NO phone/email/address). For /staff/:staffNumber.
+ */
+export async function getNursePublicProfile(staffNumber) {
+  const sql = `
+    SELECT StaffNumber, FirstName, LastName, Bio, YearsExperience, Campus
+    FROM Nurse WHERE StaffNumber = ?
+  `;
+  const rows = await query(sql, [staffNumber]);
+  return rows[0];
 }
 
 /**

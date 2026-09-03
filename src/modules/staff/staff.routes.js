@@ -8,5 +8,6 @@ import * as StaffController from './staff.controller.js';
 const router = Router();
 
 router.get('/', requireAuth, StaffController.showStaffPage);
+router.get('/:staffNumber', requireAuth, StaffController.showNurseProfile);
 
 export default router;

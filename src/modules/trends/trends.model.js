@@ -19,17 +19,6 @@ export async function getSymptomAggregation() {
 }
 
 /**
- * Queries facility distribution data.
- */
-export async function getFacilityDistribution() {
-  const sql = `
-    SELECT f.FacilityID, f.Type AS FacilityType, f.Address AS FacilityAddress, f.PhoneNumber
-    FROM MedicalFacility f ORDER BY f.Type ASC
-  `;
-  return await query(sql);
-}
-
-/**
  * Gets symptom log counts grouped by category for a given period (days).
  */
 export async function getSymptomsByTypeForPeriod(days) {

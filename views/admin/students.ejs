@@ -10,7 +10,7 @@
 
   <header class="page-header">
     <h1>Manage Students</h1>
-    <p class="subtitle">View, add, edit, or remove student accounts.</p>
+    <p class="subtitle">View, add, or remove student accounts.</p>
   </header>
 
   <section class="content-card">
@@ -23,13 +23,13 @@
     </div>
 
     <% if (students.length > 0) { %>
-      <table class="data-table">
+      <table class="data-table sortable">
         <thead>
           <tr>
-            <th>Student No.</th>
+            <th>Username</th>
             <th>Name</th>
             <th>Email</th>
-            <th></th>
+            <th class="no-sort"></th>
           </tr>
         </thead>
         <tbody>
@@ -41,7 +41,7 @@
               <td class="table-actions">
                 <button class="kebab-btn" aria-label="Actions menu" onclick="toggleKebab(this)">&#8942;</button>
                 <div class="kebab-menu">
-                  <a href="/management/admin/students/<%= s.StudentNumber %>/edit" class="kebab-item">Edit</a>
+                  <a href="/management/admin/students/<%= s.StudentNumber %>/view" class="kebab-item">View</a>
                   <form action="/management/admin/students/<%= s.StudentNumber %>/delete" method="POST" onsubmit="return confirm('Delete student <%= s.FirstName %> <%= s.LastName %>? This cannot be undone.');">
                     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                     <button type="submit" class="kebab-item kebab-danger">Delete</button>
@@ -71,5 +71,6 @@ document.addEventListener('click', function(e) {
   }
 });
 </script>
+<script src="/js/sortable-table.js"></script>
 
 <%- include('../partials/footer') %>

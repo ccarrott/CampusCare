@@ -1,0 +1,43 @@
+<%- include('../partials/header', { title: 'View Student' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="container page-wrapper">
+  <%- include('../partials/alerts') %>
+
+  <header class="page-header">
+    <h1>View Student</h1>
+    <p class="subtitle">Student account details (read-only).</p>
+  </header>
+
+  <section class="content-card" style="max-width: 600px;">
+    <ul class="profile-details">
+      <li>
+        <span class="detail-label">Student Number</span>
+        <span class="detail-value"><%= student.StudentNumber.replace(/^s/i, '') %></span>
+      </li>
+      <li>
+        <span class="detail-label">Username</span>
+        <span class="detail-value"><%= student.StudentNumber %></span>
+      </li>
+      <li>
+        <span class="detail-label">Name</span>
+        <span class="detail-value"><%= student.FirstName %> <%= student.LastName %></span>
+      </li>
+      <li>
+        <span class="detail-label">Email</span>
+        <span class="detail-value"><%= student.StudentNumber %>@mandela.ac.za</span>
+      </li>
+      <li>
+        <span class="detail-label">Medical History</span>
+        <span class="detail-value"><%= student.MedicalHistory && student.MedicalHistory.trim() ? student.MedicalHistory : '\u2014' %></span>
+      </li>
+    </ul>
+
+    <div class="profile-actions" style="margin-top: 20px;">
+      <a href="/management/admin/students" class="btn btn-secondary">Back to Students</a>
+    </div>
+  </section>
+
+</main>
+
+<%- include('../partials/footer') %>

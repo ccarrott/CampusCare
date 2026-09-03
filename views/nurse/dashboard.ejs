@@ -53,84 +53,55 @@
 
   <% if (appointments.length > 0) { %>
 
+    <%
+      // Split the schedule: Upcoming = active (Pending/Confirmed) & not in the past.
+      // Previous = Completed/Cancelled, or active-but-past (stale). Sorted sensibly.
+      var _now = Date.now();
+      var upcomingAppts = appointments.filter(function(a) {
+        var st = a.Status || 'Pending';
+        return (st === 'Pending' || st === 'Confirmed') && new Date(a.Time).getTime() >= (_now - 60 * 60 * 1000);
+      }).sort(function(a, b) { return new Date(a.Time) - new Date(b.Time); }); // soonest first
+      var previousAppts = appointments.filter(function(a) {
+        return upcomingAppts.indexOf(a) === -1;
+      }).sort(function(a, b) { return new Date(b.Time) - new Date(a.Time); }); // most recent first
+    %>
+
+    <!-- Upcoming -->
     <section class="content-card">
-      <h2>Your Schedule (<%= appointments.length %> appointments)</h2>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Patient</th>
-            <th>Type</th>
-            <th>Date & Time</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% appointments.forEach(function(apt) { %>
-            <% const status = apt.Status || 'Pending'; %>
-            <% const aptDate = new Date(apt.Time); %>
-            <% const isToday = aptDate.toDateString() === new Date().toDateString(); %>
-            <% const isUpcoming = (aptDate - Date.now() < 86400000) && (aptDate > Date.now()); %>
-            <tr class="<%= status === 'Cancelled' ? 'row-cancelled' : '' %> <%= isToday && status !== 'Cancelled' ? 'row-today' : '' %> <%= isUpcoming && status !== 'Cancelled' ? 'row-upcoming' : '' %>">
-              <td>
-                <%= apt.StudentFirstName %> <%= apt.StudentLastName %>
-                <a href="/management/nurse/patient/<%= apt.StudentNumber %>/history" style="font-size:0.7rem; margin-left:4px;" title="View patient symptom history">&#128196;</a>
-              </td>
-              <td><%= apt.AppointmentType %></td>
-              <td><%= new Date(apt.Time).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }) %></td>
-              <td><span class="status-badge status-<%= status.toLowerCase() %>"><%= status %></span></td>
-              <td>
-                <div class="action-btns">
+      <h2>Upcoming (<%= upcomingAppts.length %>)</h2>
+      <% if (upcomingAppts.length > 0) { %>
+        <table class="data-table">
+          <thead>
+            <tr><th>Patient</th><th>Type</th><th>Date & Time</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            <% upcomingAppts.forEach(function(apt) { %>
+              <%- include('../partials/nurse-appt-row', { apt: apt }) %>
+            <% }); %>
+          </tbody>
+        </table>
+      <% } else { %>
+        <p class="text-muted">No upcoming appointments.</p>
+      <% } %>
+    </section>
 
-                  <% if (status === 'Pending') { %>
-                    <form action="/management/nurse/appointment/status" method="POST" style="display:inline;">
-                      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                      <input type="hidden" name="appointmentId" value="<%= apt.AppointmentID %>">
-                      <input type="hidden" name="status" value="Confirmed">
-                      <button type="submit" class="action-btn action-btn-confirm">Confirm</button>
-                    </form>
-                    <form action="/management/nurse/appointment/status" method="POST" style="display:inline;" onsubmit="return confirm('Cancel this appointment?');">
-                      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                      <input type="hidden" name="appointmentId" value="<%= apt.AppointmentID %>">
-                      <input type="hidden" name="status" value="Cancelled">
-                      <button type="submit" class="action-btn action-btn-cancel">Cancel</button>
-                    </form>
-                  <% } %>
-
-                  <% if (status === 'Confirmed') { %>
-                    <form action="/management/nurse/appointment/status" method="POST" style="display:inline;">
-                      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                      <input type="hidden" name="appointmentId" value="<%= apt.AppointmentID %>">
-                      <input type="hidden" name="status" value="Completed">
-                      <button type="submit" class="action-btn action-btn-complete">Complete</button>
-                    </form>
-                    <form action="/management/nurse/appointment/status" method="POST" style="display:inline;" onsubmit="return confirm('Cancel this appointment?');">
-                      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                      <input type="hidden" name="appointmentId" value="<%= apt.AppointmentID %>">
-                      <input type="hidden" name="status" value="Cancelled">
-                      <button type="submit" class="action-btn action-btn-cancel">Cancel</button>
-                    </form>
-                    <% if (apt.AppointmentType === 'Online') { %>
-                      <%
-                        var t = new Date(apt.Time).getTime();
-                        var withinWindow = Date.now() >= (t - 15 * 60 * 1000) && Date.now() <= (t + 60 * 60 * 1000);
-                      %>
-                      <% if (withinWindow) { %>
-                        <a href="/consultations/<%= apt.AppointmentID %>/join" class="action-btn action-btn-teams">Join Consultation</a>
-                      <% } else { %>
-                        <span class="action-btn action-btn-disabled"><%= apt.RoomName ? 'Room ready' : 'Room pending' %></span>
-                      <% } %>
-                    <% } %>
-                  <% } %>
-
-                  <%/* No actions for Completed or Cancelled */%>
-
-                </div>
-              </td>
-            </tr>
-          <% }); %>
-        </tbody>
-      </table>
+    <!-- Previous -->
+    <section class="content-card">
+      <h2>Previous (<%= previousAppts.length %>)</h2>
+      <% if (previousAppts.length > 0) { %>
+        <table class="data-table">
+          <thead>
+            <tr><th>Patient</th><th>Type</th><th>Date & Time</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            <% previousAppts.forEach(function(apt) { %>
+              <%- include('../partials/nurse-appt-row', { apt: apt }) %>
+            <% }); %>
+          </tbody>
+        </table>
+      <% } else { %>
+        <p class="text-muted">No previous appointments.</p>
+      <% } %>
     </section>
 
     <!-- Consultation Notes -->

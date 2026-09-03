@@ -1,0 +1,35 @@
+<%
+  // Phase 29C: consultation progress bar. Stages derived from Status + Time vs now.
+  // Stages: booked → confirmed → today → in-progress → complete
+  var pStatus = apt.Status || 'Pending';
+  var pTime = new Date(apt.Time).getTime();
+  var pNow = Date.now();
+  var openMs = pTime - 15 * 60 * 1000;      // join window opens 15 min before
+  var closeMs = pTime + 60 * 60 * 1000;     // in-progress window closes 60 min after
+  var isSameDay = new Date(apt.Time).toDateString() === new Date().toDateString();
+
+  var stages = ['Booked', 'Confirmed', 'Today', 'In Progress', 'Complete'];
+  var current = 0; // index of the active/last-reached stage
+
+  if (pStatus === 'Completed') {
+    current = 4;
+  } else if (pStatus === 'Confirmed') {
+    if (pNow >= openMs && pNow <= closeMs) current = 3;      // in progress
+    else if (isSameDay && pNow < openMs) current = 2;        // today, not yet time
+    else current = 1;                                        // confirmed, future day
+  } else { // Pending
+    current = 0; // booked
+  }
+%>
+<div class="consult-progress<%= pStatus === 'Completed' ? ' consult-progress-complete' : '' %>"
+     data-appt="<%= apt.AppointmentID %>" data-complete="<%= pStatus === 'Completed' ? '1' : '0' %>">
+  <% stages.forEach(function(stage, i) { %>
+    <div class="cp-step <%= i < current ? 'cp-done' : (i === current ? 'cp-active' : '') %>">
+      <span class="cp-node"><%= i < current || (i === current && current === 4) ? '&#10003;' : (i + 1) %></span>
+      <span class="cp-label"><%= stage %></span>
+    </div>
+    <% if (i < stages.length - 1) { %>
+      <span class="cp-bar <%= i < current ? 'cp-bar-done' : '' %>"></span>
+    <% } %>
+  <% }); %>
+</div>

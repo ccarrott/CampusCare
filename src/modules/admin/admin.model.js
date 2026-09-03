@@ -126,29 +126,53 @@ export async function searchStudents(searchQuery) {
 // ============================================================================
 
 export async function getAllNurses() {
-  return await query('SELECT StaffNumber, FirstName, LastName, Email, PhoneNumber, Address, ClinicID FROM Nurse ORDER BY LastName ASC');
+  return await query(`
+    SELECT n.StaffNumber, n.FirstName, n.LastName, n.Email, n.PhoneNumber, n.Campus, n.ClinicID,
+           c.Name AS ClinicName
+    FROM Nurse n
+    LEFT JOIN Clinic c ON n.ClinicID = c.RegNum
+    ORDER BY n.LastName ASC
+  `);
+}
+
+export async function searchNurses(searchQuery) {
+  const sql = `
+    SELECT n.StaffNumber, n.FirstName, n.LastName, n.Email, n.PhoneNumber, n.Campus, n.ClinicID,
+           c.Name AS ClinicName
+    FROM Nurse n
+    LEFT JOIN Clinic c ON n.ClinicID = c.RegNum
+    WHERE n.StaffNumber LIKE ? OR n.FirstName LIKE ? OR n.LastName LIKE ? OR n.Email LIKE ? OR n.Campus LIKE ?
+    ORDER BY n.LastName ASC
+  `;
+  const param = `%${searchQuery}%`;
+  return await query(sql, [param, param, param, param, param]);
 }
 
 export async function getNurseById(staffNumber) {
-  const results = await query('SELECT * FROM Nurse WHERE StaffNumber = ?', [staffNumber]);
+  const results = await query(`
+    SELECT n.*, c.Name AS ClinicName
+    FROM Nurse n
+    LEFT JOIN Clinic c ON n.ClinicID = c.RegNum
+    WHERE n.StaffNumber = ?
+  `, [staffNumber]);
   return results[0];
 }
 
-export async function createNurse({ staffNumber, firstName, lastName, email, phoneNumber, address, clinicId, password }) {
+export async function createNurse({ staffNumber, firstName, lastName, email, phoneNumber, campus, clinicId, password }) {
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
   const sql = `
-    INSERT INTO Nurse (StaffNumber, FirstName, LastName, Email, PhoneNumber, Address, ClinicID, Password)
+    INSERT INTO Nurse (StaffNumber, FirstName, LastName, Email, PhoneNumber, Campus, ClinicID, Password)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
-  return await query(sql, [staffNumber, firstName, lastName, email || '', phoneNumber || '', address || '', clinicId || null, hashedPassword]);
+  return await query(sql, [staffNumber, firstName, lastName, email || '', phoneNumber || '', campus || null, clinicId || null, hashedPassword]);
 }
 
-export async function updateNurse(staffNumber, { firstName, lastName, email, phoneNumber, address, clinicId }) {
+export async function updateNurse(staffNumber, { firstName, lastName, email, phoneNumber, campus, clinicId }) {
   const sql = `
-    UPDATE Nurse SET FirstName = ?, LastName = ?, Email = ?, PhoneNumber = ?, Address = ?, ClinicID = ?
+    UPDATE Nurse SET FirstName = ?, LastName = ?, Email = ?, PhoneNumber = ?, Campus = ?, ClinicID = ?
     WHERE StaffNumber = ?
   `;
-  return await query(sql, [firstName, lastName, email || '', phoneNumber || '', address || '', clinicId || null, staffNumber]);
+  return await query(sql, [firstName, lastName, email || '', phoneNumber || '', campus || null, clinicId || null, staffNumber]);
 }
 
 export async function deleteNurse(staffNumber) {

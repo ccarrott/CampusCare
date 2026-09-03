@@ -65,14 +65,6 @@ const migrations = [
     sql: `ALTER TABLE Medication ADD COLUMN StockQuantity int DEFAULT 0`
   },
   {
-    name: 'Add Name to MedicalFacility',
-    sql: `ALTER TABLE MedicalFacility ADD COLUMN Name varchar(100) NULL`
-  },
-  {
-    name: 'Add ClinicID to MedicalFacility',
-    sql: `ALTER TABLE MedicalFacility ADD COLUMN ClinicID varchar(50) NULL`
-  },
-  {
     name: 'Create SymptomLog table',
     sql: `CREATE TABLE IF NOT EXISTS SymptomLog (
       LogID varchar(50) PRIMARY KEY,
@@ -198,7 +190,27 @@ const migrations = [
       StudentJoinedAt datetime NULL,
       CreatedAt datetime DEFAULT CURRENT_TIMESTAMP
     )`
-  }
+  },
+  // Phase 29A: nurse location becomes a campus (dropdown), replacing free-text Address
+  {
+    name: 'Add Campus to Nurse',
+    sql: `ALTER TABLE Nurse ADD COLUMN Campus varchar(50) NULL`
+  },
+  {
+    name: 'Drop Nurse.Address column',
+    sql: `ALTER TABLE Nurse DROP COLUMN Address`
+  },
+  {
+    name: 'Drop unused MedicalFacility table',
+    sql: `DROP TABLE IF EXISTS MedicalFacility`
+  },
+  { name: 'Drop unused Medication.FacilityID', sql: `ALTER TABLE Medication DROP COLUMN FacilityID` },
+  { name: 'Drop unused Medication.ExpiryDate', sql: `ALTER TABLE Medication DROP COLUMN ExpiryDate` },
+  { name: 'Drop unused Medication.StockQuantity', sql: `ALTER TABLE Medication DROP COLUMN StockQuantity` },
+  // Phase 29B: symptom-checker intelligence fields
+  { name: 'Add Duration to SymptomLog', sql: `ALTER TABLE SymptomLog ADD COLUMN Duration varchar(20) NULL` },
+  { name: 'Add Trajectory to SymptomLog', sql: `ALTER TABLE SymptomLog ADD COLUMN Trajectory varchar(20) NULL` },
+  { name: 'Add OtherText to SymptomLog', sql: `ALTER TABLE SymptomLog ADD COLUMN OtherText varchar(255) NULL` }
 ];
 
 async function runMigrations() {

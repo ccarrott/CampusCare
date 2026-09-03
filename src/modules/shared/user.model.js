@@ -10,7 +10,12 @@ export async function findStudentById(studentNumber) {
 }
 
 export async function findNurseById(staffNumber) {
-  const sql = 'SELECT * FROM Nurse WHERE StaffNumber = ?';
+  const sql = `
+    SELECT n.*, c.Name AS ClinicName
+    FROM Nurse n
+    LEFT JOIN Clinic c ON n.ClinicID = c.RegNum
+    WHERE n.StaffNumber = ?
+  `;
   const results = await query(sql, [staffNumber]);
   return results[0];
 }

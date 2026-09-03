@@ -119,10 +119,56 @@
   </div>
   <div class="topbar-right">
     <% if (typeof user !== 'undefined' && user) { %>
-      <span class="topbar-role"><%= user.role.charAt(0).toUpperCase() + user.role.slice(1) %></span>
+      <%
+        // "F. Lastname" for students/nurses; admins have no first/last → use their name or "Admin".
+        var hasName = user.lastName && user.lastName.trim();
+        var chipLabel = hasName
+          ? ((user.firstName ? user.firstName.charAt(0).toUpperCase() + '. ' : '') + user.lastName)
+          : (user.name && user.name.trim() ? user.name : (user.role.charAt(0).toUpperCase() + user.role.slice(1)));
+        var chipInitial = (hasName ? user.firstName || user.lastName : (user.name || user.role)).charAt(0).toUpperCase();
+      %>
+      <div class="topbar-identity" id="identityChip">
+        <button type="button" class="identity-btn" aria-haspopup="true" aria-expanded="false" onclick="toggleIdentityMenu(this)">
+          <span class="identity-avatar"><%= chipInitial %></span>
+          <span class="identity-name"><%= chipLabel %></span>
+          <span class="identity-caret">&#9662;</span>
+        </button>
+        <div class="identity-menu" role="menu">
+          <a href="/profile" class="identity-menu-item" role="menuitem">
+            <span>&#128100;</span> Profile
+          </a>
+          <a href="/auth/logout" class="identity-menu-item identity-menu-danger" role="menuitem">
+            <span>&#128682;</span> Logout
+          </a>
+        </div>
+      </div>
     <% } %>
   </div>
 </header>
+
+<script>
+function toggleIdentityMenu(btn) {
+  var chip = btn.closest('.topbar-identity');
+  var open = chip.classList.toggle('open');
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#identityChip')) {
+    var chip = document.getElementById('identityChip');
+    if (chip) {
+      chip.classList.remove('open');
+      var b = chip.querySelector('.identity-btn');
+      if (b) b.setAttribute('aria-expanded', 'false');
+    }
+  }
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    var chip = document.getElementById('identityChip');
+    if (chip) chip.classList.remove('open');
+  }
+});
+</script>
 
 <!-- Main Content Wrapper (closed in footer.ejs) -->
 <div class="mobile-backdrop" id="mobileBackdrop"></div>

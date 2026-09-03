@@ -40,8 +40,8 @@
         </div>
 
         <div class="form-group">
-          <label for="reviewText">Your Review</label>
-          <textarea id="reviewText" name="reviewText" class="form-control" rows="3" placeholder="Describe your experience with this nurse..." required></textarea>
+          <label for="reviewText">Comment (Optional)</label>
+          <textarea id="reviewText" name="reviewText" class="form-control" rows="3" placeholder="Describe your experience with this nurse..."></textarea>
         </div>
 
         <button type="submit" class="btn btn-primary" id="reviewSubmitBtn" disabled>Submit Review</button>
@@ -73,7 +73,7 @@
               <% } %>
             </span>
           </div>
-          <p style="margin:8px 0 0; font-size:0.9rem;"><%= review.ReviewText %></p>
+          <% if (review.ReviewText && review.ReviewText.trim()) { %><p style="margin:8px 0 0; font-size:0.9rem;"><%= review.ReviewText %></p><% } %>
           <% if (review.CreatedAt) { %>
             <span class="text-muted" style="font-size:0.75rem;">Submitted: <%= new Date(review.CreatedAt).toLocaleDateString('en-ZA', { dateStyle: 'medium' }) %></span>
           <% } %>
@@ -119,7 +119,7 @@
   }
 
   function checkReady() {
-    submitBtn.disabled = !(selectedRating > 0 && reviewText.value.trim().length > 0 && staffSelect.value);
+    submitBtn.disabled = !(selectedRating > 0 && staffSelect.value);
   }
 
   reviewText.addEventListener('input', checkReady);

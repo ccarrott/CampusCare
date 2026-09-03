@@ -1,0 +1,61 @@
+<% const status = apt.Status || 'Pending'; %>
+<% const aptDate = new Date(apt.Time); %>
+<% const isToday = aptDate.toDateString() === new Date().toDateString(); %>
+<% const isUpcoming = (aptDate - Date.now() < 86400000) && (aptDate > Date.now()); %>
+<tr class="<%= status === 'Cancelled' ? 'row-cancelled' : '' %> <%= isToday && status !== 'Cancelled' ? 'row-today' : '' %> <%= isUpcoming && status !== 'Cancelled' ? 'row-upcoming' : '' %>">
+  <td>
+    <%= apt.StudentFirstName %> <%= apt.StudentLastName %>
+    <a href="/management/nurse/patient/<%= apt.StudentNumber %>/history" style="font-size:0.7rem; margin-left:4px;" title="View patient symptom history">&#128196;</a>
+  </td>
+  <td><%= apt.AppointmentType %></td>
+  <td><%= new Date(apt.Time).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }) %></td>
+  <td><span class="status-badge status-<%= status.toLowerCase() %>"><%= status %></span></td>
+  <td>
+    <div class="action-btns">
+
+      <% if (status === 'Pending') { %>
+        <form action="/management/nurse/appointment/status" method="POST" style="display:inline;">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="appointmentId" value="<%= apt.AppointmentID %>">
+          <input type="hidden" name="status" value="Confirmed">
+          <button type="submit" class="action-btn action-btn-confirm">Confirm</button>
+        </form>
+        <form action="/management/nurse/appointment/status" method="POST" style="display:inline;" onsubmit="return confirm('Cancel this appointment?');">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="appointmentId" value="<%= apt.AppointmentID %>">
+          <input type="hidden" name="status" value="Cancelled">
+          <button type="submit" class="action-btn action-btn-cancel">Cancel</button>
+        </form>
+      <% } %>
+
+      <% if (status === 'Confirmed') { %>
+        <form action="/management/nurse/appointment/status" method="POST" style="display:inline;">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="appointmentId" value="<%= apt.AppointmentID %>">
+          <input type="hidden" name="status" value="Completed">
+          <button type="submit" class="action-btn action-btn-complete">Complete</button>
+        </form>
+        <form action="/management/nurse/appointment/status" method="POST" style="display:inline;" onsubmit="return confirm('Cancel this appointment?');">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="appointmentId" value="<%= apt.AppointmentID %>">
+          <input type="hidden" name="status" value="Cancelled">
+          <button type="submit" class="action-btn action-btn-cancel">Cancel</button>
+        </form>
+        <% if (apt.AppointmentType === 'Online') { %>
+          <%
+            var t = new Date(apt.Time).getTime();
+            var withinWindow = Date.now() >= (t - 15 * 60 * 1000) && Date.now() <= (t + 60 * 60 * 1000);
+          %>
+          <% if (withinWindow) { %>
+            <a href="/consultations/<%= apt.AppointmentID %>/join" class="action-btn action-btn-teams">Join Consultation</a>
+          <% } else { %>
+            <span class="action-btn action-btn-disabled"><%= apt.RoomName ? 'Room ready' : 'Room pending' %></span>
+          <% } %>
+        <% } %>
+      <% } %>
+
+      <%/* No actions for Completed or Cancelled */%>
+
+    </div>
+  </td>
+</tr>

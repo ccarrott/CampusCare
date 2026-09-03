@@ -9,6 +9,12 @@
     <p class="subtitle">Follow the steps below to schedule your 15-minute consultation session.</p>
   </header>
 
+  <% if (typeof recentBooking !== 'undefined' && recentBooking) { %>
+    <div class="alert alert-warning" style="border-left: 4px solid var(--status-warning);">
+      You booked a consultation recently. If it's for the <strong>same reason</strong>, please mention that to your nurse so they have the full picture and can follow up on your care.
+    </div>
+  <% } %>
+
   <section class="content-card">
     <!-- Step Progress Indicator -->
     <div class="step-indicator" id="stepIndicator">
@@ -85,7 +91,7 @@
         </div>
         <p id="npBio" style="margin:12px 0 0; font-size:0.9rem;"></p>
         <div id="npReviews" style="margin-top:12px;"></div>
-        <a href="/staff" class="text-muted" style="font-size:0.8rem; margin-top:8px; display:inline-block;">View full profile &rarr;</a>
+        <a href="/staff" id="npFullProfile" class="text-muted" style="font-size:0.8rem; margin-top:8px; display:inline-block;">View full profile &rarr;</a>
       </div>
 
       <!-- Step: Time Slot Grid -->
@@ -381,6 +387,10 @@
       const resp = await fetch('/consultations/api/nurse-profile/' + staffNumber);
       const data = await resp.json();
       if (data.error) return;
+
+      // Deep-link "View full profile" to this nurse's profile page
+      var fp = document.getElementById('npFullProfile');
+      if (fp) fp.href = '/staff/' + staffNumber;
 
       // Name
       document.getElementById('npName').textContent = data.firstName + ' ' + data.lastName;

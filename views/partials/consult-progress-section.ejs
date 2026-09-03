@@ -1,0 +1,67 @@
+<%
+  // Phase 29C (revised): pick which consultation(s) get a progress bar.
+  //  - the single MOST RECENT UPCOMING consultation (Pending/Confirmed, in the future), AND
+  //  - any COMPLETED consultations (client-side shows each only once, then hides it).
+  // Cancelled are never shown.
+  var _now = Date.now();
+  var _upcoming = (appointments || [])
+    .filter(function (a) {
+      var st = a.Status || 'Pending';
+      return (st === 'Pending' || st === 'Confirmed') && new Date(a.Time).getTime() >= _now;
+    })
+    .sort(function (a, b) { return new Date(a.Time) - new Date(b.Time); });
+  var _mostRecentUpcoming = _upcoming.length > 0 ? _upcoming[0] : null;
+
+  var _completed = (appointments || []).filter(function (a) { return (a.Status || 'Pending') === 'Completed'; });
+
+  var _progressApts = [];
+  if (_mostRecentUpcoming) _progressApts.push(_mostRecentUpcoming);
+  _completed.forEach(function (a) { _progressApts.push(a); });
+%>
+<% if (_progressApts.length > 0) { %>
+  <section class="content-card" id="consultProgressSection">
+    <h2>Consultation Progress</h2>
+    <% _progressApts.forEach(function (apt) { %>
+      <%
+        var _nurseName = (apt.NurseFirstName ? (apt.NurseFirstName + ' ' + apt.NurseLastName) : 'your nurse');
+      %>
+      <div class="consult-progress-row" data-appt-row="<%= apt.AppointmentID %>"
+           data-complete="<%= (apt.Status || 'Pending') === 'Completed' ? '1' : '0' %>">
+        <p class="consult-progress-title">
+          <%= apt.AppointmentType %> with <%= _nurseName %>
+          <span class="text-muted" style="font-size:0.8rem;">&middot; <%= new Date(apt.Time).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }) %></span>
+        </p>
+        <%- include('./consult-progress', { apt: apt }) %>
+      </div>
+    <% }); %>
+  </section>
+<% } %>
+
+<script>
+// Completed bars render once — the FIRST view since completion (with the celebration beat),
+// then are hidden on subsequent loads. Upcoming bars always show.
+(function () {
+  var KEY = 'campuscare_consult_celebrated';
+  var seen;
+  try { seen = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { seen = []; }
+
+  document.querySelectorAll('.consult-progress-row[data-complete="1"]').forEach(function (row) {
+    var id = row.getAttribute('data-appt-row');
+    if (seen.indexOf(id) === -1) {
+      // First viewing since completion → keep it and celebrate.
+      var bar = row.querySelector('.consult-progress');
+      if (bar) bar.classList.add('cp-celebrate');
+      seen.push(id);
+    } else {
+      // Already seen → don't render it again.
+      row.remove();
+    }
+  });
+
+  // If the section is now empty, remove it entirely.
+  var section = document.getElementById('consultProgressSection');
+  if (section && section.querySelectorAll('.consult-progress-row').length === 0) section.remove();
+
+  try { localStorage.setItem(KEY, JSON.stringify(seen.slice(-200))); } catch (e) {}
+})();
+</script>

@@ -17,7 +17,9 @@ import { APPOINTMENT_TYPE, APPOINTMENT_STATUS, ROLES } from '../../constants.js'
 
 export const showBookingForm = catchAsync(async (req, res) => {
   const nurses = await AppointmentsModel.getAvailableNurses();
-  res.render('consultations/book', { user: req.session.user, nurses, error: null });
+  let recentBooking = false;
+  try { recentBooking = await AppointmentsModel.hasRecentBooking(req.session.user.id, 7); } catch (e) { /* non-blocking */ }
+  res.render('consultations/book', { user: req.session.user, nurses, recentBooking, error: null });
 });
 
 // ============================================================================

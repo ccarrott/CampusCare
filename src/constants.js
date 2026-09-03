@@ -31,3 +31,22 @@ export const SEVERITY = Object.freeze({
   MODERATE: 'Moderate',
   HIGH: 'High'
 });
+
+// Tier-2 escalation rules engine tuning (Phase 29B).
+export const ESCALATION = Object.freeze({
+  RECURRENCE_WINDOW_DAYS: 7,   // "recent" check/booking window
+  RECURRENCE_OVERLAP: 0.5,     // >= half of the PREVIOUS check's symptoms reappear
+  DURATION_ESCALATE: ['1-2 weeks', '>2 weeks'] // symptom durations that warrant a nurse
+});
+
+// NMU campuses (Gqeberha) — nurses are assigned to a campus rather than a street address.
+// Source: mandela.ac.za campus maps (six Gqeberha campuses + George in the Southern Cape).
+export const CAMPUSES = Object.freeze([
+  'South Campus',
+  'North Campus',
+  '2nd Avenue Campus',
+  'Missionvale Campus',
+  'Bird Street Campus',
+  'Ocean Sciences Campus',
+  'George Campus'
+]);

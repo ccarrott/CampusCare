@@ -82,12 +82,17 @@
         document.getElementById('hospitalAddress').textContent = nearest.address;
         document.getElementById('hospitalPhone').textContent = nearest.phone;
         document.getElementById('hospitalDistance').textContent = nearest.distance.toFixed(1) + ' km away';
-        document.getElementById('directionsLink').href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(nearest.name + ', Gqeberha');
+        // Turn-by-turn directions FROM the user's location TO the exact hospital.
+        // dir/?api=1 gives directions (not a plain search); destination = name + coords + area
+        // so Google resolves the precise place rather than a fuzzy text match.
+        document.getElementById('directionsLink').href = dirUrl(nearest);
 
         if (detected) {
           document.getElementById('locationStatus').innerHTML = '&#9989; Based on your current location';
         } else {
-          document.getElementById('locationStatus').innerHTML = '&#9888;&#65039; Location unavailable — showing hospitals nearest to NMU campus. <br>Call <strong>10177</strong> (national ambulance) if unsure where to go.';
+          document.getElementById('locationStatus').innerHTML = '&#9888;&#65039; Location unavailable — showing hospitals nearest to NMU campus. <br>Call <strong>10177</strong> (national ambulance) if unsure where to go. <button type="button" id="retryLocation" class="btn btn-secondary" style="margin-top:8px; padding:4px 12px; font-size:0.85rem;">Retry location</button>';
+          var retry = document.getElementById('retryLocation');
+          if (retry) retry.addEventListener('click', requestLocation);
         }
 
         // Other hospitals
@@ -97,28 +102,43 @@
             return '<div style="padding:10px 0; border-bottom:1px solid var(--border-color);">' +
               '<strong>' + h.name + '</strong> <span class="text-muted">(' + h.type + ')</span><br>' +
               '<span class="text-muted" style="font-size:0.85rem;">' + h.address + '</span> — <strong>' + h.distance.toFixed(1) + ' km</strong> — ' +
-              '<a href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(h.name + ', Gqeberha') + '" target="_blank">Directions</a>' +
+              '<a href="' + dirUrl(h) + '" target="_blank">Directions</a>' +
               '</div>';
           }).join('');
         }
       }
 
-      // Request geolocation
-      if (navigator.geolocation) {
+      // Build a Google Maps directions URL to a specific hospital.
+      function dirUrl(h) {
+        return 'https://www.google.com/maps/dir/?api=1&destination=' +
+          encodeURIComponent(h.name + ', ' + h.address + ', Gqeberha') +
+          '&destination_ll=' + h.lat + ',' + h.lon;
+      }
+
+      function requestLocation() {
+        if (!navigator.geolocation) { renderHospitals(-33.9860, 25.6600, false); return; }
         navigator.geolocation.getCurrentPosition(
           function(pos) { renderHospitals(pos.coords.latitude, pos.coords.longitude, true); },
           function() { renderHospitals(-33.9860, 25.6600, false); },
-          { enableHighAccuracy: true, timeout: 10000 }
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
         );
-      } else {
-        renderHospitals(-33.9860, 25.6600, false);
       }
+
+      requestLocation();
     })();
     </script>
   <% } else if (maxTier >= 2) { %>
     <div class="alert alert-warning" style="border-left: 4px solid var(--status-warning);">
       <strong>You need to book a nurse consultation.</strong><br>
       One or more of your symptoms requires professional assessment. OTC medication alone is not appropriate for these symptoms.
+      <% if (typeof escalationReasons !== 'undefined' && escalationReasons && escalationReasons.length > 0) { %>
+        <ul style="margin:8px 0 0; padding-left:18px; font-size:0.9rem;">
+          <% escalationReasons.forEach(function(reason) { %><li><%= reason %></li><% }); %>
+        </ul>
+      <% } %>
+      <% if (typeof otherText !== 'undefined' && otherText) { %>
+        <p style="margin:8px 0 0; font-size:0.9rem;">You reported: <em>"<%= otherText %>"</em></p>
+      <% } %>
       <a href="/consultations/book" class="btn btn-primary" style="margin-top: 8px; display: inline-block;">Book Consultation Now</a>
     </div>
   <% } %>
@@ -130,8 +150,8 @@
       <% selectedSymptoms.forEach(function(sym) { %>
         <span class="symptom-summary-tag">
           <%= sym.Name %>
-          <% if (sym.Tier >= 2) { %><span style="color:var(--status-warning);">&#9679;</span><% } %>
-          <% if (sym.Tier >= 3) { %><span style="color:var(--status-danger);">&#9679;</span><% } %>
+          <% if (sym.Tier === 2) { %><span class="tier-dot tier-dot-2"></span><% } %>
+          <% if (sym.Tier >= 3) { %><span class="tier-dot tier-dot-3"></span><% } %>
         </span>
       <% }); %>
     </div>

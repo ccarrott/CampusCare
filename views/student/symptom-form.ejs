@@ -13,35 +13,49 @@
     <div class="alert alert-danger"><%= error %></div>
   <% } %>
 
+  <% if (typeof lastCheck !== 'undefined' && lastCheck) { %>
+    <div class="alert alert-warning" id="prefillPrompt" data-ids="<%= lastCheck.ids.join(',') %>">
+      Experiencing the same symptoms as your last check on <strong><%= new Date(lastCheck.date).toLocaleDateString('en-ZA', { dateStyle: 'medium' }) %></strong>?
+      <button type="button" class="btn btn-secondary" id="prefillYes" style="margin-left:8px; padding:4px 12px; font-size:0.85rem;">Yes, fill them in</button>
+    </div>
+  <% } %>
+
   <form action="/symptoms/evaluate" method="POST" id="symptomForm">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
-    <!-- Selected Symptoms Summary -->
+    <!-- Selected Symptoms — token input (pills + inline search) -->
     <section class="content-card">
       <h2>Your Symptoms</h2>
-      <div class="symptom-summary" id="symptomSummary">
-        <span class="text-muted" id="summaryPlaceholder">Click symptoms below to add them here...</span>
+      <div class="symptom-tokenbar" id="symptomTokenbar">
+        <!-- pills injected here before the input -->
+        <input type="text" id="symptomSearch" class="symptom-token-input" placeholder="Search or tap symptoms below to add them..." autocomplete="off">
+        <div id="symptomSuggestions" class="symptom-suggestions" style="display:none;"></div>
       </div>
     </section>
 
     <!-- Symptom Categories (Accordion) -->
     <section class="content-card">
       <h2>Select Symptoms</h2>
-      <p class="text-muted mb-2">Tap any symptom to select it. You can pick multiple.</p>
+      <p class="text-muted mb-2">Search or tap any symptom to select it. You can pick multiple.</p>
+
+      <p class="text-muted" style="font-size:0.8rem; margin-bottom:12px;">
+        <span class="tier-dot tier-dot-2"></span> needs a nurse &nbsp;·&nbsp;
+        <span class="tier-dot tier-dot-3"></span> urgent
+      </p>
 
       <% const categories = Object.keys(symptomsByCategory); %>
-      <% categories.forEach(function(category, catIdx) { %>
-        <div class="symptom-category <%= catIdx < 3 ? 'open' : '' %>">
+      <% categories.forEach(function(category) { %>
+        <div class="symptom-category open">
           <div class="symptom-category-header" onclick="this.parentElement.classList.toggle('open')">
             <%= category %> <span class="text-muted" style="font-size:0.75rem; margin-left:4px;">(<%= symptomsByCategory[category].length %>)</span>
           </div>
           <div class="symptom-category-body">
             <% symptomsByCategory[category].forEach(function(sym) { %>
-              <span class="symptom-tag" data-id="<%= sym.SymptomID %>" data-tier="<%= sym.Tier %>" title="<%= sym.Description %>">
+              <span class="symptom-tag" data-id="<%= sym.SymptomID %>" data-tier="<%= sym.Tier %>" data-name="<%= sym.Name.toLowerCase() %>" title="<%= sym.Description %>">
                 <input type="checkbox" name="symptoms" value="<%= sym.SymptomID %>" style="display:none;" onchange="updateSummary()">
                 <%= sym.Name %>
-                <% if (sym.Tier === 2) { %><span style="color:var(--status-warning); font-size:0.7rem;">&#9679;</span><% } %>
-                <% if (sym.Tier >= 3) { %><span style="color:var(--status-danger); font-size:0.7rem;">&#9679;</span><% } %>
+                <% if (sym.Tier === 2) { %><span class="tier-dot tier-dot-2"></span><% } %>
+                <% if (sym.Tier >= 3) { %><span class="tier-dot tier-dot-3"></span><% } %>
               </span>
             <% }); %>
           </div>
@@ -49,14 +63,41 @@
       <% }); %>
     </section>
 
-    <!-- Severity + Submit -->
+    <!-- My symptom isn't listed -->
+    <section class="content-card">
+      <button type="button" class="btn btn-secondary" id="notListedToggle" style="font-size:0.9rem;">My symptom isn't listed</button>
+      <div id="notListedBox" style="display:none; margin-top:12px;">
+        <label for="otherText" class="form-group" style="font-weight:600;">Briefly describe what you're experiencing</label>
+        <textarea id="otherText" name="otherText" class="form-control" rows="2" maxlength="255" placeholder="e.g. a strange rash that comes and goes"></textarea>
+        <p class="text-muted" style="font-size:0.8rem; margin-top:4px;">This will be reviewed by a nurse — it goes straight to a consultation recommendation.</p>
+      </div>
+    </section>
+
+    <!-- Severity + duration + trajectory + Submit -->
     <section class="content-card" id="submitSection" style="display:none;">
       <div class="form-group">
         <label for="severity">How severe do these symptoms feel overall?</label>
-        <select id="severity" name="severity" class="form-control" style="max-width:250px;">
+        <select id="severity" name="severity" class="form-control" style="max-width:280px;">
           <option value="Low">Low — mild discomfort</option>
           <option value="Moderate" selected>Moderate — affecting my day</option>
           <option value="High">High — I need help now</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="duration">How long have you had these symptoms?</label>
+        <select id="duration" name="duration" class="form-control" style="max-width:280px;">
+          <option value="<3 days" selected>Less than 3 days</option>
+          <option value="3-7 days">3–7 days</option>
+          <option value="1-2 weeks">1–2 weeks</option>
+          <option value=">2 weeks">More than 2 weeks</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="trajectory">Since it started, is it…</label>
+        <select id="trajectory" name="trajectory" class="form-control" style="max-width:280px;">
+          <option value="same" selected>Staying the same</option>
+          <option value="worse">Getting worse</option>
+          <option value="better">Getting better</option>
         </select>
       </div>
       <button type="submit" class="btn btn-primary" id="submitBtn">Get Recommendations</button>
@@ -67,59 +108,134 @@
 
 <script>
 (function() {
-  const summary = document.getElementById('symptomSummary');
-  const placeholder = document.getElementById('summaryPlaceholder');
+  const tokenbar = document.getElementById('symptomTokenbar');
+  const search = document.getElementById('symptomSearch');
+  const suggBox = document.getElementById('symptomSuggestions');
   const submitSection = document.getElementById('submitSection');
+  const otherText = document.getElementById('otherText');
+  const allTags = Array.prototype.slice.call(document.querySelectorAll('.symptom-tag'));
 
-  // Tag click toggles the checkbox + selected class
-  document.querySelectorAll('.symptom-tag').forEach(function(tag) {
+  function titleCase(s) { return s.replace(/\b\w/g, c => c.toUpperCase()); }
+
+  function selectTagById(id) {
+    const cb = document.querySelector('.symptom-tag input[value="' + id + '"]');
+    if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+  }
+  window.removeSymptom = function(symId) {
+    const cb = document.querySelector('.symptom-tag input[value="' + symId + '"]');
+    if (cb) { cb.checked = false; cb.dispatchEvent(new Event('change')); }
+  };
+
+  // Rebuild the pills INSIDE the tokenbar, always keeping the search input last.
+  window.updateSummary = function() {
+    const checked = Array.prototype.slice.call(document.querySelectorAll('.symptom-tag input:checked'));
+    allTags.forEach(function(tag) { tag.classList.toggle('selected', tag.querySelector('input').checked); });
+
+    // Remove existing pills, then insert fresh ones before the input.
+    tokenbar.querySelectorAll('.symptom-summary-tag').forEach(t => t.remove());
+    checked.forEach(function(cb) {
+      const tag = cb.closest('.symptom-tag');
+      const pill = document.createElement('span');
+      pill.className = 'symptom-summary-tag';
+      pill.innerHTML = titleCase(tag.getAttribute('data-name')) +
+        ' <span class="remove" onclick="removeSymptom(\'' + cb.value + '\')">&times;</span>';
+      tokenbar.insertBefore(pill, search);
+    });
+
+    // Placeholder only when nothing chosen; shrink placeholder once pills exist.
+    search.placeholder = checked.length === 0 ? 'Search or tap symptoms below to add them...' : 'Add another...';
+
+    const hasOther = otherText && otherText.value.trim().length > 0;
+    submitSection.style.display = (checked.length > 0 || hasOther) ? 'block' : 'none';
+  };
+
+  // Tag click in the grid toggles selection.
+  allTags.forEach(function(tag) {
     tag.addEventListener('click', function(e) {
-      if (e.target.tagName === 'INPUT') return; // let checkbox handle itself
+      if (e.target.tagName === 'INPUT') return;
       const cb = tag.querySelector('input[type="checkbox"]');
       cb.checked = !cb.checked;
       cb.dispatchEvent(new Event('change'));
     });
   });
 
-  window.updateSummary = function() {
-    const checked = document.querySelectorAll('.symptom-tag input:checked');
-
-    // Update tag visual states
-    document.querySelectorAll('.symptom-tag').forEach(function(tag) {
-      const cb = tag.querySelector('input');
-      tag.classList.toggle('selected', cb.checked);
+  // ---- Inline search + autocomplete ----
+  function renderSuggestions() {
+    const q = search.value.trim().toLowerCase();
+    allTags.forEach(function(tag) {
+      tag.style.display = (!q || tag.getAttribute('data-name').indexOf(q) !== -1) ? '' : 'none';
     });
-
-    // Update summary bar
-    if (checked.length === 0) {
-      placeholder.style.display = 'inline';
-      summary.querySelectorAll('.symptom-summary-tag').forEach(t => t.remove());
-      submitSection.style.display = 'none';
-      return;
+    if (!q) { suggBox.style.display = 'none'; suggBox.innerHTML = ''; return; }
+    const matches = allTags
+      .filter(t => !t.querySelector('input').checked && t.getAttribute('data-name').indexOf(q) !== -1)
+      .slice(0, 6);
+    if (matches.length === 0) {
+      suggBox.innerHTML = '<div class="symptom-suggestion-empty">No match — try <strong>"My symptom isn\'t listed"</strong> below.</div>';
+    } else {
+      suggBox.innerHTML = matches.map(function(t) {
+        return '<div class="symptom-suggestion" data-id="' + t.querySelector('input').value + '">' +
+          titleCase(t.getAttribute('data-name')) + '</div>';
+      }).join('');
     }
+    suggBox.style.display = 'block';
+  }
+  function commit(id) {
+    selectTagById(id);           // becomes a pill in the bar
+    search.value = '';
+    suggBox.style.display = 'none';
+    allTags.forEach(t => t.style.display = '');
+    search.focus();              // caret stays right after the new pill
+  }
 
-    placeholder.style.display = 'none';
-    submitSection.style.display = 'block';
-
-    // Rebuild summary tags
-    summary.querySelectorAll('.symptom-summary-tag').forEach(t => t.remove());
-    checked.forEach(function(cb) {
-      const tag = cb.closest('.symptom-tag');
-      const pill = document.createElement('span');
-      pill.className = 'symptom-summary-tag';
-      pill.innerHTML = tag.textContent.trim().replace(/●/g, '').trim() +
-        ' <span class="remove" onclick="removeSymptom(\'' + cb.value + '\')">&times;</span>';
-      summary.appendChild(pill);
-    });
-  };
-
-  window.removeSymptom = function(symId) {
-    const cb = document.querySelector('.symptom-tag input[value="' + symId + '"]');
-    if (cb) {
-      cb.checked = false;
-      cb.dispatchEvent(new Event('change'));
+  search.addEventListener('input', renderSuggestions);
+  search.addEventListener('focus', renderSuggestions);
+  suggBox.addEventListener('mousedown', function(e) {
+    // mousedown (not click) so it fires before the input blurs
+    const item = e.target.closest('.symptom-suggestion');
+    if (!item) return;
+    e.preventDefault();
+    commit(item.dataset.id);
+  });
+  search.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const first = suggBox.querySelector('.symptom-suggestion');
+      if (first) commit(first.dataset.id);
+    } else if (e.key === 'Backspace' && search.value === '') {
+      // Backspace on empty input removes the last pill (token-input convention).
+      const pills = tokenbar.querySelectorAll('.symptom-summary-tag');
+      if (pills.length > 0) {
+        const rm = pills[pills.length - 1].querySelector('.remove');
+        if (rm) rm.click();
+      }
     }
-  };
+  });
+  // Clicking anywhere in the bar focuses the input.
+  tokenbar.addEventListener('click', function(e) {
+    if (e.target === tokenbar) search.focus();
+  });
+  // Hide suggestions when clicking away.
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#symptomTokenbar')) suggBox.style.display = 'none';
+  });
+
+  // ---- "My symptom isn't listed" ----
+  const toggle = document.getElementById('notListedToggle');
+  const box = document.getElementById('notListedBox');
+  if (toggle) toggle.addEventListener('click', function() {
+    box.style.display = box.style.display === 'none' ? 'block' : 'none';
+    if (box.style.display === 'block') otherText.focus();
+  });
+  if (otherText) otherText.addEventListener('input', window.updateSummary);
+
+  // ---- "Same as last time" prefill ----
+  const prefill = document.getElementById('prefillYes');
+  if (prefill) prefill.addEventListener('click', function() {
+    const ids = (document.getElementById('prefillPrompt').dataset.ids || '').split(',').filter(Boolean);
+    ids.forEach(selectTagById);
+    document.getElementById('prefillPrompt').style.display = 'none';
+    submitSection.scrollIntoView({ behavior: 'smooth' });
+  });
 })();
 </script>
 

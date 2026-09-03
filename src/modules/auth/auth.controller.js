@@ -20,11 +20,13 @@ export function getLoginPage(req, res) {
 }
 
 export const handleLogin = catchAsync(async (req, res) => {
-  const idNumber = sanitize(req.body.idNumber);
+  // A username may be entered as a bare number (s227921577 / NUR001) OR as an
+  // email (s227921577@mandela.ac.za). Slice off anything from '@' onward so both resolve.
+  const idNumber = sanitize(req.body.idNumber).split('@')[0];
   const password = req.body.password || '';
 
   if (!idNumber || !password) {
-    return res.render('auth/login', { error: 'Please enter your ID and password.', idNumber });
+    return res.render('auth/login', { error: 'Please enter your username and password.', idNumber });
   }
 
   // Auto-detect: Student → Nurse → Admin
@@ -45,12 +47,12 @@ export const handleLogin = catchAsync(async (req, res) => {
   }
 
   if (!user || !user.Password) {
-    return res.render('auth/login', { error: 'Invalid ID Number or password.', idNumber });
+    return res.render('auth/login', { error: 'Invalid username or password.', idNumber });
   }
 
   const isMatch = await bcrypt.compare(password, user.Password);
   if (!isMatch) {
-    return res.render('auth/login', { error: 'Invalid ID Number or password.', idNumber });
+    return res.render('auth/login', { error: 'Invalid username or password.', idNumber });
   }
 
   // Build session
@@ -138,10 +140,11 @@ export function showForgotPasswordForm(req, res) {
 }
 
 export const handleForgotPassword = catchAsync(async (req, res) => {
-  const idNumber = sanitize(req.body.idNumber);
+  // Accept username or email (strip @domain), same as login.
+  const idNumber = sanitize(req.body.idNumber).split('@')[0];
 
   if (!idNumber) {
-    return res.render('auth/forgot-password', { error: 'Please enter your ID Number.', success: null });
+    return res.render('auth/forgot-password', { error: 'Please enter your username.', success: null });
   }
 
   // Auto-detect user
@@ -153,7 +156,7 @@ export const handleForgotPassword = catchAsync(async (req, res) => {
   if (!user) { user = await AuthModel.findAdminById(idNumber); if (user) userType = 'admin'; }
 
   if (!user) {
-    return res.render('auth/forgot-password', { error: 'No account found with that ID Number.', success: null });
+    return res.render('auth/forgot-password', { error: 'No account found with that username.', success: null });
   }
 
   const token = crypto.randomBytes(32).toString('hex');

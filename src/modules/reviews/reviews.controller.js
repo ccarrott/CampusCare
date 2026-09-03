@@ -64,7 +64,8 @@ export const handleReviewSubmission = catchAsync(async (req, res) => {
   const { staffNumber, rating, reviewText } = req.body;
   const studentNumber = req.session.user.id;
 
-  if (!staffNumber || !rating || !reviewText) {
+  // Comment is optional — only staffNumber + a valid rating are required.
+  if (!staffNumber || !rating) {
     return res.redirect('/consultations/nurse-reviews');
   }
 
@@ -92,7 +93,7 @@ export const handleReviewSubmission = catchAsync(async (req, res) => {
     studentNumber,
     staffNumber,
     rating: parseInt(rating, 10),
-    reviewText: sanitize(reviewText)
+    reviewText: sanitize(reviewText || '')
   });
 
   res.redirect('/consultations/nurse-reviews?toast=Review+submitted+for+approval');

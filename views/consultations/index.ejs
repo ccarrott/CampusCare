@@ -11,6 +11,8 @@
 
   <% if (appointments.length > 0) { %>
 
+    <%- include('../partials/consult-progress-section', { appointments: appointments }) %>
+
     <section class="content-card">
       <h2>Appointment History</h2>
       <table class="data-table">

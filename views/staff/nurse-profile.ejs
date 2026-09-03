@@ -1,0 +1,114 @@
+<%- include('../partials/header', { title: nurse.firstName + ' ' + nurse.lastName }) %>
+<%- include('../partials/navbar') %>
+
+<main class="container page-wrapper">
+  <%- include('../partials/alerts') %>
+
+  <a href="/staff" class="text-muted" style="font-size:0.85rem;">&larr; Back to Meet Our Staff</a>
+
+  <!-- Profile header -->
+  <section class="content-card staff-profile-header">
+    <div class="staff-avatar staff-avatar-lg"><%= (nurse.firstName || '?').charAt(0).toUpperCase() %></div>
+    <div style="flex:1;">
+      <h1 style="margin:0;"><%= nurse.firstName %> <%= nurse.lastName %></h1>
+      <% if (nurse.campus) { %><span class="staff-campus-badge"><%= nurse.campus %></span><% } %>
+      <p class="text-muted" style="margin:6px 0 0;"><%= nurse.yearsExperience > 0 ? nurse.yearsExperience + ' years experience' : 'Campus Nurse' %></p>
+      <div style="margin-top:8px;">
+        <span class="star-rating-static" style="font-size:1.3rem;">
+          <% for (let i = 1; i <= 5; i++) { %><% if (nurse.averageRating && i <= Math.round(nurse.averageRating)) { %><span>&#9733;</span><% } else { %><span class="star-empty">&#9734;</span><% } %><% } %>
+        </span>
+        <span class="text-muted" style="font-size:0.9rem;">
+          <%= nurse.averageRating ? nurse.averageRating + ' / 5 from ' + nurse.ratingCount + ' review' + (nurse.ratingCount !== 1 ? 's' : '') : 'No ratings yet' %>
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <% if (nurse.bio) { %>
+    <section class="content-card">
+      <h2>About</h2>
+      <p><%= nurse.bio %></p>
+    </section>
+  <% } %>
+
+  <!-- Reviews with filter/sort -->
+  <section class="content-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <h2 style="border-bottom:none; margin:0; padding:0;">Reviews (<%= reviews.length %>)</h2>
+      <% if (reviews.length > 0) { %>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <select id="reviewRatingFilter" class="form-control" style="width:auto; font-size:0.85rem; padding:6px 10px;">
+            <option value="all">All ratings</option>
+            <option value="5">5 stars</option>
+            <option value="4">4 stars</option>
+            <option value="3">3 stars</option>
+            <option value="2">2 stars</option>
+            <option value="1">1 star</option>
+          </select>
+          <select id="reviewSort" class="form-control" style="width:auto; font-size:0.85rem; padding:6px 10px;">
+            <option value="newest">Newest</option>
+            <option value="highest">Highest rated</option>
+            <option value="lowest">Lowest rated</option>
+          </select>
+        </div>
+      <% } %>
+    </div>
+
+    <% if (reviews.length > 0) { %>
+      <div id="reviewList" style="margin-top:14px;">
+        <% reviews.forEach(function(review) { %>
+          <div class="staff-review-row" data-score="<%= review.score %>" data-date="<%= review.date ? new Date(review.date).getTime() : 0 %>">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong style="font-size:0.9rem;"><%= review.patient %></strong>
+              <span class="star-rating-static" style="font-size:0.95rem;">
+                <% for (let i = 1; i <= 5; i++) { %><% if (i <= review.score) { %><span>&#9733;</span><% } else { %><span class="star-empty">&#9734;</span><% } %><% } %>
+              </span>
+            </div>
+            <% if (review.comment) { %><p class="text-muted" style="margin:4px 0 0; font-size:0.9rem;">"<%= review.comment %>"</p><% } %>
+            <% if (review.date) { %><span class="text-muted" style="font-size:0.72rem;"><%= new Date(review.date).toLocaleDateString('en-ZA', { dateStyle: 'medium' }) %></span><% } %>
+          </div>
+        <% }); %>
+      </div>
+      <p class="text-muted text-center" id="noReviewMatch" style="display:none; margin-top:12px;">No reviews with that rating.</p>
+    <% } else { %>
+      <p class="text-muted" style="margin-top:12px;">No reviews yet — be the first after your consultation!</p>
+    <% } %>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  var list = document.getElementById('reviewList');
+  if (!list) return;
+  var ratingSel = document.getElementById('reviewRatingFilter');
+  var sortSel = document.getElementById('reviewSort');
+  var noMatch = document.getElementById('noReviewMatch');
+  var rows = Array.prototype.slice.call(list.querySelectorAll('.staff-review-row'));
+
+  function apply() {
+    var rating = ratingSel.value;
+    var sort = sortSel.value;
+
+    var sorted = rows.slice().sort(function (a, b) {
+      if (sort === 'newest') return b.dataset.date - a.dataset.date;
+      if (sort === 'highest') return b.dataset.score - a.dataset.score;
+      if (sort === 'lowest') return a.dataset.score - b.dataset.score;
+      return 0;
+    });
+    sorted.forEach(function (r) { list.appendChild(r); });
+
+    var shown = 0;
+    rows.forEach(function (r) {
+      var match = rating === 'all' || r.dataset.score === rating;
+      r.style.display = match ? '' : 'none';
+      if (match) shown++;
+    });
+    if (noMatch) noMatch.style.display = shown === 0 ? 'block' : 'none';
+  }
+  ratingSel.addEventListener('change', apply);
+  sortSel.addEventListener('change', apply);
+})();
+</script>
+
+<%- include('../partials/footer') %>

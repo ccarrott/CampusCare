@@ -34,6 +34,7 @@ import staffRoutes from './modules/staff/staff.routes.js';
 import { getUpcomingAppointmentsAPI } from './modules/notifications/notifications.controller.js';
 import { showJoinConsultation } from './modules/appointments/appointments.controller.js';
 import { handleDailyWebhook } from './modules/appointments/webhook.controller.js';
+import * as AppointmentsModel from './modules/appointments/appointments.model.js';
 import { exportAppointmentsCSV, exportTrendsCSV } from './modules/export/export.controller.js';
 import statesApi from './config/states/states-api.js';
 
@@ -109,8 +110,15 @@ app.set('views', path.join(__dirname, '../views'));
 // ============================================================================
 
 // Root dashboard
-app.get('/', requireAuth, (req, res) => {
-  res.render('index', { user: req.session.user });
+app.get('/', requireAuth, async (req, res) => {
+  let appointments = [];
+  if (req.session.user.role === 'student') {
+    try {
+      await AppointmentsModel.expirePastAppointments();
+      appointments = await AppointmentsModel.getAppointmentsByStudentWithStatus(req.session.user.id);
+    } catch (e) { /* non-blocking — dashboard still renders */ }
+  }
+  res.render('index', { user: req.session.user, appointments });
 });
 
 // Auth (login, register, logout, password reset)

@@ -174,7 +174,7 @@ CampusCare/
 
 ## Database Schema
 
-The platform uses **17 tables** with full relational integrity:
+The platform uses **16 tables** with full relational integrity:
 
 | Table | Purpose |
 |-------|---------|
@@ -191,8 +191,7 @@ The platform uses **17 tables** with full relational integrity:
 | `NurseAvailability` | Weekly slot grid (27 slots × 5 days per nurse) |
 | `CampusZone` | GPS-located campus zones (8 zones) |
 | `StudentZone` | Student ↔ zone address mapping |
-| `Clinic` | Clinic locations and contact info |
-| `MedicalFacility` | Medical facilities linked to clinics |
+| `Clinic` | Campus health facilities (nurse assignment + display) |
 | `PasswordResetToken` | Single-use password reset tokens with expiry |
 | `sessions` | Persistent session store |
 

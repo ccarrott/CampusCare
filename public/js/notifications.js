@@ -163,8 +163,10 @@
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
-  // Initialize
-  requestPermission();
+  // Initialize — NOTE (Phase 29C): we no longer eagerly call requestPermission() on every
+  // page load. If notification permission was already granted in a prior session, reminders
+  // still fire; otherwise we simply skip (no contextless prompt). checkAppointments handles
+  // the "not granted" case gracefully by logging instead of firing.
   checkAppointments();
 
   // Poll every 60 seconds (more responsive for 1/5/15 min triggers)

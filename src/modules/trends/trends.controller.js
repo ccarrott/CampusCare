@@ -15,13 +15,11 @@ export const renderTrendsDashboard = catchAsync(async (req, res) => {
   const days = PERIOD_MAP[period] || 30;
 
   const symptomAggregation = await TrendsModel.getSymptomAggregation();
-  const facilityDistribution = await TrendsModel.getFacilityDistribution();
   const symptomsByType = await TrendsModel.getSymptomsByTypeForPeriod(days);
 
   res.render('trends/dashboard', {
     user: req.session.user,
     symptomAggregation,
-    facilityDistribution,
     symptomsByType,
     period,
     error: null

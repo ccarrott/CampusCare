@@ -16,7 +16,8 @@
       <h2>Account Details</h2>
       <ul class="profile-details">
         <% if (user.role === 'student') { %>
-          <li><span class="detail-label">Student Number</span><span class="detail-value"><%= profile.StudentNumber %></span></li>
+          <li><span class="detail-label">Student Number</span><span class="detail-value"><%= profile.StudentNumber.replace(/^s/i, '') %></span></li>
+          <li><span class="detail-label">Username</span><span class="detail-value"><%= profile.StudentNumber %></span></li>
           <li><span class="detail-label">First Name</span><span class="detail-value"><%= profile.FirstName %></span></li>
           <li><span class="detail-label">Last Name</span><span class="detail-value"><%= profile.LastName %></span></li>
           <li><span class="detail-label">Email</span><span class="detail-value"><%= profile.StudentNumber %>@mandela.ac.za</span></li>
@@ -28,8 +29,8 @@
           <li><span class="detail-label">Last Name</span><span class="detail-value"><%= profile.LastName %></span></li>
           <li><span class="detail-label">Email</span><span class="detail-value"><%= profile.Email || 'Not set' %></span></li>
           <li><span class="detail-label">Phone</span><span class="detail-value"><%= profile.PhoneNumber || 'Not set' %></span></li>
-          <li><span class="detail-label">Address</span><span class="detail-value"><%= profile.Address || 'Not provided' %></span></li>
-          <li><span class="detail-label">Clinic</span><span class="detail-value"><%= profile.ClinicID || 'Not assigned' %></span></li>
+          <li><span class="detail-label">Campus</span><span class="detail-value"><%= profile.Campus || 'Not set' %></span></li>
+          <li><span class="detail-label">Clinic</span><span class="detail-value"><%= profile.ClinicName || 'Not assigned' %></span></li>
         <% } else if (user.role === 'admin') { %>
           <li><span class="detail-label">Staff Number</span><span class="detail-value"><%= profile.StaffNumber %></span></li>
           <li><span class="detail-label">Name</span><span class="detail-value"><%= profile.Name %></span></li>

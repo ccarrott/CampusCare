@@ -8,6 +8,10 @@
  */
 (function() {
   function getCsrf() {
+    // Prefer the page-wide meta tag (present on every logged-in page), then fall back
+    // to a form's hidden input for older pages.
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta && meta.content) return meta.content;
     var el = document.querySelector('input[name="_csrf"]');
     return el ? el.value : '';
   }
@@ -15,7 +19,10 @@
   async function stateCall(endpoint, confirmMsg) {
     if (confirmMsg && !confirm(confirmMsg)) return;
     var token = getCsrf();
-    if (!token) { console.error('❌ No CSRF token found. Are you logged in?'); return; }
+    if (!token) {
+      console.error('❌ No CSRF token found on this page. Make sure you are logged in as an admin, then try again (any admin page works).');
+      return;
+    }
     console.log('⏳ Working...');
     try {
       var r = await fetch(endpoint, { method: 'POST', headers: { 'x-csrf-token': token } });

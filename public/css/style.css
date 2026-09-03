@@ -24,6 +24,13 @@
   --status-warning: #f59e0b;
   --status-danger: #ef4444;
   --border-color: #e2e8f0;
+  /* Availability slot colours (cells + legend swatches share these) */
+  --slot-available: #d1fae5;
+  --slot-available-border: #6ee7b7;
+  --slot-unavailable: #cbd5e1;
+  --slot-unavailable-border: #94a3b8;
+  --slot-booked: #fde68a;
+  --slot-booked-border: #d97706;
   --radius-md: 8px;
   --radius-lg: 12px;
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -261,6 +268,133 @@ img {
   border-radius: 12px;
   font-weight: 600;
 }
+
+/* ---------- Top-bar Identity Chip (Phase 29A) ---------- */
+.topbar-identity {
+  position: relative;
+}
+
+.identity-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 4px 10px 4px 4px;
+  cursor: pointer;
+  color: var(--text-dark);
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.identity-btn:hover {
+  background: var(--bg-canvas);
+  border-color: var(--accent-cyan);
+}
+
+.identity-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--brand-yellow);
+  color: var(--primary-navy);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.identity-name {
+  white-space: nowrap;
+}
+
+.identity-caret {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  transition: transform 0.15s;
+}
+
+.topbar-identity.open .identity-caret {
+  transform: rotate(180deg);
+}
+
+.identity-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  background: var(--surface-white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 6px;
+  display: none;
+  z-index: 1200;
+}
+
+.topbar-identity.open .identity-menu {
+  display: block;
+  animation: identityMenuIn 0.16s ease-out;
+  transform-origin: top right;
+}
+
+@keyframes identityMenuIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.identity-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  color: var(--text-dark);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.15s ease, color 0.15s ease, padding-left 0.15s ease;
+}
+
+.identity-menu-item span {
+  transition: transform 0.15s ease;
+}
+
+.identity-menu-item:hover,
+.identity-menu-item:focus-visible {
+  background: var(--bg-canvas);
+  text-decoration: none;
+  padding-left: 16px;
+  outline: none;
+}
+
+.identity-menu-item:hover span {
+  transform: scale(1.15);
+}
+
+.identity-menu-item:active {
+  transform: scale(0.98);
+}
+
+.identity-menu-danger {
+  color: var(--status-danger);
+}
+
+.identity-menu-danger:hover,
+.identity-menu-danger:focus-visible {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--status-danger);
+}
+
+[data-theme="dark"] .identity-btn { color: #e2e8f0; }
+[data-theme="dark"] .identity-btn:hover { background: #2d3748; }
+[data-theme="dark"] .identity-menu-item { color: #e2e8f0; }
+[data-theme="dark"] .identity-menu-item:hover,
+[data-theme="dark"] .identity-menu-item:focus-visible { background: #2d3748; }
 
 /* ==========================================================================
    MAIN CONTENT AREA
@@ -563,6 +697,42 @@ textarea.form-control {
   background-color: #f1f5f9;
 }
 
+/* ---------- Sortable Table Headers ---------- */
+.data-table th.sortable-th {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+
+.data-table th.sortable-th::after {
+  content: '\2195'; /* up-down arrow — neutral/unsorted */
+  font-size: 0.8em;
+  opacity: 0.35;
+  margin-left: 6px;
+}
+
+.data-table th.sortable-th:hover {
+  color: var(--accent-text);
+}
+
+.data-table th.sortable-th.sort-asc::after {
+  content: '\2191'; /* up arrow */
+  opacity: 1;
+  color: var(--accent-text);
+}
+
+.data-table th.sortable-th.sort-desc::after {
+  content: '\2193'; /* down arrow */
+  opacity: 1;
+  color: var(--accent-text);
+}
+
+.data-table th.sortable-th:focus-visible {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: -2px;
+}
+
 /* ---------- Medication Cards ---------- */
 .medication-list {
   display: flex;
@@ -807,7 +977,7 @@ textarea.form-control {
 }
 
 .slot-cell.slot-available {
-  background-color: #d1fae5;
+  background-color: var(--slot-available);
 }
 
 .slot-cell.slot-available:hover {
@@ -815,7 +985,7 @@ textarea.form-control {
 }
 
 .slot-cell.slot-unavailable {
-  background-color: #cbd5e1;
+  background-color: var(--slot-unavailable);
 }
 
 .slot-cell.slot-unavailable:hover {
@@ -859,6 +1029,11 @@ textarea.form-control {
   color: var(--status-danger);
 }
 
+/* Dark mode: mute the bright badge backgrounds (Phase 29B fix) */
+[data-theme="dark"] .severity-low { background-color: rgba(16, 185, 129, 0.15); color: #6ee7b7; }
+[data-theme="dark"] .severity-moderate { background-color: rgba(245, 158, 11, 0.15); color: #fcd34d; }
+[data-theme="dark"] .severity-high { background-color: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+
 /* ---------- Booking Grid: Selected Slot ---------- */
 .slot-cell.slot-selected {
   background-color: var(--accent-cyan) !important;
@@ -875,7 +1050,7 @@ textarea.form-control {
 
 /* ---------- Availability: Booked State (locked) ---------- */
 .slot-cell.slot-booked {
-  background-color: #fde68a;
+  background-color: var(--slot-booked);
   cursor: not-allowed;
 }
 
@@ -902,9 +1077,9 @@ textarea.form-control {
   border-radius: 3px;
 }
 
-.swatch-available { background-color: #d1fae5; border: 1px solid #6ee7b7; }
-.swatch-unavailable { background-color: #cbd5e1; border: 1px solid #94a3b8; }
-.swatch-booked { background-color: #fde68a; border: 2px solid #d97706; }
+.swatch-available { background-color: var(--slot-available); border: 1px solid var(--slot-available-border); }
+.swatch-unavailable { background-color: var(--slot-unavailable); border: 1px solid var(--slot-unavailable-border); }
+.swatch-booked { background-color: var(--slot-booked); border: 2px solid var(--slot-booked-border); }
 
 /* ---------- Status Badges ---------- */
 .status-badge {
@@ -996,6 +1171,13 @@ textarea.form-control {
   --text-dark: #f1f5f9;
   --text-muted: #94a3b8;
   --border-color: #475569;
+  /* Dark-mode slot colours — cells AND legend swatches read these, so they always match */
+  --slot-available: #1a3b2a;
+  --slot-available-border: #2f6b4d;
+  --slot-unavailable: #374151;
+  --slot-unavailable-border: #4b5563;
+  --slot-booked: #5c4a1a;
+  --slot-booked-border: #b8860b;
 }
 
 [data-theme="dark"] .sidebar {
@@ -1060,14 +1242,6 @@ textarea.form-control {
 
 [data-theme="dark"] .auth-brand {
   color: #f1f5f9;
-}
-
-[data-theme="dark"] .slot-cell.slot-available {
-  background-color: #1a3b2a;
-}
-
-[data-theme="dark"] .slot-cell.slot-unavailable {
-  background-color: #374151;
 }
 
 [data-theme="dark"] .availability-grid th {
@@ -1805,6 +1979,43 @@ textarea.form-control {
   align-items: center;
 }
 
+/* Token-input: pills + inline search live in one bordered bar (Phase 29B) */
+.symptom-tokenbar {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  min-height: 48px;
+  background: var(--surface-white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: text;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.symptom-tokenbar:focus-within {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.2);
+}
+
+.symptom-token-input {
+  flex: 1;
+  min-width: 140px;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-dark);
+  font-size: 0.9rem;
+  padding: 4px 2px;
+}
+
+.symptom-token-input::placeholder { color: var(--text-muted); }
+
+[data-theme="dark"] .symptom-tokenbar { background: #1e293b; border-color: #475569; }
+[data-theme="dark"] .symptom-token-input { color: #f1f5f9; }
+
 .symptom-summary-tag {
   display: inline-flex;
   align-items: center;
@@ -1820,10 +2031,15 @@ textarea.form-control {
 .symptom-summary-tag .remove {
   cursor: pointer;
   opacity: 0.7;
-  font-size: 1.2rem;
+  font-size: 1rem;
   line-height: 1;
-  padding: 2px 4px;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
+  flex-shrink: 0;
   transition: opacity 0.15s, background 0.15s;
 }
 
@@ -1929,4 +2145,279 @@ textarea.form-control {
 [data-theme="dark"] .map-legend-panel {
   background: #2d3748;
   color: #f1f5f9;
+}
+
+/* ==========================================================================
+   MEET OUR STAFF (Phase 29C redesign)
+   ========================================================================== */
+.staff-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.staff-pill {
+  border: 1px solid var(--border-color);
+  background: var(--surface-white);
+  color: var(--text-dark);
+  padding: 6px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.staff-pill:hover { border-color: var(--accent-cyan); }
+
+.staff-pill.active {
+  background: var(--brand-yellow);
+  color: var(--primary-navy);
+  border-color: var(--brand-yellow);
+}
+
+.staff-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.staff-card {
+  background: var(--surface-white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.staff-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.staff-card-head {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.staff-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--brand-yellow);
+  color: var(--primary-navy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.staff-avatar-lg { width: 72px; height: 72px; font-size: 2rem; }
+
+.staff-head-info { flex: 1; min-width: 0; }
+
+.staff-name {
+  border-bottom: none;
+  margin: 0 0 4px;
+  padding: 0;
+  font-size: 1.15rem;
+}
+
+.staff-campus-badge {
+  display: inline-block;
+  background: var(--secondary-blue);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+
+.staff-exp { margin: 6px 0 0; font-size: 0.82rem; }
+
+.staff-rating { margin: 14px 0 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.staff-bio { font-size: 0.9rem; margin: 0 0 14px; line-height: 1.5; }
+
+.staff-reviews-preview {
+  border-top: 1px solid var(--border-color);
+  padding-top: 12px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.staff-review-snippet { display: flex; flex-direction: column; gap: 2px; }
+.staff-review-text { font-size: 0.82rem; font-style: italic; }
+
+.staff-view-btn { margin-top: auto; }
+
+.staff-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.staff-review-row {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+.staff-review-row:last-child { border-bottom: none; }
+
+[data-theme="dark"] .staff-card { background: #2d3748; border-color: #475569; }
+[data-theme="dark"] .staff-pill { background: #2d3748; color: #e2e8f0; border-color: #475569; }
+[data-theme="dark"] .staff-pill.active { background: var(--brand-yellow); color: var(--primary-navy); }
+
+/* ---------- Symptom Tier Dots (Phase 29B) — CSS circles, guaranteed equal size ---------- */
+.tier-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-left: 5px;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+  box-sizing: border-box;
+}
+.tier-dot-2 { background: transparent; border: 2px solid var(--brand-yellow); } /* hollow yellow */
+.tier-dot-3 { background: var(--status-danger); border: 2px solid var(--status-danger); } /* solid red */
+
+/* ---------- Symptom Search + Autocomplete (Phase 29B) ---------- */
+.symptom-search-wrap { position: relative; margin-bottom: 14px; }
+
+.symptom-suggestions {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background: var(--surface-white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: 50;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.symptom-suggestion {
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--border-color);
+}
+.symptom-suggestion:last-child { border-bottom: none; }
+.symptom-suggestion:hover { background: var(--bg-canvas); }
+.symptom-suggestion-empty { padding: 12px 14px; font-size: 0.85rem; color: var(--text-muted); }
+
+[data-theme="dark"] .symptom-suggestions { background: #2d3748; border-color: #475569; }
+[data-theme="dark"] .symptom-suggestion { border-color: #475569; color: #e2e8f0; }
+[data-theme="dark"] .symptom-suggestion:hover { background: #334155; }
+
+/* ==========================================================================
+   CONSULTATION PROGRESS BAR (Phase 29C)
+   ========================================================================== */
+.consult-progress-row { padding: 14px 0; border-bottom: 1px solid var(--border-color); }
+.consult-progress-row:last-child { border-bottom: none; }
+.consult-progress-title { margin: 0 0 12px; font-weight: 600; font-size: 0.95rem; }
+
+.consult-progress {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.cp-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.cp-node {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: var(--bg-canvas);
+  border: 2px solid var(--border-color);
+  color: var(--text-muted);
+  transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease, transform 0.3s ease;
+}
+
+.cp-label { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; transition: color 0.4s ease; }
+
+.cp-bar {
+  flex: 1;
+  height: 3px;
+  background: var(--border-color);
+  margin: 0 4px;
+  position: relative;
+  border-radius: 2px;
+  overflow: hidden;
+  align-self: flex-start;
+  margin-top: 14px;
+}
+
+.cp-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 0;
+  background: var(--brand-yellow);
+  transition: width 0.5s ease;
+}
+.cp-bar.cp-bar-done::after { width: 100%; }
+
+/* Done steps */
+.cp-step.cp-done .cp-node {
+  background: var(--brand-yellow);
+  border-color: var(--brand-yellow);
+  color: var(--primary-navy);
+}
+.cp-step.cp-done .cp-label { color: var(--text-dark); }
+
+/* Active step — soft pulse */
+.cp-step.cp-active .cp-node {
+  background: var(--surface-white);
+  border-color: var(--brand-yellow);
+  color: var(--accent-text-yellow);
+  animation: cpPulse 1.8s ease-in-out infinite;
+}
+.cp-step.cp-active .cp-label { color: var(--text-dark); font-weight: 600; }
+
+@keyframes cpPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 204, 0, 0.5); }
+  50% { box-shadow: 0 0 0 6px rgba(255, 204, 0, 0); }
+}
+
+/* Once-only completion celebration beat */
+.consult-progress.cp-celebrate .cp-node {
+  animation: cpPop 0.5s ease;
+}
+@keyframes cpPop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-step.cp-active .cp-node { animation: none; }
+  .consult-progress.cp-celebrate .cp-node { animation: none; }
+  .cp-bar::after { transition: none; }
 }

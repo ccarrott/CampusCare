@@ -1,6 +1,8 @@
 <%- include('./partials/header', { title: 'Dashboard' }) %>
 <%- include('./partials/navbar') %>
 
+<% if (user.role === 'student') { %><span id="requestLocationFlag" hidden></span><% } %>
+
 <main class="container page-wrapper">
   <%- include('./partials/alerts') %>
 
@@ -13,6 +15,10 @@
     </h1>
     <p class="subtitle">Your CampusCare dashboard — quick access to all health services.</p>
   </header>
+
+  <% if (user.role === 'student' && typeof appointments !== 'undefined') { %>
+    <%- include('./partials/consult-progress-section', { appointments: appointments }) %>
+  <% } %>
 
   <% if (user.role === 'student') { %>
 
@@ -121,7 +127,7 @@
       <section class="content-card">
         <div class="card-icon">&#128101;</div>
         <h2>Manage Students</h2>
-        <p class="text-muted">Add, edit, or remove student accounts from the system.</p>
+        <p class="text-muted">View, add, or remove student accounts from the system.</p>
         <a href="/management/admin/students" class="btn btn-primary">Manage Students</a>
       </section>
 
