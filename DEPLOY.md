@@ -1,110 +1,202 @@
-# Deploying Campus Care (free, on Render)
+# Deploying Campus Care for free
 
-Campus Care is an Express + EJS + MySQL app. This guide gets it running on Render's
-free tier, talking to your existing Aiven MySQL database, with no secrets in the repo.
+Campus Care is an Express + EJS + MySQL app with no build step, so hosting it is
+mostly a matter of pointing a Node service at a MySQL database and setting
+environment variables. This guide gets you a public HTTPS URL that behaves
+**exactly like `npm start` on your laptop**, at no cost.
 
-## What's already in place
-- `.env` and `*.pem` are gitignored and were **never committed** — no secrets in git history.
-- The DB connection reads its SSL CA from the `DB_CA_CERT` env var (no file needed on the host).
-- The server uses the host-injected `PORT` and enables `trust proxy` in production so secure
-  session cookies work behind Render's HTTPS.
-- `render.yaml` describes the service; `.env.example` documents every variable.
+Two free pieces:
+
+| Piece | Provider | Free tier |
+|-------|----------|-----------|
+| Web service | **Render** | 750 instance-hours/month; sleeps after ~15 min idle |
+| Database | **Aiven for MySQL** | 1 shared CPU, 5 GB — free plan, no card |
+
+You can swap either one (see [Alternatives](#alternatives)). Nothing in the app is
+Render-specific.
 
 ---
 
-## 1. Push to GitHub
-Your working tree already ignores secrets. Commit and push:
+## 0. Before you start
+
+You need a GitHub account with this repository pushed, and about twenty minutes.
+Have `.env` open — you will be copying values out of it.
+
+Confirm no secrets are in the repo:
+
+```bash
+git ls-files | grep -E '\.env$|\.pem$'      # must print nothing
 ```
-git add -A
-git commit -m "Prepare for deployment"
-git push
-```
-Confirm `.env` and `ca.pem` are NOT in the push (they're gitignored).
 
-## 2. Get your database CA certificate (one-time)
-Managed MySQL requires SSL. Render has no file system for `ca.pem`, so we pass the cert
-as an env var:
-1. Open the local `ca.pem` file (project root) — it's the Aiven CA certificate.
-2. You'll paste its full contents into `DB_CA_CERT` in step 4.
-   - It must be one value including the `-----BEGIN CERTIFICATE-----` / `-----END CERTIFICATE-----`
-     lines. Render accepts multi-line values, so paste it as-is.
-   - (If Aiven rotated it, download a fresh CA from the Aiven console → your MySQL service → "CA certificate".)
+---
 
-## 3. Create the Render service
-Option A — Blueprint (uses `render.yaml`):
-- Render dashboard → **New → Blueprint** → connect this repo → Apply.
+## 1. Create the database (Aiven)
 
-Option B — manual:
-- **New → Web Service** → connect the repo.
-- Runtime: Node. Build command: `npm install`. Start command: `npm start`. Plan: Free.
+1. Sign up at [aiven.io](https://aiven.io) — the free plan needs no card.
+2. **Create service → MySQL → Free plan**. Pick the region closest to your users
+   (`aws-eu-west-1` is a reasonable choice from South Africa; there is no free
+   African region).
+3. Wait for the service to reach **Running** (a few minutes).
+4. From the service **Overview** tab collect:
+   - Host, Port, User (`avnadmin`), Password, Database name (`defaultdb`)
+   - **CA Certificate** — click *Download* and open the file in a text editor.
+     You will paste its whole contents, `-----BEGIN CERTIFICATE-----` line included.
 
-## 4. Set environment variables (Render → your service → Environment)
-Set these (values come from your local `.env`):
+> Managed MySQL requires TLS. Campus Care reads the CA from the `DB_CA_CERT`
+> environment variable, so no file needs to exist on the host. Skip it and the
+> connection still works but is **unverified** — the app warns loudly on boot.
+
+## 2. Create the web service (Render)
+
+1. Sign up at [render.com](https://render.com) and connect your GitHub account.
+2. **New → Blueprint**, pick this repository, **Apply**. Render reads
+   `render.yaml` and creates the service with the right build and start commands.
+
+   *Manual alternative:* **New → Web Service** → Runtime **Node**, Build
+   `npm install`, Start `npm start`, Plan **Free**, Health check path `/healthz`.
+
+3. Render will prompt for every variable marked `sync: false`. Fill them in from
+   step 1, or add them later under **Environment**.
+
+## 3. Set the environment variables
 
 | Key | Value |
 |-----|-------|
 | `NODE_ENV` | `production` |
 | `DB_HOST` | your Aiven host |
 | `DB_PORT` | your Aiven port |
-| `DB_USER` | your Aiven user |
+| `DB_USER` | `avnadmin` |
 | `DB_PASSWORD` | your Aiven password |
 | `DB_NAME` | `defaultdb` |
-| `DB_CA_CERT` | paste the full contents of `ca.pem` |
-| `SESSION_SEED` | a long random hex string (Blueprint auto-generates one) |
-| `APP_BASE_URL` | `https://<your-app>.onrender.com` (fill in after the URL exists) |
-| `DAILY_API_KEY` | your Daily key (only if using video) |
-| `DAILY_DOMAIN` | your Daily subdomain — also drives the camera/mic Permissions-Policy and the CSP frame origin |
-| `DAILY_WEBHOOK_SECRET` | your Daily webhook secret |
-| `MAPTILER_KEY` | your MapTiler key (optional — map falls back to free tiles without it) |
-| `ALLOW_INSECURE_PASSWORD_RESET` | leave UNSET. Only set to `true` to demo the reset flow — see the security checklist |
+| `DB_CA_CERT` | the whole CA certificate, pasted as-is (Render accepts multi-line values) |
+| `SESSION_SEED` | a long random hex string — the Blueprint generates one for you |
+| `APP_TIMEZONE` | `Africa/Johannesburg` (already in `render.yaml`) |
+| `DB_TIMEZONE` | `+02:00` (already in `render.yaml`) |
+| `APP_BASE_URL` | `https://<your-app>.onrender.com` — fill in once the URL exists |
+| `DEMO_ADMIN_PASSWORD` / `DEMO_NURSE_PASSWORD` / `DEMO_STUDENT_PASSWORD` | your own values — the repo defaults are public |
+| `MAPTILER_KEY` | optional; without it the map uses free CARTO/OSM tiles |
+| `DAILY_API_KEY` / `DAILY_DOMAIN` / `DAILY_WEBHOOK_SECRET` | only if you want video consultations |
+| `ALLOW_INSECURE_PASSWORD_RESET` | leave unset — see the checklist at the bottom |
 
-`DB_CA_CERT` is not optional in spirit: without it the app still connects over TLS but
-does not verify the server's certificate, and it logs a warning on boot saying so.
+Need a random `SESSION_SEED`?
 
-Do NOT reuse the values that were in the local `.env` if this repo is public — rotate them
-(see the checklist at the bottom).
-
-## 5. Initialise the database (one-time)
-After the first successful deploy, open Render → your service → **Shell** and run:
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
-npm run setup          # schema + migrations + symptom seed + zone seed
-npm run state:showcase # optional: rich demo data
+
+## 4. Initialise the database
+
+After the first successful deploy, open **Render → your service → Shell**:
+
+```bash
+npm run setup            # schema + migrations + symptom seed + zone seed
+npm run state:showcase   # optional: rich demo data
 ```
-`npm run setup` creates the base tables if they are missing, so it works against a
-brand-new empty database as well as the existing one, and it is safe to re-run —
-already-applied steps are reported as `[SKIP]` and do not fail the run.
 
-## 6. Third-party dashboards (only if you use them)
-- **MapTiler**: add `https://<your-app>.onrender.com` to the key's Allowed HTTP Origins.
-- **Daily.co**: add your Render domain to allowed domains; set the webhook URL to
-  `https://<your-app>.onrender.com/consultations/webhook/daily`. The `Permissions-Policy`
-  and CSP frame origin are derived from `DAILY_DOMAIN`, so just set that env var
-  correctly — no code change needed.
+`npm run setup` builds the schema from nothing, so a brand-new Aiven database is
+fine. It is safe to re-run — already-applied steps print `[SKIP]`.
 
-## Notes
-- Render free web services sleep after ~15 min idle; the next request cold-starts in ~30s.
-  Fine for a demo/student project.
-- **Sessions are held in memory**, so every cold start, restart or deploy signs everyone
-  out, and the service cannot be scaled past one instance. Node prints a warning about
-  this on boot. If persistent logins matter, add `express-mysql-session` and pass a
-  `store` to `createSessionMiddleware()` in `src/config/session.js`.
-- The health check is `/healthz` — a plain 200 with no DB or session work.
-- The admin-only "state" endpoints (`showcase`/`outbreak`/`clear`/`naked`) remain available
-  in production but are gated behind an admin login. `naked` deletes all data — use with care.
+> No Shell on the free plan? Run the same commands from your laptop with the
+> Aiven values in your local `.env`; they talk to the same database.
+
+## 5. Third-party dashboards (only if you use them)
+
+- **MapTiler** — add `https://<your-app>.onrender.com` to the key's Allowed HTTP Origins.
+- **Daily.co** — add your Render domain to allowed domains, and set the webhook URL to
+  `https://<your-app>.onrender.com/consultations/webhook/daily`. The camera/mic
+  `Permissions-Policy` and the CSP frame origin are derived from `DAILY_DOMAIN`, so
+  just set that variable correctly — no code change needed.
 
 ---
 
-## Security checklist before going public
-- [ ] Confirm `.env` and `ca.pem` are not in the repo (`git ls-files` shows neither).
-- [ ] If the repo is public, ROTATE these (they were in the local `.env`): the Aiven DB
-      password, `SESSION_SEED`, and the Daily API key/webhook secret. Set the new values
-      only in Render's Environment tab.
-- [ ] `MAPTILER_KEY` is a public browser key — no need to rotate, just origin-restrict it.
-- [ ] Set `DB_CA_CERT`. Without it the database connection is encrypted but unauthenticated.
-- [ ] Leave `ALLOW_INSECURE_PASSWORD_RESET` unset. There is no mail server, so the reset
-      link can only be rendered in the page — which means anyone who knows a student
-      number could reset that account. In production the link is written to the server log
-      instead, and the form gives the same neutral answer whether or not the account
-      exists. Set the flag to `true` only for a supervised live demo, and unset it after.
-- [ ] Change the seeded demo passwords (`admin123`, `nurse123`, `password123` in
-      `src/config/states/`) before pointing anyone at the deployed URL.
+## Will it behave like localhost?
+
+Yes, and the things that usually break have been dealt with:
+
+| Usually breaks in production | How Campus Care handles it |
+|------------------------------|----------------------------|
+| **Times shift by hours** — hosts run containers in UTC | The app pins its own timezone (`src/config/timezone.js`): Node's clock *and* the MySQL session both run at SAST, so bookable days, appointment times, expiry and trend windows match a machine in Gqeberha. |
+| **Everyone signed out after a restart** | Sessions live in MySQL, not process memory, so they survive cold starts and redeploys. |
+| **Secure cookies dropped behind a proxy** | `trust proxy` is enabled in production, so Render's HTTPS termination is understood. |
+| **A CDN is blocked and the page half-loads** | Nothing is loaded from a CDN. Every script, stylesheet and webfont is served from your own origin. |
+| **Assets are slow on mobile** | Responses are gzipped; images are sized to what is actually displayed. |
+| **Database file paths don't exist on the host** | The TLS CA comes from an environment variable. |
+
+Two genuine differences remain, both inherent to the free tier:
+
+1. **Cold starts.** A free Render service sleeps after ~15 minutes of no traffic.
+   The next request takes roughly 30–60 seconds while it wakes. Your session
+   survives it, but the wait is real — **start your app a minute before a live
+   demo**. Paid Render (\$7/month) removes this entirely.
+2. **Shared CPU.** The free instance is small. Fine for a demo or a class of
+   users; the heat-map query over a year of data is the heaviest thing it does.
+
+If you want to reduce cold starts, a free uptime monitor (UptimeRobot,
+cron-job.org) pinging `https://<your-app>.onrender.com/healthz` every 10 minutes
+keeps it warm. Note that Render intends free services to sleep, so treat this as
+a demo-day convenience rather than a permanent arrangement.
+
+---
+
+## Alternatives
+
+| Host | Free tier | Notes |
+|------|-----------|-------|
+| **Render** | 750 hrs/month, sleeps when idle | What `render.yaml` targets. Easiest path. |
+| **Fly.io** | Small always-on VMs | No sleep, so no cold starts. Requires a card for verification. Needs a `Dockerfile` or `fly launch`. |
+| **Koyeb** | One free service, no sleep | Good Render alternative; same env-var setup. |
+| **Railway** | Trial credit, then paid | Fine for a demo window; not free indefinitely. |
+| **Vercel / Netlify** | — | **Not suitable.** They run serverless functions; this app is a long-lived Express server with a connection pool. |
+
+For the database: Aiven MySQL (free), Railway MySQL (trial credit), or any MySQL 8
+you can reach over TLS. PlanetScale removed its free tier.
+
+---
+
+## Updating a deployed app
+
+Render redeploys automatically on every push to the connected branch.
+
+```bash
+git push origin main
+```
+
+Schema changes need `npm run setup` re-run afterwards (it only applies what is
+missing). Watch **Logs** in the Render dashboard if a deploy misbehaves — a failed
+boot prints the reason and exits rather than hanging.
+
+---
+
+## Security checklist before sharing the URL
+
+- [ ] `.env` and `ca.pem` are not in the repo — `git ls-files` shows neither.
+- [ ] If the repo is public, **rotate** anything that was ever in your local `.env`:
+      the Aiven password, `SESSION_SEED`, and the Daily API key and webhook secret.
+      Set the new values only in Render's Environment tab.
+- [ ] `DB_CA_CERT` is set. Without it the database connection is encrypted but
+      unauthenticated, and the app says so on boot.
+- [ ] The demo passwords are overridden via `DEMO_*_PASSWORD`, and you have re-run
+      `npm run state:naked`. The repo defaults are public knowledge.
+- [ ] `ALLOW_INSECURE_PASSWORD_RESET` is **unset**. There is no mail server, so the
+      reset link can only be rendered on the page — meaning anyone who knows a
+      username could reset that account. In production the link goes to the server
+      log instead, and the form gives the same neutral answer either way. Set the
+      flag only for a supervised live demo, and unset it after.
+- [ ] `MAPTILER_KEY` is origin-restricted in the MapTiler dashboard. It is a public
+      browser key, so restriction is the protection, not secrecy.
+- [ ] You are comfortable with the nurse portraits being used to depict fictional
+      clinicians (see *Privacy & demo data* in the README), or you have removed them.
+
+---
+
+## Troubleshooting a deploy
+
+| Symptom | Fix |
+|---------|-----|
+| Boot exits with `Missing required environment variables` | The named variables are not set in Render's Environment tab. |
+| Boot exits with `Database connection failed` | Wrong `DB_*` values, or Aiven's IP allow-list is blocking Render. Aiven's free plan allows all IPs by default — check you did not restrict it. |
+| `Server does not support secure connection` | You pointed `DB_*` at a MySQL without TLS. Managed instances all support it. |
+| Health check keeps failing | Confirm the path is `/healthz`. It returns a plain `ok` with no database call, so a failure means the process is not listening at all — read the logs. |
+| Signed out on every page load | The session cookie is `secure`. You are on plain HTTP, or `NODE_ENV` is not `production` so `trust proxy` is off. |
+| Times two hours out | `APP_TIMEZONE` / `DB_TIMEZONE` have been overridden. Unset them to take the SAST defaults. |
+| Deploy succeeds, pages 500 | Almost always an un-run migration. Open the Shell and run `npm run setup`. |

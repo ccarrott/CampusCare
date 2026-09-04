@@ -35,8 +35,8 @@
 
 </main>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="/vendor/leaflet/leaflet.css?v=<%= typeof assetV !== 'undefined' ? assetV : '1' %>" />
+<script src="/vendor/leaflet/leaflet.js?v=<%= typeof assetV !== 'undefined' ? assetV : '1' %>"></script>
 <script>
 (function() {
   // Leaflet is loaded from a CDN. If it can't be reached, show a message instead

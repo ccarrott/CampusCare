@@ -19,10 +19,10 @@
     <form action="<%= isEdit ? '/management/admin/students/' + student.StudentNumber + '/update' : '/management/admin/students/add' %>" method="POST">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <div class="form-group">
-        <label for="studentNumber">Username <span class="text-muted" style="font-weight:normal;">(student number, e.g. s229001020)</span></label>
+        <label for="studentNumber">Username <span class="text-muted" style="font-weight:normal;">(student number, e.g. s999000001)</span></label>
         <input type="text" id="studentNumber" name="studentNumber" class="form-control" 
           value="<%= student ? student.StudentNumber || student.studentNumber || '' : '' %>"
-          <%= isEdit ? 'readonly' : 'required' %> placeholder="e.g. s229001020">
+          <%= isEdit ? 'readonly' : 'required' %> placeholder="e.g. s999000001">
       </div>
 
       <div class="form-row">
@@ -41,7 +41,7 @@
       <div class="form-group">
         <label for="email">Email</label>
         <input type="email" id="email" name="email" class="form-control"
-          value="<%= student ? student.Email || student.email || '' : '' %>" placeholder="s229001020@mandela.ac.za">
+          value="<%= student ? student.Email || student.email || '' : '' %>" placeholder="s999000001@mandela.ac.za">
       </div>
 
       <div class="form-group">

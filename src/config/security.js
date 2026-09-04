@@ -27,13 +27,15 @@ const DAILY_ORIGIN = dailyOrigin();
 // and blocks object/base-uri/framing outright.
 const CSP = [
   "default-src 'self'",
-  // Chart.js (jsdelivr) and Leaflet / the Daily SDK fallback (unpkg) are loaded from
-  // CDNs by a few views. See README "Third-party client libraries".
-  "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com",
-  "font-src 'self' data: https://fonts.gstatic.com",
+  // Every client library AND webfont is vendored under public/vendor/, so no external
+  // origin may serve script, style or fonts to this app at all. The only remote things
+  // left are map tiles and the Daily video iframe, both pinned below. If you ever
+  // re-introduce a CDN, list it here or the browser will silently refuse to load it.
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self' data:",
   // Map tiles (MapTiler + the CARTO/OSM fallback) and MapLibre's blob-backed canvases.
-  "img-src 'self' data: blob: https://api.maptiler.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org https://unpkg.com",
+  "img-src 'self' data: blob: https://api.maptiler.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org",
   `connect-src 'self' https://api.maptiler.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org https://*.daily.co wss://*.daily.co`,
   // MapLibre GL spawns its workers from a blob URL.
   "worker-src 'self' blob:",

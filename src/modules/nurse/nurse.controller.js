@@ -12,7 +12,7 @@ import { isValidStatus } from '../../middleware/validate.js';
 import { APPOINTMENT_STATUS, APPOINTMENT_TYPE } from '../../constants.js';
 
 // Demo/showcase student used by the "Create Demo Consultation" button.
-const DEMO_STUDENT_NUMBER = 's227921577';
+import { DEMO_STUDENT_NUMBER } from '../../config/states/demo-credentials.js';
 
 // ============================================================================
 // NURSE DASHBOARD

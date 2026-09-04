@@ -12,6 +12,13 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # Render containers run in UTC. The app pins its own timezone from these, so
+      # appointment times, bookable days and trend windows match South African local
+      # time exactly as they do on a developer's machine.
+      - key: APP_TIMEZONE
+        value: Africa/Johannesburg
+      - key: DB_TIMEZONE
+        value: "+02:00"
       # Database (Aiven MySQL) — enter these in the dashboard when prompted
       - key: DB_HOST
         sync: false
@@ -39,6 +46,14 @@ services:
         sync: false
       # MapTiler (public browser key; optional — map falls back to free tiles)
       - key: MAPTILER_KEY
+        sync: false
+      # Demo account passwords — defaults are public (they're in the repo).
+      # Set real values here before sharing the URL, then re-run `npm run state:naked`.
+      - key: DEMO_ADMIN_PASSWORD
+        sync: false
+      - key: DEMO_NURSE_PASSWORD
+        sync: false
+      - key: DEMO_STUDENT_PASSWORD
         sync: false
       # Password reset: with no mail server the reset link can only be shown on
       # screen, which is an account-takeover path on a public deploy. Leave this

@@ -1,5 +1,6 @@
 import { query, pool } from '../database.js';
 import bcrypt from 'bcrypt';
+import { DEMO_PASSWORDS } from './demo-credentials.js';
 import crypto from 'crypto';
 import { getZoneForPoint } from '../../utils/geo.js';
 
@@ -36,26 +37,31 @@ async function batchInsert(table, columns, rows) {
 }
 
 // ============================================================================
+// ALL DEMO DATA IS FICTIONAL.
+// Every student below is invented. Student numbers use the s999… block on purpose:
+// real NMU numbers start with the enrolment year (s22…, s23…), so nothing here can
+// collide with an actual person. Medical histories are illustrative sample values —
+// they must never be attached to a real name or a real student number.
 const STUDENTS = [
-  { id: 's227921577', first: 'Seth', last: 'Whitfield', lat: -33.9870, lon: 25.6650, med: 'Asthma, Penicillin Allergy' },  // Summerstrand
-  { id: 's226205096', first: 'Tarisai', last: 'Rusike', lat: -33.9880, lon: 25.6600, med: '' },  // Summerstrand
-  { id: 's227582012', first: 'Vhuthuhawe', last: 'Nekhavhambe', lat: -33.9830, lon: 25.6500, med: 'Mild Migraines' },  // Summerstrand
-  { id: 's228124603', first: 'Bridget', last: 'Magampa', lat: -33.9470, lon: 25.5900, med: '' },  // Newton Park
-  { id: 's229001001', first: 'Liam', last: 'van der Merwe', lat: -33.9860, lon: 25.6550, med: '' },  // Summerstrand
-  { id: 's229001002', first: 'Naledi', last: 'Mokoena', lat: -33.9720, lon: 25.6350, med: 'Seasonal allergies' },  // Humewood
-  { id: 's229001003', first: 'Jason', last: 'Pieterse', lat: -33.9730, lon: 25.6450, med: '' },  // Kings Beach
-  { id: 's229001004', first: 'Amahle', last: 'Dlamini', lat: -33.9750, lon: 25.6100, med: 'Lactose intolerance' },  // Walmer
-  { id: 's229001005', first: 'Ruan', last: 'Botha', lat: -33.9370, lon: 25.5850, med: '' },  // Fairview
-  { id: 's229001006', first: 'Zintle', last: 'Mthembu', lat: -33.9560, lon: 25.6050, med: 'Mild asthma' },  // Central/Richmond Hill
-  { id: 's229001007', first: 'Kyle', last: 'Adams', lat: -33.9560, lon: 25.5980, med: '' },  // Central CBD
-  { id: 's229001008', first: 'Thandeka', last: 'Zulu', lat: -33.9430, lon: 25.6150, med: '' },  // North End/Korsten
-  { id: 's229001009', first: 'Marco', last: 'Ferreira', lat: -33.9560, lon: 25.6150, med: 'Eczema' },  // Mill Park
-  { id: 's229001010', first: 'Lesedi', last: 'Molefe', lat: -33.9280, lon: 25.5700, med: '' },  // Lorraine
-  { id: 's229001011', first: 'Amy', last: 'Smith', lat: -33.9720, lon: 25.6000, med: '' },  // Walmer
-  { id: 's229001012', first: 'Sipho', last: 'Ndlovu', lat: -33.9360, lon: 25.5550, med: '' },  // Sherwood
-  { id: 's229001013', first: 'Chloe', last: 'van Niekerk', lat: -33.9900, lon: 25.6700, med: 'Iron deficiency' },  // Summerstrand
-  { id: 's229001014', first: 'Thabo', last: 'Mahlangu', lat: -33.9650, lon: 25.6200, med: '' },  // South End
-  { id: 's229001015', first: 'Danielle', last: 'Jordaan', lat: -33.9500, lon: 25.5500, med: 'Anxiety history' },  // Kamma Park
+  { id: 's999000001', first: 'Sipho',     last: 'Mahlangu',       lat: -33.9870, lon: 25.6650, med: 'Asthma, Penicillin Allergy' },  // Summerstrand
+  { id: 's999000002', first: 'Jordan',    last: 'Adams',          lat: -33.9880, lon: 25.6600, med: '' },  // Summerstrand
+  { id: 's999000003', first: 'Refilwe',   last: 'Motaung',        lat: -33.9830, lon: 25.6500, med: 'Mild Migraines' },  // Summerstrand
+  { id: 's999000004', first: 'Nadia',     last: 'Petersen',       lat: -33.9470, lon: 25.5900, med: '' },  // Newton Park
+  { id: 's999000005', first: 'Liam',      last: 'van der Merwe',  lat: -33.9860, lon: 25.6550, med: '' },  // Summerstrand
+  { id: 's999000006', first: 'Naledi',    last: 'Mokoena',        lat: -33.9720, lon: 25.6350, med: 'Seasonal allergies' },  // Humewood
+  { id: 's999000007', first: 'Jason',     last: 'Pieterse',       lat: -33.9730, lon: 25.6450, med: '' },  // Kings Beach
+  { id: 's999000008', first: 'Amahle',    last: 'Dlamini',        lat: -33.9750, lon: 25.6100, med: 'Lactose intolerance' },  // Walmer
+  { id: 's999000009', first: 'Ruan',      last: 'Botha',          lat: -33.9370, lon: 25.5850, med: '' },  // Fairview
+  { id: 's999000010', first: 'Zintle',    last: 'Mthembu',        lat: -33.9560, lon: 25.6050, med: 'Mild asthma' },  // Central/Richmond Hill
+  { id: 's999000011', first: 'Kyle',      last: 'Adams',          lat: -33.9560, lon: 25.5980, med: '' },  // Central CBD
+  { id: 's999000012', first: 'Thandeka',  last: 'Zulu',           lat: -33.9430, lon: 25.6150, med: '' },  // North End/Korsten
+  { id: 's999000013', first: 'Marco',     last: 'Ferreira',       lat: -33.9560, lon: 25.6150, med: 'Eczema' },  // Mill Park
+  { id: 's999000014', first: 'Lesedi',    last: 'Molefe',         lat: -33.9280, lon: 25.5700, med: '' },  // Lorraine
+  { id: 's999000015', first: 'Amy',       last: 'Smith',          lat: -33.9720, lon: 25.6000, med: '' },  // Walmer
+  { id: 's999000016', first: 'Sibusiso',  last: 'Ndlovu',         lat: -33.9360, lon: 25.5550, med: '' },  // Sherwood
+  { id: 's999000017', first: 'Chloe',     last: 'van Niekerk',    lat: -33.9900, lon: 25.6700, med: 'Iron deficiency' },  // Summerstrand
+  { id: 's999000018', first: 'Thabo',     last: 'Nkosi',          lat: -33.9650, lon: 25.6200, med: '' },  // South End
+  { id: 's999000019', first: 'Danielle',  last: 'Jordaan',        lat: -33.9500, lon: 25.5500, med: 'Anxiety history' },  // Kamma Park
 ];
 
 const NURSES = ['NUR001', 'NUR002', 'NUR003'];
@@ -86,7 +92,7 @@ export async function loadShowcaseState() {
   await loadNakedState();
 
   const zones = await query('SELECT ZoneID, Name, Latitude, Longitude, Boundary FROM CampusZone');
-  const pw = await bcrypt.hash('password123', 10);
+  const pw = await bcrypt.hash(DEMO_PASSWORDS.student, 10);
 
   // 2. STUDENTS (batch)
   console.log('  [2/7] Seeding 19 students + zone assignments...');

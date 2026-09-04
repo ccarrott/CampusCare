@@ -378,7 +378,7 @@ Replaced the manual "nurse pastes a Microsoft Teams link" flow with automated, s
 - Dark-mode sidebar/navy now derives from `--brand-blue`
 
 ### Nurse-side demo tooling for the video feature
-- "Create Demo Video Consultation" button on the nurse Clinical Dashboard: instantly books + confirms an online consultation for student s227921577 with the logged-in nurse, scheduled ~5 min out so the join window is open immediately, and provisions the Daily room
+- "Create Demo Video Consultation" button on the nurse Clinical Dashboard: instantly books + confirms an online consultation for the demo student (see `config/states/demo-credentials.js`) with the logged-in nurse, scheduled ~5 min out so the join window is open immediately, and provisions the Daily room
 - "Clear Demo Consultations" button: deletes all `APT-DEMO-*` rows for the nurse, tearing down their Daily rooms first (scoped per-nurse)
 
 ### Camera/microphone permission fix

@@ -48,8 +48,8 @@ export function getLoginPage(req, res) {
 }
 
 export const handleLogin = catchAsync(async (req, res) => {
-  // A username may be entered as a bare number (s227921577 / NUR001) OR as an
-  // email (s227921577@mandela.ac.za). Slice off anything from '@' onward so both resolve.
+  // A username may be entered as a bare number (s999000001 / NUR001) OR as an
+  // email (s999000001@mandela.ac.za). Slice off anything from '@' onward so both resolve.
   const idNumber = sanitize(req.body.idNumber).split('@')[0];
   const password = req.body.password || '';
 
@@ -121,7 +121,7 @@ export const handleRegister = catchAsync(async (req, res) => {
   }
 
   if (!isValidStudentNumber(studentNumber)) {
-    return res.render('auth/register', { error: 'Student Number must start with "s" followed by 9 digits (e.g. s226205096).' });
+    return res.render('auth/register', { error: 'Student Number must start with "s" followed by 9 digits (e.g. s999000001).' });
   }
 
   if (!isValidPassword(password)) {

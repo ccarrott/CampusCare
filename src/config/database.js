@@ -1,4 +1,6 @@
-import 'dotenv/config';
+// Imported FIRST so the process timezone is pinned before any Date exists.
+// Every entry point — the server and each CLI seed script — reaches this module.
+import { DB_TIMEZONE } from './timezone.js';
 import mysql from 'mysql2/promise';
 import fs from 'fs';
 
@@ -37,7 +39,27 @@ export const pool = mysql.createPool({
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  ssl
+  ssl,
+  // How mysql2 converts DATETIME columns to and from JS Dates. Managed MySQL runs
+  // in UTC, but every time this app stores is a South African wall-clock time, so
+  // both directions are pinned to the app's offset instead of the server's.
+  timezone: DB_TIMEZONE
+});
+
+// SQL's own clock has to agree with the app's. NOW(), CURDATE() and every
+// DATE_SUB(NOW(), INTERVAL ? DAY) window run on the *database* server's timezone,
+// which on a managed instance is UTC — so without this, appointments stored as
+// 09:00 SAST would be compared against a clock two hours out, expiring bookings at
+// the wrong time and shifting trend windows. Set it once per pooled connection.
+pool.on('connection', (conn) => {
+  conn.query(`SET time_zone = '${DB_TIMEZONE}'`, (err) => {
+    if (err) {
+      console.warn(
+        `[Database] Could not set session time_zone to ${DB_TIMEZONE}: ${err.message}. ` +
+        'Date comparisons may be offset from app time.'
+      );
+    }
+  });
 });
 
 // Run a parameterised SQL query

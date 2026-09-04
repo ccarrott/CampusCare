@@ -4,7 +4,7 @@
   <img src="https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white" />
   <img src="https://img.shields.io/badge/EJS-Templates-B4CA65?style=for-the-badge&logo=ejs&logoColor=black" />
   <img src="https://img.shields.io/badge/MapLibre_GL-Heatmap-396CB2?style=for-the-badge&logo=maplibre&logoColor=white" />
-  <img src="https://img.shields.io/badge/Chart.js-4.x-FF6384?style=for-the-badge&logo=chartdotjs&logoColor=white" />
+  <img src="https://img.shields.io/badge/No_build_step-000000?style=for-the-badge" />
 </p>
 
 <h1 align="center">Campus Care</h1>
@@ -22,11 +22,63 @@
 
 ---
 
-## The Problem
+## Contents
 
-NMU's campus clinic often requires appointments booked **a month in advance**. Students with immediate needs are left waiting, and the clinic stays overcrowded.
+[Quick start](#quick-start) · [Demo accounts](#demo-accounts) · [The problem](#the-problem) ·
+[What each role can do](#what-each-role-can-do) · [The heat map](#the-showpiece-the-campus-health-heat-map) ·
+[Tech stack](#tech-stack) · [Project structure](#project-structure) ·
+[Environment variables](#environment-variables) · [Database & demo data](#database--demo-data) ·
+[Deployment](#deployment) · [Security](#security) · [Privacy & demo data](#privacy--demo-data) ·
+[Troubleshooting](#troubleshooting) · [Team](#team)
 
-## The Solution — a Three-Tier Strategy
+---
+
+## Quick start
+
+You need **Node 18+** and a **MySQL 8** database. A free managed instance (Aiven, PlanetScale,
+Railway) works out of the box — so does a local MySQL.
+
+```bash
+git clone https://github.com/ccarrott/CampusCare.git
+cd CampusCare
+npm install
+
+cp .env.example .env          # then fill in your DB_* values
+npm run setup                 # creates the schema and seeds symptoms + map zones
+npm run state:showcase        # optional: rich demo data (students, bookings, reviews, trends)
+
+npm start                     # → http://localhost:3000
+```
+
+`npm run setup` works against a **completely empty database** and is safe to re-run —
+already-applied steps report `[SKIP]` rather than failing.
+
+## Demo accounts
+
+Created by `npm run state:naked` and `npm run state:showcase`.
+
+| Role        | Username      | Password       |
+|-------------|---------------|----------------|
+| **Admin**   | `ADM001`      | `123admin!`    |
+| **Nurse**   | `NUR001`      | `123nurse!`    |
+| **Student** | `s999000001`  | `123student!`  |
+
+`NUR002` / `NUR003` share the nurse password; showcase students run `s999000001` through
+`s999000019`. You can sign in with the bare username or with the full
+`s999000001@mandela.ac.za` form — anything after the `@` is ignored.
+
+> These passwords are in a public repository, so treat them as public. Override them with
+> `DEMO_ADMIN_PASSWORD` / `DEMO_NURSE_PASSWORD` / `DEMO_STUDENT_PASSWORD` and re-run
+> `npm run state:naked` before pointing anyone at a deployed instance.
+
+---
+
+## The problem
+
+NMU's campus clinic often requires appointments booked **a month in advance**. Students with
+immediate needs are left waiting, and the clinic stays overcrowded.
+
+## The solution — a three-tier strategy
 
 Campus Care triages student health needs *before* they reach the clinic:
 
@@ -40,11 +92,19 @@ Campus Care triages student health needs *before* they reach the clinic:
 
 ## What each role can do
 
-**Students** — check symptoms (multi-select, severity + duration aware), get OTC recommendations, view a personal history, explore the campus health heat map, book/cancel/reschedule consultations, join video calls, rate consultations, review nurses, and get browser reminders.
+**Students** — check symptoms (multi-select, severity + duration aware), get OTC
+recommendations, view a personal history, explore the campus health heat map, book / cancel
+consultations, join video calls, rate consultations, review nurses, and get browser reminders.
 
-**Nurses** — manage the appointment lifecycle from a clinical dashboard, set a drag-to-paint weekly availability grid, run video consultations, write consultation notes, view patient history, and edit a public bio.
+**Nurses** — manage the appointment lifecycle from a clinical dashboard, set a drag-to-paint
+weekly availability grid, run video consultations, write consultation notes, view patient
+history, and edit a public bio.
 
-**Admins** — view operational reports with charts, moderate nurse reviews, run full CRUD on student/nurse accounts, export CSVs, and watch campus-wide health trends.
+**Admins** — view operational reports with charts, moderate nurse reviews, run full CRUD on
+student and nurse accounts, export CSVs, and watch campus-wide health trends.
+
+Access is enforced per route by role middleware, and per record by ownership middleware — a
+nurse can only open a patient's history if they actually have an appointment with them.
 
 ---
 
@@ -52,103 +112,219 @@ Campus Care triages student health needs *before* they reach the clinic:
 
 A live, theme-matched **MapLibre GL** density heat map of symptom activity across Gqeberha:
 
-- A soft, feathered **heat cloud** shows where reports concentrate (brand-palette gradient, quiet → outbreak).
-- The whole city is divided into **gap-free Voronoi suburb zones** generated from suburb centre points — every location resolves to exactly one suburb, no gaps, no overlaps.
-- **Hover anywhere** to see the suburb + report count; **click** for a symptom breakdown. No blocky boundaries — just the clean cloud.
-- **Outbreak thresholds scale with the time window**, so a week and a year are judged realistically.
-- **Privacy first**: only aggregated data is shown; each report's coordinates are jittered and no student is ever identifiable.
+- A soft, feathered **heat cloud** shows where reports concentrate (brand palette, quiet → outbreak).
+- The city is divided into **gap-free Voronoi suburb zones** generated from suburb centre
+  points, so every location resolves to exactly one suburb — no gaps, no overlaps. The
+  tessellation is computed in `utils/voronoi.js` with no geometry library.
+- **Hover anywhere** for the suburb and report count; **click** for a symptom breakdown.
+- **Outbreak thresholds scale sub-linearly with the time window**, so a week and a year are
+  judged realistically rather than every long window turning red.
+- **Privacy first**: only aggregates are shown. Each report's coordinates are jittered by
+  ~30–60 m at write time and no student is ever identifiable.
 
-Alongside the map, the **Trends** page shows headline KPIs, a daily-volume timeline, severity and category charts, and a filterable top-conditions table.
+Alongside the map, **Trends** shows headline KPIs, a daily-volume timeline, severity and
+category charts, and a filterable top-conditions table.
 
 ---
 
-## Tech Stack
+## Tech stack
 
 ```
 Runtime        Node.js 18+ (native ES Modules)
 Framework      Express.js 5.x
 Views          EJS with layout + component partials
-Database       MySQL 8.0 (mysql2/promise — pooling + transactions, TLS)
-Auth           bcrypt + express-session (httpOnly, sameSite, secure in prod)
-Security       Session-based CSRF, ownership middleware, security headers, parameterised SQL
-Maps           MapLibre GL JS (vendored) + Leaflet (CDN, pin-drop pages)
-Tiles          Raster tiles — MapTiler, CARTO/OSM fallback
-Video          Daily.co (vendored client SDK, ephemeral rooms)
-Charts         Chart.js 4.4 (CDN)
-Animation      Motion One (vanilla, vendored)
+Database       MySQL 8.0 (mysql2/promise — pooling, transactions, TLS)
+Sessions       express-session + express-mysql-session (survive restarts)
+Auth           bcrypt (10 rounds); httpOnly + sameSite cookies, secure in production
+Security       CSP, session CSRF, ownership middleware, rate limiting, parameterised SQL
+Maps           MapLibre GL (heat map) + Leaflet (pin-drop) + MapTiler / CARTO-OSM tiles
+Video          Daily.co — ephemeral rooms, per-user scoped tokens
+Charts         Chart.js 4.4
+Animation      Motion One
 Design         "Calm Clinical Glass" — liquid-glass surfaces over a breathing gradient
-Architecture   Domain-based modules (routes + controller + model per feature)
+Architecture   Domain modules (routes + controller + model per feature)
 ```
 
-> No frontend framework, no build step — vanilla JS + server-rendered EJS + hand-written CSS. The only client libraries are vanilla runtime ones.
+**No frontend framework and no build step** — vanilla JS, server-rendered EJS, hand-written
+CSS. `npm install && npm start` is the whole toolchain.
 
-**Third-party client libraries.** MapLibre GL, Motion One and the Daily SDK are vendored under `public/vendor/`. Chart.js (admin reports, trends) and Leaflet (the two pin-drop pages) are still fetched from `cdn.jsdelivr.net` / `unpkg.com` at runtime; both call sites degrade to a message if the CDN is unreachable, and the CSP in `src/config/security.js` pins those two origins. Vendoring them — or adding Subresource Integrity hashes — would remove the remaining runtime dependency on third-party CDNs.
+**Everything the browser loads is served from this origin.** MapLibre, Leaflet, Chart.js, the
+Daily SDK, Motion One and the webfonts are all committed under `public/vendor/`
+(see [its README](public/vendor/README.md) for versions and how to refresh them). No CDN can
+break, slow, or observe a page load, the app works on a locked-down network, and the
+Content-Security-Policy can therefore refuse *every* external script origin outright. The only
+remote requests left are map tiles and the Daily video iframe.
 
 ---
 
-## Project Structure
+## Project structure
 
 ```
-Campus Care/
+CampusCare/
 ├── public/
 │   ├── css/style.css          # Design system (tokens, glass, dark mode, responsive)
 │   ├── js/                    # sidebar, darkmode, notifications, map, trends-charts, motion…
 │   ├── icons/                 # inline SVG icon set
-│   └── vendor/                # maplibre, daily, motion (vendored client libs)
+│   ├── images/                # NMU marks + nurse portraits
+│   └── vendor/                # maplibre, leaflet, chartjs, daily, motion, fonts
 ├── src/
 │   ├── app.js                 # Express entry point + middleware chain
-│   ├── constants.js           # Frozen enums + TREND map tuning
-│   ├── config/                # db pool, session, security, migrations, seeders, DB "states"
-│   ├── middleware/            # authenticate, authorize, ownership, validate, rateLimit, errorHandler
+│   ├── constants.js           # Frozen enums + heat-map tuning
+│   ├── config/                # timezone, db pool, session, security headers,
+│   │   │                      #   migrations, seeders
+│   │   └── states/            # one-command database "states" (naked / showcase / outbreak)
+│   ├── middleware/            # authenticate, authorize, ownership, validate,
+│   │                          #   rateLimit, errorHandler
 │   ├── utils/                 # catchAsync, AppError, sanitize, dates, daily, geo, voronoi
 │   └── modules/               # auth, profile, symptoms, appointments, availability,
 │                              #   reviews, trends, nurse, admin, staff, notifications, export
 ├── views/                     # EJS pages + partials, grouped by area
 ├── render.yaml                # Render deployment blueprint
-├── DEPLOY.md                  # Deployment guide
+├── DEPLOY.md                  # Step-by-step free deployment guide
 ├── .env.example               # Documented environment template
 └── CHANGES.md                 # Full development changelog
 ```
 
+Each module owns three files — `*.routes.js` (URLs and middleware), `*.controller.js`
+(request handling), `*.model.js` (SQL). Controllers never write SQL; models never touch
+`req`/`res`.
+
 ---
 
-## Running locally
+## Environment variables
 
-1. **Install**: `npm install`
-2. **Configure**: copy `.env.example` → `.env` and fill in the values (see the file for each variable). A managed MySQL (e.g. Aiven free tier) works out of the box.
-3. **Set up the database**: `npm run setup` — creates the schema, runs every migration, then seeds symptoms and zones. It works against a completely empty database and is safe to re-run.
-4. **Optional demo data**: `npm run state:showcase` (rich data) or `npm run state:outbreak` (simulated spike).
-5. **Start**: `npm start` → http://localhost:3000
+Full annotated list in [`.env.example`](.env.example). The essentials:
+
+| Variable | Required | Purpose |
+|----------|:--------:|---------|
+| `DB_HOST` `DB_PORT` `DB_USER` `DB_PASSWORD` `DB_NAME` | ✅ | MySQL connection |
+| `SESSION_SEED` | ✅ | Session signing secret — a long random hex string |
+| `DB_CA_CERT` | Production | Managed-MySQL CA certificate (PEM). Without it the connection is encrypted but **unverified**, and the app warns on boot |
+| `NODE_ENV` | Production | `production` enables secure cookies and `trust proxy` |
+| `APP_PORT` | Local only | Local dev port. Hosts inject `PORT`, which wins |
+| `APP_TIMEZONE` `DB_TIMEZONE` | — | Default to `Africa/Johannesburg` / `+02:00`. See [Deployment](#deployment) |
+| `DAILY_API_KEY` `DAILY_DOMAIN` `DAILY_WEBHOOK_SECRET` | Video only | Daily.co video consultations. `DAILY_DOMAIN` also drives the camera/mic `Permissions-Policy` and the CSP frame origin |
+| `MAPTILER_KEY` | — | Nicer map tiles. Without it the map falls back to free CARTO/OSM tiles |
+| `DEMO_*_PASSWORD` | — | Override the seeded demo passwords |
+| `ALLOW_INSECURE_PASSWORD_RESET` | — | Leave unset. See [Security](#security) |
+
+---
+
+## Database & demo data
+
+```bash
+npm run setup           # schema + migrations + symptom seed + zone seed (idempotent)
+npm run migrate         # schema only
+npm run seed:symptoms   # 48 symptoms, 27 medications, 66 mappings
+npm run seed:zones      # 35 Voronoi suburb zones across Gqeberha
+npm run db              # print the live schema (handy when debugging a query)
+```
+
+### Database "states"
+
+One command puts the database into a known shape — useful for demos and for resetting after
+you have clicked around.
+
+| Command | Result |
+|---------|--------|
+| `npm run state:naked` | Fresh install: 1 admin, 3 nurses, 2 clinics. Everything else empty. **Deletes all data.** |
+| `npm run state:showcase` | Rich dataset: 19 students, 50 appointments, ratings, reviews, 100 symptom logs, availability |
+| `npm run state:outbreak` | Layers a simulated outbreak cluster onto the map |
+| `npm run state:clear` | Removes only the outbreak rows, leaving the showcase intact |
+
+The same four are available to a signed-in admin from the browser console:
+`CampusCare.showcase()`, `.outbreak()`, `.clear()`, `.naked()`.
 
 ---
 
 ## Deployment
 
-Campus Care is ready for a free Render deploy — see **[DEPLOY.md](./DEPLOY.md)** for the full step-by-step.
+Campus Care runs on a free Render web service — **[DEPLOY.md](./DEPLOY.md)** has the full
+walkthrough. Highlights:
 
-- `render.yaml` describes the web service; set secrets in Render's dashboard (never in the repo).
-- The DB SSL certificate is passed via the `DB_CA_CERT` env var (no file needed on the host).
-- The app uses the host-injected `PORT` and enables `trust proxy` for secure cookies in production.
-- `.env` and `*.pem` are gitignored and are not committed — keep it that way.
+- `render.yaml` describes the service; secrets go in the dashboard, never in the repo.
+- The database CA is passed as `DB_CA_CERT`, so no file is needed on the host.
+- Health check is `/healthz` — a plain 200 with no database or session work.
+- `SIGTERM` is handled: the server stops accepting connections and drains the pool.
+- **Timezone is pinned by the app, not the host.** Hosting containers run in UTC; Campus Care
+  reasons in South African local time everywhere. `src/config/timezone.js` sets the Node
+  process timezone and the MySQL session offset from `APP_TIMEZONE` / `DB_TIMEZONE`, so
+  appointment times, bookable days, expiry and trend windows behave on the deployed app
+  exactly as they do on a machine in Gqeberha. (SAST has no daylight saving, which is why a
+  fixed `+02:00` offset is safe.)
+- Sessions live in MySQL, so a free-tier cold start does not sign everyone out.
 
 ---
 
 ## Security
 
-- **bcrypt** password hashing (10 rounds); sessions use `httpOnly` + `sameSite` cookies, `secure` in production.
+- **bcrypt** password hashing (10 rounds). Sessions use `httpOnly` + `sameSite` cookies,
+  `secure` in production, with a rolling one-hour expiry.
 - **Session ID regenerated on login and registration** — closes session fixation.
-- **Rate limiting** on login, registration, and both password-reset endpoints (in-memory, per-instance).
-- **CSRF tokens** on every form; **parameterised SQL** everywhere; user input **sanitised** against XSS.
-- **Ownership middleware** blocks IDOR; **role-based** access control on every protected route, CSV exports included.
-- **Server-side booking validation** — weekday, future, published slot, and nurse availability are all re-checked on the server, not just greyed out in the grid.
-- **Atomic booking transaction** prevents double-booking race conditions.
-- Security headers: `Content-Security-Policy`, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` (camera/mic delegated to your `DAILY_DOMAIN`).
-- Health-map data is aggregated and jittered — no individual student data is exposed.
+- **Rate limiting** on login, registration and both password-reset endpoints.
+- **CSRF tokens** on every form and on the admin JSON endpoints.
+- **Parameterised SQL** everywhere, including the dynamic `IN (?)` builders. The one place a
+  table name is interpolated validates against a fixed map first.
+- **Ownership middleware** blocks IDOR; **role middleware** guards every protected route,
+  CSV exports included.
+- **Server-side booking validation** — weekday, future, published slot and nurse availability
+  are all re-checked on the server, not merely greyed out in the grid.
+- **Atomic booking transaction** (`SELECT … FOR UPDATE`) prevents double-booking races.
+- **Content-Security-Policy** that admits no external script, style or font origin, plus
+  `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` and a `Permissions-Policy`
+  that delegates camera/mic only to your Daily domain.
+- Heat-map data is aggregated and coordinate-jittered — no individual is exposed.
 
-### Known limitations
+### Known limitation: password reset
 
-- **Password reset has no mail server.** The reset link can only be shown on screen, which would let anyone who knows a username take over that account. It is therefore hidden when `NODE_ENV=production` (the link goes to the server log instead) unless `ALLOW_INSECURE_PASSWORD_RESET=true` is set for a live demo.
-- **Sessions live in memory.** `express-session` uses the default `MemoryStore`, so every restart or cold start signs everyone out, and the app cannot run on more than one instance. Moving to a MySQL-backed store (`express-mysql-session`) is the fix when that matters.
+There is no mail server, so a reset link cannot be emailed — it can only be rendered on the
+page, which would let anyone who knows a username take over that account. So:
+
+- In development the link is shown, for convenience.
+- In production it is **hidden** and written to the server log instead, and the form returns
+  the same neutral message whether or not the account exists (no username enumeration).
+- Set `ALLOW_INSECURE_PASSWORD_RESET=true` only for a supervised live demo, and unset it after.
+
+Wiring up a real mail provider is the proper fix and would remove the flag entirely.
+
+---
+
+## Privacy & demo data
+
+**Everything in the seed data is fictional.** Students, their names, their medical histories
+and their pinned locations are all invented. Student numbers use the `s999…` block on purpose:
+real NMU numbers begin with the enrolment year (`s22…`, `s23…`), so nothing in this repository
+can collide with an actual person's number.
+
+If you extend the demo data, keep it that way. A real name beside a real student number and a
+medical condition is health data about an identifiable person, whether or not the condition is
+made up — and this repository is public.
+
+Two things worth knowing:
+
+- **Nurse portraits** (`public/images/nurses/`) are photographs of real people used to
+  represent fictional nurses, complete with invented experience and patient reviews. Many
+  stock licences specifically prohibit portraying a model in a medical or otherwise sensitive
+  context. Confirm the licence covers this use, or delete the files — the staff pages already
+  fall back to clean initials avatars, so nothing breaks.
+- **Clinic contact details** in the seed data are NMU Student Health's genuine published phone
+  numbers and address. That is deliberate and appropriate for a campus health app, but it does
+  mean a demo user could actually call the clinic.
+
+---
+
+## Troubleshooting
+
+| Symptom | Cause and fix |
+|---------|---------------|
+| `[FATAL] Missing required environment variables` | Copy `.env.example` to `.env` and fill in the `DB_*` values and `SESSION_SEED`. |
+| `[FATAL] Database connection failed` | Wrong `DB_*` values, or the host's IP allow-list is blocking you. Check the message under it for the driver's own error. |
+| `Server does not support secure connection` | Your MySQL has TLS disabled. Managed providers all support it; a bare local install may not — enable TLS on the server, or use a managed instance. |
+| Every migration fails with "table doesn't exist" | You are on a build from before the base schema was added. Pull the latest and re-run `npm run setup`. |
+| Times are two hours out on the deployed app | `APP_TIMEZONE` / `DB_TIMEZONE` are being overridden. Unset them to take the SAST defaults. |
+| Map is blank | Check the browser console. Without `MAPTILER_KEY` the map falls back to CARTO/OSM tiles, which is expected; a blank canvas usually means the tile host is blocked. |
+| Video call never gets camera or mic | `DAILY_DOMAIN` does not match the subdomain your rooms are created on, so `Permissions-Policy` is delegating to the wrong origin. |
+| Signed out on every page load in production | The session cookie is `secure`, so the browser drops it over plain HTTP. Deploy behind HTTPS (Render does this for you). |
 
 ---
 
@@ -160,8 +336,6 @@ Campus Care is ready for a free Render deploy — see **[DEPLOY.md](./DEPLOY.md)
 | **Vhuthuhawe Nekhavhambe** | Symptom Checking, OTC Recommendations & Health Trends |
 | **Bridgette Magampa** | Consultations, Nurse Ratings & Booking System |
 | **Seth Whitfield** | Nurse Availability, Progress Tracking, Admin Reports, Architecture, Security & UI System |
-
----
 
 ## License
 

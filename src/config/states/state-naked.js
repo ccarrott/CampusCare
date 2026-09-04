@@ -1,5 +1,6 @@
 import { query } from '../database.js';
 import bcrypt from 'bcrypt';
+import { DEMO_PASSWORDS } from './demo-credentials.js';
 
 /**
  * STATE: NAKED — Fresh deployment. Only admin + nurses. Everything else empty.
@@ -22,9 +23,15 @@ export async function loadNakedState() {
   await query('DELETE FROM Admin');
   await query('DELETE FROM Nurse');
   await query('DELETE FROM Clinic');
-  // NOTE: there is no `sessions` table — express-session keeps sessions in memory,
-  // so they are cleared by restarting the process, not by SQL. The DELETE that used
-  // to be here threw "table doesn't exist" and aborted the whole reset.
+
+  // Sessions live in MySQL (see config/session.js), so a full reset should sign
+  // everyone out too. The table is created by the app on first boot — tolerate it
+  // being absent so this script still works on a database the app has never served.
+  try {
+    await query('DELETE FROM sessions');
+  } catch (err) {
+    if (err.code !== 'ER_NO_SUCH_TABLE') throw err;
+  }
 
   // Seed clinics — real NMU Student Health Services facilities (Gqeberha).
   // Source: studenthealth.mandela.ac.za (South 041 504 2174, North 041 504 1149).
@@ -40,11 +47,11 @@ export async function loadNakedState() {
   );
 
   // Seed admin
-  const adminPw = await bcrypt.hash('admin123', 10);
+  const adminPw = await bcrypt.hash(DEMO_PASSWORDS.admin, 10);
   await query("INSERT INTO Admin (StaffNumber, Name, Password) VALUES ('ADM001', 'System Administrator', ?)", [adminPw]);
 
   // Seed 3 nurses (with Campus — Phase 29A)
-  const nursePw = await bcrypt.hash('nurse123', 10);
+  const nursePw = await bcrypt.hash(DEMO_PASSWORDS.nurse, 10);
   await query("INSERT INTO Nurse (StaffNumber, FirstName, LastName, PhoneNumber, Password, Email, ClinicID, Campus, Bio, YearsExperience) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ['NUR001', 'Sarah', 'Jenkins', '0821234567', nursePw, 'sarah.jenkins@mandela.ac.za', 'CLN001', 'South Campus', 'Experienced campus nurse specialising in student wellness and primary care.', 8]);
   await query("INSERT INTO Nurse (StaffNumber, FirstName, LastName, PhoneNumber, Password, Email, ClinicID, Campus, Bio, YearsExperience) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",

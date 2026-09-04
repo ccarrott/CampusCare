@@ -13,6 +13,7 @@ import { query, pool } from './config/database.js';
 import { createSessionMiddleware } from './config/session.js';
 import { securityHeaders } from './config/security.js';
 import cookieParser from 'cookie-parser';
+import compression from 'compression';
 
 // Middleware
 import { requireAuth } from './middleware/authenticate.js';
@@ -61,6 +62,11 @@ if (process.env.NODE_ENV === 'production') {
 // ============================================================================
 
 app.use(securityHeaders);
+
+// gzip responses. Matters most for the vendored client libraries (MapLibre, Chart.js,
+// Leaflet, Daily) and style.css — together well over a megabyte uncompressed, which is
+// a slow first paint on a phone or a free-tier cold start.
+app.use(compression());
 
 // View engine + static assets. Static is mounted BEFORE the session/CSRF layer so
 // CSS/JS/image requests never touch the session store (they can't be authenticated
