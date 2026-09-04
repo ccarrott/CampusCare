@@ -1,4 +1,4 @@
-# CampusCare — Development Changelog (Phases 3–28)
+# Campus Care — Development Changelog (Phases 3–30 + Deployment)
 
 Full-stack university health platform built across the development phases below.
 
@@ -390,3 +390,55 @@ Replaced the manual "nurse pastes a Microsoft Teams link" flow with automated, s
 - Vendored the pinned SDK into `public/vendor/daily/daily-iframe.js` (committed, ~275 KB) and removed the node_modules-based static mount
 - Added a CDN fallback in `call.ejs` (`onerror` loads `@daily-co/daily-js@0.92.2` from unpkg) as a safety net
 - Decision recorded: keep `node_modules/` gitignored (platform-specific native builds e.g. bcrypt, redundant with package-lock); vendor only the single required runtime asset instead
+
+## Phase 29: Symptom-Checker Intelligence & Escalation Engine
+- Tag-based multi-select symptom picker (grouped by category) replacing the single dropdown
+- Severity, duration, trajectory and free-text "other" capture per check
+- `escalation.js` rules engine: recurrence detection (same symptoms within 7 days), duration-based escalation (`1-2 weeks` / `>2 weeks`), and tier advancement
+- "Same as last time?" prefill from the student's most recent recent check
+- `SymptomLog` extended with `Duration`, `Trajectory`, `OtherText`
+- Tier-2 results give instructive "book a nurse" guidance instead of OTC meds
+
+## Phase 30: The UI Haul — "Calm Clinical Glass" Design Language
+A full-app visual overhaul introducing a cohesive design system, documented in `.kiro/steering/ui-design.md`.
+
+### Foundations (30A–30C)
+- **Design tokens**: brand palette, glass tokens (translucent surfaces, blur, luminous rim), a breathing "aurora" gradient background, motion + spacing + elevation scales
+- **Breathing background**: fixed drifting radial-gradient blobs behind everything (GPU-only, reduced-motion aware)
+- **Motion One** (vanilla, vendored) bootstrap: scroll-in `.reveal` entrances + `.hover-lift`, all gated behind `prefers-reduced-motion`
+- **Liquid-glass surfaces**: cards, sidebar, modals, overlays — see-through panes with hairline rims (not flat frost)
+- **Floating glass shell**: sidebar became a detached floating rail; topbar removed (identity + theme toggle float top-right)
+- **Lucide icons** vendored + inlined as `currentColor` SVGs via an `icon` partial
+
+### Layout archetypes (30D–30F)
+- Four archetypes replace "everything is a card grid": **immersive** (video call, map), **focused** (forms/checker/booking), **dashboard** (home/reports), **feed/split** (appointments, staff → profile)
+- Video call became an immersive edge-to-edge Daily surface with floating glass controls
+- "Meet Our Staff" → nurse-profile split view; admin tables → glass sortable tables
+
+### Phase 30G: Health Map + Location Rework (MapLibre)
+Retired Leaflet entirely and rebuilt the health map as the app's showpiece.
+- **MapLibre GL JS** (vendored) with an inline **raster basemap** (MapTiler tiles + free CARTO/OSM fallback) — robust, pans/zooms natively, theme-swaps light/dark
+- **Density heatmap**: soft "clouded", feathered heat surface of symptom reports across Gqeberha (brand-palette ramp), intensity normalised by dataset size so long periods don't over-saturate
+- **Per-report location snapshot**: `SymptomLog` gained `Latitude`, `Longitude`, `ZoneID`, captured (with privacy jitter) at report time — the map reflects where reports came from, not a student's current zone
+- **Voronoi suburb zoning** (`utils/voronoi.js`): gap-free, non-overlapping tessellation from suburb centre points; every location resolves to its nearest suburb (verified 800/800 random points → exactly one zone, zero gaps/overlaps)
+- **Idea-3 interaction**: no visible zone boundaries — just the heat cloud; an invisible hit-layer catches hover/click, a cursor-following glass chip shows "Suburb — N reports", click opens a floating breakdown card + gentle fly-to
+- **Scale-aware outbreak thresholds** (`constants.TREND`): defined as a reports/day rate scaled sub-linearly by the selected period, so a week needs ~11 reports and a year ~66 — realistic across timespans
+- **Beefed-up Trends page**: headline KPIs, severity split + category doughnuts, a daily-volume timeline, and a category/severity-filterable top-conditions table
+- New APIs: `/trends/api/heatmap` (weighted GeoJSON points) and `/trends/api/zones` (polygons + rollup); multi-ring/multipolygon support added to `utils/geo.js`
+
+### UI polish & responsiveness
+- Root-scaled "zoom out" for more surrounding negative space (all sizing rem-based off a small root, body text bumped up for readability)
+- Clickable dashboard cards (stretched-link overlay; buttons still work individually)
+- Clearer, more see-through glass site-wide
+- Widened/enlarged floating sidebar with centred icons (fixed collapsed-state alignment)
+- Site-wide portrait/mobile optimisation: single-column stacks, 44px tap targets, `menu.svg` hamburger, trends overlays repositioned
+
+## Post-Phase 30: Rebrand & Deployment Readiness
+- **Rename**: all user-facing "CampusCare" → **"Campus Care"** (titles, brand headings, alt text, welcome copy) — JS globals/localStorage keys left intact
+- **Deploy-safe config**:
+  - DB SSL CA now read from `DB_CA_CERT` env var (falls back to local `ca.pem`) — no cert file needed on the host
+  - Server prefers host-injected `PORT`; `trust proxy` enabled in production for secure session cookies
+  - Env validation relaxed so `APP_PORT`/`DAILY_API_KEY` don't hard-fail a deploy
+- **Deploy files**: `render.yaml` (Render Blueprint), `DEPLOY.md` (step-by-step), `.env.example` (documented template); `npm run setup` (migrate + seed symptoms + seed zones)
+- **Audit & cleanup**: removed unused npm deps (`motion`, `@daily-co/daily-js` — both vendored client-side instead), removed scratch/loose files, hardened `.gitignore`
+- **Secrets verified**: `.env` and `ca.pem` were never committed and remain gitignored

@@ -14,5 +14,13 @@ test_out.txt
 tmp_*.js
 backup/
 
+# Dev notes & loose source images (kept local, not in repo)
+Campus Care Plans*.txt
+Not dont yet*.txt
+*.pdf
+nmu.jpg
+NMU George Campus Facebook.png
+NMU Mandela Stethascope.jpeg
+
 # Kiro
 # .kiro/

@@ -1,13 +1,13 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" />
-  <img src="https://img.shields.io/badge/Express-4.x-000000?style=for-the-badge&logo=express&logoColor=white" />
+  <img src="https://img.shields.io/badge/Express-5.x-000000?style=for-the-badge&logo=express&logoColor=white" />
   <img src="https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white" />
   <img src="https://img.shields.io/badge/EJS-Templates-B4CA65?style=for-the-badge&logo=ejs&logoColor=black" />
-  <img src="https://img.shields.io/badge/Leaflet.js-Maps-199900?style=for-the-badge&logo=leaflet&logoColor=white" />
+  <img src="https://img.shields.io/badge/MapLibre_GL-Heatmap-396CB2?style=for-the-badge&logo=maplibre&logoColor=white" />
   <img src="https://img.shields.io/badge/Chart.js-4.x-FF6384?style=for-the-badge&logo=chartdotjs&logoColor=white" />
 </p>
 
-<h1 align="center">CampusCare</h1>
+<h1 align="center">Campus Care</h1>
 
 <p align="center">
   <strong>University Health Services Platform</strong><br>
@@ -15,8 +15,8 @@
 </p>
 
 <p align="center">
-  A three-tier healthcare web platform designed to relieve university clinic congestion<br>
-  by categorising student needs according to symptom severity — built for<br>
+  A three-tier healthcare web platform that relieves university clinic congestion by
+  triaging student health needs by severity — built for
   <strong>Nelson Mandela University, Gqeberha</strong>.
 </p>
 
@@ -24,193 +24,120 @@
 
 ## The Problem
 
-NMU's campus clinic currently requires appointments to be booked almost **a month in advance**. Students with immediate health needs are left without care unless they can afford private medical professionals. The result: overcrowded waiting rooms, delayed treatment, and a growing sense that the clinic system simply doesn't work.
+NMU's campus clinic often requires appointments booked **a month in advance**. Students with immediate needs are left waiting, and the clinic stays overcrowded.
 
-## The Solution
+## The Solution — a Three-Tier Strategy
 
-CampusCare implements a **Three-Tier Healthcare Strategy** that triages student health needs before they reach the clinic:
+Campus Care triages student health needs *before* they reach the clinic:
 
-| Tier | Purpose | How It Works |
+| Tier | Purpose | How it works |
 |:----:|---------|--------------|
-| **1** | Self-Care & Automated Support | Students log symptoms, receive OTC medication recommendations, and view campus health trend maps showing what's going around |
-| **2** | Nurse Consultations | 15-minute physical or online (Microsoft Teams) appointments with campus nurses, complete with availability grids and student feedback ratings |
-| **3** | Clinical Escalation | Nurse shift management, patient progress tracking, tier advancement, and operational analytics for administrators |
+| **1** | Self-care & automated support | Log symptoms, get OTC medication guidance, and see a live campus health heat map of what's going around |
+| **2** | Nurse consultations | Book 15-minute physical or online **video** appointments with campus nurses; rate and review them |
+| **3** | Clinical escalation | Urgent-symptom escalation with a nearest-ER locator, plus nurse scheduling and admin analytics |
 
 ---
 
-## Features
+## What each role can do
 
-### For Students
-- Symptom checker with 20 SA-relevant conditions across 6 medical categories
-- OTC medication recommendations (15 medications with symptom mappings)
-- Personal symptom history timeline
-- Interactive campus health map (Leaflet.js + OpenStreetMap)
-- Appointment booking with real-time nurse availability grid
-- Nurse profile card shown during booking (bio, experience, verified reviews)
-- Cancel and reschedule consultations
-- Rate completed consultations via star rating modal
-- Review nurses (one per nurse, admin-moderated before public display)
-- "Meet Our Staff" page with nurse profiles and approved anonymous reviews
-- Browser notifications (24h, 1h, and start-time reminders)
-- Session timeout warnings with one-click refresh
-- Auto-expire past appointments (stale bookings cleaned automatically)
+**Students** — check symptoms (multi-select, severity + duration aware), get OTC recommendations, view a personal history, explore the campus health heat map, book/cancel/reschedule consultations, join video calls, rate consultations, review nurses, and get browser reminders.
 
-### For Nurses
-- Clinical dashboard with full appointment lifecycle management
-- Personal rating summary (average score from consultations)
-- Drag-to-paint weekly availability grid (27 slots per day)
-- Patient symptom history viewer (IDOR-protected)
-- Consultation notes documentation
-- MS Teams link management for online appointments
-- Appointment status flow: Pending → Confirmed → Completed
-- Bio editor (public profile with character limit + years of experience)
+**Nurses** — manage the appointment lifecycle from a clinical dashboard, set a drag-to-paint weekly availability grid, run video consultations, write consultation notes, view patient history, and edit a public bio.
 
-### For Administrators
-- Operational reports with Chart.js visualisations
-- Nurse review moderation queue (approve/reject before public display)
-- Per-nurse feedback overview (averages + counts)
-- Full CRUD management for student and nurse accounts
-- CSV export for appointments and health trend data
-- Print-friendly report layouts
-- Campus-wide health trend analytics
-
-### Platform-Wide
-- Auto-detect login (no role dropdown — searches Student → Nurse → Admin)
-- Forgot/reset password with token-based links
-- Dark mode (system preference detection + manual toggle)
-- Responsive mobile layout with drawer sidebar
-- CSRF protection on all form submissions (session-based tokens)
-- Role-based access control on every endpoint
-- IDOR ownership validation on sensitive resources
-- XSS sanitisation and parameterised SQL queries throughout
-- bcrypt password hashing (10 salt rounds)
-- Security headers (nosniff, X-Frame-Options, Referrer-Policy)
-- Atomic transaction-based booking (prevents race condition double-bookings)
+**Admins** — view operational reports with charts, moderate nurse reviews, run full CRUD on student/nurse accounts, export CSVs, and watch campus-wide health trends.
 
 ---
 
-## Campus Health Map
+## The showpiece: the Campus Health Heat Map
 
-CampusCare maps real-time health trends across **16 Gqeberha suburb zones** using anonymised, aggregated symptom data displayed as a **choropleth heat map**:
+A live, theme-matched **MapLibre GL** density heat map of symptom activity across Gqeberha:
 
-- **Summerstrand** — NMU campus + student accommodation
-- **Humewood** — Beachfront area
-- **South End & Central** — CBD and inner city
-- **North End & Korsten** — Dense residential
-- **Newton Park** — Major western suburb
-- **Mill Park** — Inner residential
-- **Walmer** — Southern suburb
-- **Lorraine** — Northern suburb
-- **Sherwood & Kabega** — Western suburbs
-- **Westering & Bridgemead** — Northwest
-- **Sunridge Park** — Midlands
-- **Richmond Hill** — Inner east
-- **Sydenham & Malabar** — North of CBD
-- **Mangold Park & Charlo** — South-west
-- **Kamma Park & Theescombe** — Far west
-- **Lovemore Heights & Sardinia Bay** — Southern coast
+- A soft, feathered **heat cloud** shows where reports concentrate (brand-palette gradient, quiet → outbreak).
+- The whole city is divided into **gap-free Voronoi suburb zones** generated from suburb centre points — every location resolves to exactly one suburb, no gaps, no overlaps.
+- **Hover anywhere** to see the suburb + report count; **click** for a symptom breakdown. No blocky boundaries — just the clean cloud.
+- **Outbreak thresholds scale with the time window**, so a week and a year are judged realistically.
+- **Privacy first**: only aggregated data is shown; each report's coordinates are jittered and no student is ever identifiable.
 
-Zones rendered as soft coloured splotches — opacity and colour intensify with report density (green → amber → orange → red). Students set their location via a map pin-drop; zone assignment is computed server-side from polygon boundaries. No individual student data is exposed.
+Alongside the map, the **Trends** page shows headline KPIs, a daily-volume timeline, severity and category charts, and a filterable top-conditions table.
 
 ---
 
 ## Tech Stack
 
 ```
-Runtime        Node.js 18+ (ES Modules)
-Framework      Express.js 4.x
-View Engine    EJS with layout partials
-Database       MySQL 8.0 (mysql2/promise, connection pooling, transactions)
-Auth           bcrypt + express-session (httpOnly, sameSite, 1hr expiry)
-Security       CSRF tokens, ownership middleware, security headers, CSV sanitisation
-Maps           Leaflet.js 1.9 + OpenStreetMap tiles (choropleth + pin-drop)
-Charts         Chart.js 4.4 (doughnut + line)
+Runtime        Node.js 18+ (native ES Modules)
+Framework      Express.js 5.x
+Views          EJS with layout + component partials
+Database       MySQL 8.0 (mysql2/promise — pooling + transactions, TLS)
+Auth           bcrypt + express-session (httpOnly, sameSite, secure in prod)
+Security       Session-based CSRF, ownership middleware, security headers, parameterised SQL
+Maps           MapLibre GL JS (vendored) + raster tiles (MapTiler, CARTO/OSM fallback)
+Video          Daily.co (vendored client SDK, ephemeral rooms)
+Charts         Chart.js 4.4
+Animation      Motion One (vanilla, vendored)
+Design         "Calm Clinical Glass" — liquid-glass surfaces over a breathing gradient
 Architecture   Domain-based modules (routes + controller + model per feature)
 ```
+
+> No frontend framework, no build step — vanilla JS + server-rendered EJS + hand-written CSS. The only client libraries are vanilla runtime ones (MapLibre GL, Chart.js, Motion One, Daily), all vendored.
 
 ---
 
 ## Project Structure
 
 ```
-CampusCare/
+Campus Care/
 ├── public/
-│   ├── css/style.css          # Design system (CSS variables, dark mode, responsive)
-│   └── js/                    # Client-side: sidebar, darkmode, notifications, session
+│   ├── css/style.css          # Design system (tokens, glass, dark mode, responsive)
+│   ├── js/                    # sidebar, darkmode, notifications, map, trends-charts, motion…
+│   ├── icons/                 # inline SVG icon set
+│   └── vendor/                # maplibre, daily, motion (vendored client libs)
 ├── src/
 │   ├── app.js                 # Express entry point + middleware chain
-│   ├── constants.js           # Frozen enums (roles, statuses, types)
-│   ├── config/                # Database pool, session, security, migrations, seeders
-│   ├── middleware/            # authenticate, authorize, ownership, CSRF, validation, errorHandler
-│   ├── utils/                 # catchAsync, AppError, sanitize, dates
-│   └── modules/
-│       ├── auth/              # Login, register, logout, password reset
-│       ├── profile/           # View, edit, delete account
-│       ├── symptoms/          # Symptom checker, OTC recommendations, history
-│       ├── appointments/      # Booking, cancellation, reschedule, nurse grid API
-│       ├── availability/      # Nurse weekly schedule management
-│       ├── reviews/           # Per-consultation ratings + per-nurse reviews
-│       ├── trends/            # Health map, zone analytics, period filtering
-│       ├── nurse/             # Nurse dashboard, Teams links, notes, bio editor
-│       ├── admin/             # Reports, student/nurse CRUD, review moderation
-│       ├── staff/             # "Meet Our Staff" public nurse profiles
-│       ├── notifications/     # Upcoming appointment API for browser alerts
-│       └── export/            # CSV downloads (appointments, trends)
-├── views/
-│   ├── admin/                 # Reports, student/nurse CRUD forms
-│   ├── auth/                  # Login, register, forgot/reset password
-│   ├── consultations/         # Booking grid, confirmation, appointments, reviews
-│   ├── nurse/                 # Dashboard, availability grid, patient history, bio editor
-│   ├── partials/              # Header, footer, navbar, alerts
-│   ├── profile/               # View + edit profile
-│   ├── staff/                 # Meet Our Staff page
-│   ├── student/               # Symptom checker, recommendations, history
-│   └── trends/                # Health map + analytics dashboard
-├── CHANGES.md                 # Full development changelog
-└── package.json
+│   ├── constants.js           # Frozen enums + TREND map tuning
+│   ├── config/                # db pool, session, security, migrations, seeders, DB "states"
+│   ├── middleware/            # authenticate, authorize, ownership, validate, errorHandler
+│   ├── utils/                 # catchAsync, AppError, sanitize, dates, daily, geo, voronoi
+│   └── modules/               # auth, profile, symptoms, appointments, availability,
+│                              #   reviews, trends, nurse, admin, staff, notifications, export
+├── views/                     # EJS pages + partials, grouped by area
+├── render.yaml                # Render deployment blueprint
+├── DEPLOY.md                  # Deployment guide
+├── .env.example               # Documented environment template
+└── CHANGES.md                 # Full development changelog
 ```
 
 ---
 
-## Database Schema
+## Running locally
 
-The platform uses **16 tables** with full relational integrity:
+1. **Install**: `npm install`
+2. **Configure**: copy `.env.example` → `.env` and fill in the values (see the file for each variable). A managed MySQL (e.g. Aiven free tier) works out of the box.
+3. **Set up the database** (idempotent): `npm run setup` — runs migrations + seeds symptoms + seeds zones.
+4. **Optional demo data**: `npm run state:showcase` (rich data) or `npm run state:outbreak` (simulated spike).
+5. **Start**: `npm start` → http://localhost:3000
 
-| Table | Purpose |
-|-------|---------|
-| `Student` | Student profiles (StudentNumber PK, bcrypt password) |
-| `Nurse` | Nurse staff (StaffNumber PK, bio, years experience, clinic assignment) |
-| `Admin` | System administrators |
-| `Appointment` | Consultation bookings with status lifecycle |
-| `Rating` | Per-consultation feedback (1–5 score + description) |
-| `NurseReviews` | Per-nurse written reviews (admin-moderated, anonymous public display) |
-| `Symptoms` | Master symptom catalog (20 conditions, 3 tiers) |
-| `Medication` | OTC medication registry (15 medications) |
-| `SymptomMedication` | Many-to-many symptom ↔ medication mappings |
-| `SymptomLog` | Per-student symptom check history (timestamped) |
-| `NurseAvailability` | Weekly slot grid (27 slots × 5 days per nurse) |
-| `CampusZone` | GPS-located campus zones (8 zones) |
-| `StudentZone` | Student ↔ zone address mapping |
-| `Clinic` | Campus health facilities (nurse assignment + display) |
-| `PasswordResetToken` | Single-use password reset tokens with expiry |
-| `sessions` | Persistent session store |
+---
+
+## Deployment
+
+Campus Care is ready for a free Render deploy — see **[DEPLOY.md](./DEPLOY.md)** for the full step-by-step.
+
+- `render.yaml` describes the web service; set secrets in Render's dashboard (never in the repo).
+- The DB SSL certificate is passed via the `DB_CA_CERT` env var (no file needed on the host).
+- The app uses the host-injected `PORT` and enables `trust proxy` for secure cookies in production.
+- `.env` and `*.pem` are gitignored and are not committed — keep it that way.
 
 ---
 
 ## Security
 
-- All passwords hashed with **bcrypt** (10 salt rounds)
-- Sessions use `httpOnly` + `sameSite: lax` cookies (1-hour expiry)
-- **CSRF tokens** on every POST form (session-based, validated server-side)
-- Every database query uses **parameterised placeholders** (SQL injection proof)
-- All user text inputs **sanitised** against XSS (`<>` stripped)
-- **Ownership middleware** prevents IDOR (students can't access other students' records)
-- Role-based middleware on every protected route
-- **Atomic transactions** on booking (prevents double-booking race conditions)
-- Security headers: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`
-- Password reset tokens are single-use with 1-hour expiry
-- Nurse review moderation prevents abuse (admin approval required for public display)
-- No student-identifiable data exposed in health trend APIs or public reviews
+- **bcrypt** password hashing (10 rounds); sessions use `httpOnly` + `sameSite` cookies, `secure` in production.
+- **CSRF tokens** on every form; **parameterised SQL** everywhere; user input **sanitised** against XSS.
+- **Ownership middleware** blocks IDOR; **role-based** access control on every protected route.
+- **Atomic booking transaction** prevents double-booking race conditions.
+- Security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`).
+- Health-map data is aggregated and jittered — no individual student data is exposed.
 
 ---
 
@@ -221,17 +148,17 @@ The platform uses **16 tables** with full relational integrity:
 | **Tarisai Rusike** | Authentication, Profiles & System Access |
 | **Vhuthuhawe Nekhavhambe** | Symptom Checking, OTC Recommendations & Health Trends |
 | **Bridgette Magampa** | Consultations, Nurse Ratings & Booking System |
-| **Seth Whitfield** | Nurse Availability, Progress Tracking, Admin Reports & Tier Escalation |
+| **Seth Whitfield** | Nurse Availability, Progress Tracking, Admin Reports, Architecture, Security & UI System |
 
 ---
 
 ## License
 
-This project was developed as part of the WRRV302 module at **Nelson Mandela University**.
+Developed for the WRRV302 module at **Nelson Mandela University**.
 
 ---
 
 <p align="center">
   <em>Built with care for campus health.</em><br>
-  <strong>CampusCare</strong> — because a month is too long to wait.
+  <strong>Campus Care</strong> — because a month is too long to wait.
 </p>
