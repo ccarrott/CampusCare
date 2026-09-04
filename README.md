@@ -71,15 +71,18 @@ Views          EJS with layout + component partials
 Database       MySQL 8.0 (mysql2/promise — pooling + transactions, TLS)
 Auth           bcrypt + express-session (httpOnly, sameSite, secure in prod)
 Security       Session-based CSRF, ownership middleware, security headers, parameterised SQL
-Maps           MapLibre GL JS (vendored) + raster tiles (MapTiler, CARTO/OSM fallback)
+Maps           MapLibre GL JS (vendored) + Leaflet (CDN, pin-drop pages)
+Tiles          Raster tiles — MapTiler, CARTO/OSM fallback
 Video          Daily.co (vendored client SDK, ephemeral rooms)
-Charts         Chart.js 4.4
+Charts         Chart.js 4.4 (CDN)
 Animation      Motion One (vanilla, vendored)
 Design         "Calm Clinical Glass" — liquid-glass surfaces over a breathing gradient
 Architecture   Domain-based modules (routes + controller + model per feature)
 ```
 
-> No frontend framework, no build step — vanilla JS + server-rendered EJS + hand-written CSS. The only client libraries are vanilla runtime ones (MapLibre GL, Chart.js, Motion One, Daily), all vendored.
+> No frontend framework, no build step — vanilla JS + server-rendered EJS + hand-written CSS. The only client libraries are vanilla runtime ones.
+
+**Third-party client libraries.** MapLibre GL, Motion One and the Daily SDK are vendored under `public/vendor/`. Chart.js (admin reports, trends) and Leaflet (the two pin-drop pages) are still fetched from `cdn.jsdelivr.net` / `unpkg.com` at runtime; both call sites degrade to a message if the CDN is unreachable, and the CSP in `src/config/security.js` pins those two origins. Vendoring them — or adding Subresource Integrity hashes — would remove the remaining runtime dependency on third-party CDNs.
 
 ---
 
@@ -96,7 +99,7 @@ Campus Care/
 │   ├── app.js                 # Express entry point + middleware chain
 │   ├── constants.js           # Frozen enums + TREND map tuning
 │   ├── config/                # db pool, session, security, migrations, seeders, DB "states"
-│   ├── middleware/            # authenticate, authorize, ownership, validate, errorHandler
+│   ├── middleware/            # authenticate, authorize, ownership, validate, rateLimit, errorHandler
 │   ├── utils/                 # catchAsync, AppError, sanitize, dates, daily, geo, voronoi
 │   └── modules/               # auth, profile, symptoms, appointments, availability,
 │                              #   reviews, trends, nurse, admin, staff, notifications, export
@@ -113,7 +116,7 @@ Campus Care/
 
 1. **Install**: `npm install`
 2. **Configure**: copy `.env.example` → `.env` and fill in the values (see the file for each variable). A managed MySQL (e.g. Aiven free tier) works out of the box.
-3. **Set up the database** (idempotent): `npm run setup` — runs migrations + seeds symptoms + seeds zones.
+3. **Set up the database**: `npm run setup` — creates the schema, runs every migration, then seeds symptoms and zones. It works against a completely empty database and is safe to re-run.
 4. **Optional demo data**: `npm run state:showcase` (rich data) or `npm run state:outbreak` (simulated spike).
 5. **Start**: `npm start` → http://localhost:3000
 
@@ -133,11 +136,19 @@ Campus Care is ready for a free Render deploy — see **[DEPLOY.md](./DEPLOY.md)
 ## Security
 
 - **bcrypt** password hashing (10 rounds); sessions use `httpOnly` + `sameSite` cookies, `secure` in production.
+- **Session ID regenerated on login and registration** — closes session fixation.
+- **Rate limiting** on login, registration, and both password-reset endpoints (in-memory, per-instance).
 - **CSRF tokens** on every form; **parameterised SQL** everywhere; user input **sanitised** against XSS.
-- **Ownership middleware** blocks IDOR; **role-based** access control on every protected route.
+- **Ownership middleware** blocks IDOR; **role-based** access control on every protected route, CSV exports included.
+- **Server-side booking validation** — weekday, future, published slot, and nurse availability are all re-checked on the server, not just greyed out in the grid.
 - **Atomic booking transaction** prevents double-booking race conditions.
-- Security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`).
+- Security headers: `Content-Security-Policy`, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` (camera/mic delegated to your `DAILY_DOMAIN`).
 - Health-map data is aggregated and jittered — no individual student data is exposed.
+
+### Known limitations
+
+- **Password reset has no mail server.** The reset link can only be shown on screen, which would let anyone who knows a username take over that account. It is therefore hidden when `NODE_ENV=production` (the link goes to the server log instead) unless `ALLOW_INSECURE_PASSWORD_RESET=true` is set for a live demo.
+- **Sessions live in memory.** `express-session` uses the default `MemoryStore`, so every restart or cold start signs everyone out, and the app cannot run on more than one instance. Moving to a MySQL-backed store (`express-mysql-session`) is the fix when that matters.
 
 ---
 

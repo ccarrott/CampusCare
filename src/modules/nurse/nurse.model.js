@@ -21,15 +21,6 @@ export async function updateNurseProfile(staffNumber, { bio, yearsExperience }) 
 }
 
 /**
- * Gets a nurse's current bio and experience for the edit form.
- */
-export async function getNurseBioData(staffNumber) {
-  const sql = 'SELECT Bio, YearsExperience FROM Nurse WHERE StaffNumber = ?';
-  const results = await query(sql, [staffNumber]);
-  return results[0];
-}
-
-/**
  * Fetches a patient's symptom log history.
  */
 export async function getPatientSymptomHistory(studentNumber, limit = 30) {

@@ -213,6 +213,14 @@
 (function() {
   const canvas = document.getElementById('dailyChart');
   if (!canvas) return;
+  // Chart.js comes from a CDN. If it did not load, degrade to a message rather
+  // than throwing and taking the rest of the page's scripts down with it.
+  if (typeof Chart === 'undefined') {
+    canvas.insertAdjacentHTML('afterend',
+      '<p class="text-muted text-center">Chart library unavailable — the figures above are unaffected.</p>');
+    canvas.remove();
+    return;
+  }
 
   const rawData = <%- dailyAppointments %>;
   const labels = rawData.map(r => new Date(r.day).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' }));

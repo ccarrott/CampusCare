@@ -39,6 +39,13 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (function() {
+  // Leaflet is loaded from a CDN. If it can't be reached, show a message instead
+  // of letting the whole block throw and leaving an unexplained blank box.
+  if (typeof L === 'undefined') {
+    var box = document.getElementById('locationMap');
+    if (box) box.innerHTML = '<div class="map-fallback">Map library failed to load. Check your connection and refresh.</div>';
+    return;
+  }
   const map = L.map('locationMap').setView([-33.9855, 25.6600], 13);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors', maxZoom: 18

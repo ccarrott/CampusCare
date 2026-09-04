@@ -103,15 +103,3 @@ export const saveAvailability = catchAsync(async (req, res) => {
     success: successMsg
   });
 });
-
-// ============================================================================
-// API: Open slots (for booking form)
-// ============================================================================
-
-export const getAvailableSlotsAPI = catchAsync(async (req, res) => {
-  const { staffNumber, day, date } = req.params;
-  const slots = date
-    ? await AvailabilityModel.getOpenSlots(staffNumber, day, date)
-    : await AvailabilityModel.getAvailableSlots(staffNumber, day);
-  res.json({ slots });
-});

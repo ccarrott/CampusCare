@@ -76,37 +76,6 @@ export async function saveFullAvailability(staffNumber, slots) {
 }
 
 /**
- * Gets available time slots for a nurse on a specific day.
- */
-export async function getAvailableSlots(staffNumber, dayOfWeek) {
-  const sql = `
-    SELECT TimeSlot FROM NurseAvailability
-    WHERE StaffNumber = ? AND DayOfWeek = ? AND Status = 'Available'
-    ORDER BY TimeSlot ASC
-  `;
-  const rows = await query(sql, [staffNumber, dayOfWeek]);
-
-  if (rows.length === 0) return FILTERED_SLOTS.map(s => s.start);
-  return rows.map(r => r.TimeSlot.split('-')[0]);
-}
-
-/**
- * Gets available slots minus already-booked appointments for a specific date.
- */
-export async function getOpenSlots(staffNumber, dayOfWeek, date) {
-  const available = await getAvailableSlots(staffNumber, dayOfWeek);
-
-  const bookedSql = `
-    SELECT TIME_FORMAT(Time, '%H:%i') AS BookedSlot
-    FROM Appointment WHERE StaffNumber = ? AND DATE(Time) = ? AND Status != 'Cancelled'
-  `;
-  const booked = await query(bookedSql, [staffNumber, date]);
-  const bookedSlots = booked.map(r => r.BookedSlot);
-
-  return available.filter(slot => !bookedSlots.includes(slot));
-}
-
-/**
  * Gets booked appointment details for a nurse on specific dates (for the grid display).
  */
 export async function getBookedAppointmentsForDate(staffNumber, date) {

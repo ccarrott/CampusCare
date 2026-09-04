@@ -1,7 +1,7 @@
 // src/modules/symptoms/symptoms.model.js
 // Database queries for the tag-based symptom checker system (Phase 22).
 
-import { query } from '../../config/database.js';
+import { query, transaction } from '../../config/database.js';
 import { getZoneForPoint } from '../../utils/geo.js';
 import { TREND } from '../../constants.js';
 
@@ -97,14 +97,20 @@ export async function getMedicationSymptomCoverage(medicationCode, symptomIds) {
 export async function createSymptomLog(logId, studentNumber, severity, symptomIds, extra = {}) {
   const { duration = null, trajectory = null, otherText = null,
           latitude = null, longitude = null, zoneId = null } = extra;
-  await query(
-    `INSERT INTO SymptomLog (LogID, StudentNumber, SymptomName, Severity, Duration, Trajectory, OtherText, Latitude, Longitude, ZoneID, LogDate)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-    [logId, studentNumber, symptomIds.join(','), severity, duration, trajectory, otherText, latitude, longitude, zoneId]
-  );
-  for (const symId of symptomIds) {
-    await query('INSERT INTO SymptomLogEntry (LogID, SymptomID) VALUES (?, ?)', [logId, symId]);
-  }
+
+  // Header + entry rows go in one transaction: a failure part-way through would
+  // otherwise leave a SymptomLog with only some of its symptoms, which then skews
+  // the trend rollups and the recurrence check.
+  await transaction(async (conn) => {
+    await conn.execute(
+      `INSERT INTO SymptomLog (LogID, StudentNumber, SymptomName, Severity, Duration, Trajectory, OtherText, Latitude, Longitude, ZoneID, LogDate)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [logId, studentNumber, symptomIds.join(','), severity, duration, trajectory, otherText, latitude, longitude, zoneId]
+    );
+    for (const symId of symptomIds) {
+      await conn.execute('INSERT INTO SymptomLogEntry (LogID, SymptomID) VALUES (?, ?)', [logId, symId]);
+    }
+  });
 }
 
 /**

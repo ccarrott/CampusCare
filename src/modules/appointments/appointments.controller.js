@@ -11,6 +11,44 @@ import { AppError } from '../../utils/AppError.js';
 import { getUpcomingWeekDays } from '../../utils/dates.js';
 import { APPOINTMENT_TYPE, APPOINTMENT_STATUS, ROLES } from '../../constants.js';
 
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/**
+ * Validates a requested appointment slot on the server.
+ *
+ * The booking grid greys out weekends, past days and slots the nurse marked
+ * Unavailable, but that is only a UI hint — the form posts a free-text datetime, so
+ * a hand-crafted POST could otherwise book 03:00, a date in the past, or a slot the
+ * nurse has closed. Everything the grid enforces visually is re-checked here.
+ *
+ * @returns {Promise<string|null>} an error message, or null when the slot is valid.
+ */
+async function validateSlot(staffNumber, time) {
+  const when = new Date(time);
+  if (Number.isNaN(when.getTime())) return 'That appointment time is not valid.';
+
+  if (when.getTime() <= Date.now()) {
+    return 'Appointments can only be booked for a future time.';
+  }
+
+  const day = when.getDay();
+  if (day === 0 || day === 6) return 'Appointments cannot be booked on weekends.';
+
+  // The time must land exactly on one of the published 15-minute session starts.
+  const hhmm = `${String(when.getHours()).padStart(2, '0')}:${String(when.getMinutes()).padStart(2, '0')}`;
+  const slot = AvailabilityModel.TIME_SLOTS.find(s => s.start === hhmm);
+  if (!slot) return 'Please choose one of the available consultation slots.';
+
+  // And the nurse must not have marked that weekly slot Unavailable.
+  const grid = await AvailabilityModel.getAvailabilityForNurse(staffNumber);
+  const dayName = DAY_NAMES[day];
+  if (grid[dayName] && grid[dayName][slot.label] === 'Unavailable') {
+    return 'That nurse is not available at the selected time. Please pick another slot.';
+  }
+
+  return null;
+}
+
 // ============================================================================
 // BOOKING FORM
 // ============================================================================
@@ -72,12 +110,12 @@ export const handleBooking = catchAsync(async (req, res) => {
     });
   }
 
-  // Weekend check
-  const bookingDate = new Date(time);
-  if (bookingDate.getDay() === 0 || bookingDate.getDay() === 6) {
+  // Slot validation (weekday, future, published slot, nurse actually available)
+  const slotError = await validateSlot(staffNumber, time);
+  if (slotError) {
     const nurses = await AppointmentsModel.getAvailableNurses();
     return res.status(400).render('consultations/book', {
-      user: req.session.user, nurses, error: 'Appointments cannot be booked on weekends.'
+      user: req.session.user, nurses, error: slotError
     });
   }
 
@@ -173,10 +211,10 @@ export const handleRescheduleAppointment = catchAsync(async (req, res) => {
     return res.redirect('/consultations/my-appointments');
   }
 
-  // Weekend validation
-  const newDate = new Date(newTime);
-  if (newDate.getDay() === 0 || newDate.getDay() === 6) {
-    return res.redirect('/consultations/my-appointments?toast=Cannot+book+on+weekends');
+  // Same slot validation as a fresh booking — a reschedule must not be a way in.
+  const slotError = await validateSlot(apt.StaffNumber, newTime);
+  if (slotError) {
+    return res.redirect('/consultations/my-appointments?toast=' + encodeURIComponent(slotError));
   }
 
   // Atomic slot availability check (same protection as initial booking)

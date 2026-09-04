@@ -8,6 +8,7 @@ import { sanitize } from '../../utils/sanitize.js';
 import { ROLES } from '../../constants.js';
 import { query } from '../../config/database.js';
 import { getZoneForPoint } from '../../utils/geo.js';
+import * as NurseModel from '../nurse/nurse.model.js';
 
 // ============================================================================
 // VIEW PROFILE
@@ -68,24 +69,30 @@ export const changePassword = catchAsync(async (req, res) => {
   const { id, role } = req.session.user;
   const { currentPassword, newPassword, confirmPassword } = req.body;
 
-  if (!currentPassword || !newPassword || !confirmPassword) return res.redirect('/profile');
-  if (newPassword.length < 6) return res.redirect('/profile');
-  if (newPassword !== confirmPassword) return res.redirect('/profile');
+  // Every failure used to redirect silently, so a wrong current password looked
+  // identical to a successful change. Say what went wrong via the profile toast.
+  const fail = (msg) => res.redirect('/profile?toast=' + encodeURIComponent(msg) + '&toastType=error');
+
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    return fail('Please fill in all three password fields.');
+  }
+  if (newPassword.length < 6) return fail('New password must be at least 6 characters.');
+  if (newPassword !== confirmPassword) return fail('New passwords do not match.');
 
   let user;
   if (role === ROLES.STUDENT) user = await ProfileModel.findStudentById(id);
   else if (role === ROLES.NURSE) user = await ProfileModel.findNurseById(id);
   else if (role === ROLES.ADMIN) user = await ProfileModel.findAdminById(id);
 
-  if (!user || !user.Password) return res.redirect('/profile');
+  if (!user || !user.Password) return fail('Could not verify your account. Please sign in again.');
 
   const isMatch = await bcrypt.compare(currentPassword, user.Password);
-  if (!isMatch) return res.redirect('/profile');
+  if (!isMatch) return fail('Your current password is incorrect.');
 
   const hashedPassword = await bcrypt.hash(newPassword, 10);
   await ProfileModel.updatePassword(id, role, hashedPassword);
 
-  res.redirect('/profile');
+  res.redirect('/profile?toast=' + encodeURIComponent('Password changed successfully.'));
 });
 
 // ============================================================================
@@ -145,6 +152,6 @@ export const updateNurseBio = catchAsync(async (req, res) => {
   const bio = sanitize(req.body.bio).substring(0, 300);
   const yearsExperience = Math.max(0, Math.min(50, parseInt(req.body.yearsExperience) || 0));
 
-  await query("UPDATE Nurse SET Bio = ?, YearsExperience = ? WHERE StaffNumber = ?", [bio, yearsExperience, staffNumber]);
+  await NurseModel.updateNurseProfile(staffNumber, { bio, yearsExperience });
   res.redirect('/profile?toast=Public+profile+updated');
 });

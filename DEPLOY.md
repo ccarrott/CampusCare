@@ -53,9 +53,13 @@ Set these (values come from your local `.env`):
 | `SESSION_SEED` | a long random hex string (Blueprint auto-generates one) |
 | `APP_BASE_URL` | `https://<your-app>.onrender.com` (fill in after the URL exists) |
 | `DAILY_API_KEY` | your Daily key (only if using video) |
-| `DAILY_DOMAIN` | your Daily subdomain |
+| `DAILY_DOMAIN` | your Daily subdomain — also drives the camera/mic Permissions-Policy and the CSP frame origin |
 | `DAILY_WEBHOOK_SECRET` | your Daily webhook secret |
 | `MAPTILER_KEY` | your MapTiler key (optional — map falls back to free tiles without it) |
+| `ALLOW_INSECURE_PASSWORD_RESET` | leave UNSET. Only set to `true` to demo the reset flow — see the security checklist |
+
+`DB_CA_CERT` is not optional in spirit: without it the app still connects over TLS but
+does not verify the server's certificate, and it logs a warning on boot saying so.
 
 Do NOT reuse the values that were in the local `.env` if this repo is public — rotate them
 (see the checklist at the bottom).
@@ -63,20 +67,28 @@ Do NOT reuse the values that were in the local `.env` if this repo is public —
 ## 5. Initialise the database (one-time)
 After the first successful deploy, open Render → your service → **Shell** and run:
 ```
-npm run setup          # migrations + symptom seed + zone seed
+npm run setup          # schema + migrations + symptom seed + zone seed
 npm run state:showcase # optional: rich demo data
 ```
-`npm run setup` is idempotent — safe to re-run.
+`npm run setup` creates the base tables if they are missing, so it works against a
+brand-new empty database as well as the existing one, and it is safe to re-run —
+already-applied steps are reported as `[SKIP]` and do not fail the run.
 
 ## 6. Third-party dashboards (only if you use them)
 - **MapTiler**: add `https://<your-app>.onrender.com` to the key's Allowed HTTP Origins.
 - **Daily.co**: add your Render domain to allowed domains; set the webhook URL to
-  `https://<your-app>.onrender.com/consultations/webhook/daily`. If your Daily subdomain
-  isn't `campuscare`, update the `Permissions-Policy` in `src/config/security.js`.
+  `https://<your-app>.onrender.com/consultations/webhook/daily`. The `Permissions-Policy`
+  and CSP frame origin are derived from `DAILY_DOMAIN`, so just set that env var
+  correctly — no code change needed.
 
 ## Notes
 - Render free web services sleep after ~15 min idle; the next request cold-starts in ~30s.
   Fine for a demo/student project.
+- **Sessions are held in memory**, so every cold start, restart or deploy signs everyone
+  out, and the service cannot be scaled past one instance. Node prints a warning about
+  this on boot. If persistent logins matter, add `express-mysql-session` and pass a
+  `store` to `createSessionMiddleware()` in `src/config/session.js`.
+- The health check is `/healthz` — a plain 200 with no DB or session work.
 - The admin-only "state" endpoints (`showcase`/`outbreak`/`clear`/`naked`) remain available
   in production but are gated behind an admin login. `naked` deletes all data — use with care.
 
@@ -88,3 +100,11 @@ npm run state:showcase # optional: rich demo data
       password, `SESSION_SEED`, and the Daily API key/webhook secret. Set the new values
       only in Render's Environment tab.
 - [ ] `MAPTILER_KEY` is a public browser key — no need to rotate, just origin-restrict it.
+- [ ] Set `DB_CA_CERT`. Without it the database connection is encrypted but unauthenticated.
+- [ ] Leave `ALLOW_INSECURE_PASSWORD_RESET` unset. There is no mail server, so the reset
+      link can only be rendered in the page — which means anyone who knows a student
+      number could reset that account. In production the link is written to the server log
+      instead, and the form gives the same neutral answer whether or not the account
+      exists. Set the flag to `true` only for a supervised live demo, and unset it after.
+- [ ] Change the seeded demo passwords (`admin123`, `nurse123`, `password123` in
+      `src/config/states/`) before pointing anyone at the deployed URL.

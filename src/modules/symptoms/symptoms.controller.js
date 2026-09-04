@@ -3,6 +3,7 @@
 
 import crypto from 'crypto';
 import * as SymptomsModel from './symptoms.model.js';
+import * as AppointmentsModel from '../appointments/appointments.model.js';
 import { catchAsync } from '../../utils/catchAsync.js';
 import { sanitize } from '../../utils/sanitize.js';
 import { evaluateEscalation } from './escalation.js';
@@ -54,6 +55,10 @@ export const processSymptomCheck = catchAsync(async (req, res) => {
   // Recurrence context (non-blocking).
   let lastCheck = null, recentBooking = false;
   try { lastCheck = await SymptomsModel.getLastSymptomCheck(req.session.user.id, ESCALATION.RECURRENCE_WINDOW_DAYS); }
+  catch (e) { /* ignore */ }
+  // The "you booked a consultation recently" escalation signal needs this lookup —
+  // without it the rule could never fire.
+  try { recentBooking = await AppointmentsModel.hasRecentBooking(req.session.user.id, ESCALATION.RECURRENCE_WINDOW_DAYS); }
   catch (e) { /* ignore */ }
 
   // Run the escalation engine.

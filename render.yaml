@@ -8,7 +8,7 @@ services:
     plan: free
     buildCommand: npm install
     startCommand: npm start
-    healthCheckPath: /auth/login
+    healthCheckPath: /healthz
     envVars:
       - key: NODE_ENV
         value: production
@@ -40,3 +40,8 @@ services:
       # MapTiler (public browser key; optional — map falls back to free tiles)
       - key: MAPTILER_KEY
         sync: false
+      # Password reset: with no mail server the reset link can only be shown on
+      # screen, which is an account-takeover path on a public deploy. Leave this
+      # unset for a safe production default; set it to "true" only for a live demo.
+      # - key: ALLOW_INSECURE_PASSWORD_RESET
+      #   value: "true"

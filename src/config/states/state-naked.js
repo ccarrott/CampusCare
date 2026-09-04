@@ -22,7 +22,9 @@ export async function loadNakedState() {
   await query('DELETE FROM Admin');
   await query('DELETE FROM Nurse');
   await query('DELETE FROM Clinic');
-  await query("DELETE FROM sessions WHERE 1=1");
+  // NOTE: there is no `sessions` table — express-session keeps sessions in memory,
+  // so they are cleared by restarting the process, not by SQL. The DELETE that used
+  // to be here threw "table doesn't exist" and aborted the whole reset.
 
   // Seed clinics — real NMU Student Health Services facilities (Gqeberha).
   // Source: studenthealth.mandela.ac.za (South 041 504 2174, North 041 504 1149).

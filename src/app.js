@@ -9,14 +9,16 @@ import { fileURLToPath } from 'url';
 
 // Config
 import { validateEnv } from './config/environment.js';
-import { query } from './config/database.js';
+import { query, pool } from './config/database.js';
 import { createSessionMiddleware } from './config/session.js';
 import { securityHeaders } from './config/security.js';
 import cookieParser from 'cookie-parser';
 
 // Middleware
 import { requireAuth } from './middleware/authenticate.js';
+import { requireRole } from './middleware/authorize.js';
 import { globalErrorHandler } from './middleware/errorHandler.js';
+import { ROLES } from './constants.js';
 
 // Module routes
 import authRoutes from './modules/auth/auth.routes.js';
@@ -58,10 +60,21 @@ if (process.env.NODE_ENV === 'production') {
 // CORE MIDDLEWARE
 // ============================================================================
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
 app.use(securityHeaders);
+
+// View engine + static assets. Static is mounted BEFORE the session/CSRF layer so
+// CSS/JS/image requests never touch the session store (they can't be authenticated
+// anyway) — that keeps asset serving cheap and avoids pointless session churn.
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, '../views'));
+app.use(express.static(path.join(__dirname, '../public'), { maxAge: '1h' }));
+
+// Cheap liveness probe for the host's health check — no DB, no session, no render.
+app.get('/healthz', (req, res) => res.status(200).type('text').send('ok'));
+
+app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
+app.use(cookieParser());
 app.use(createSessionMiddleware());
 
 // Asset cache-bust token — changes each server start so browsers always fetch
@@ -96,8 +109,10 @@ app.use((req, res, next) => {
     return res.status(403).json({ error: 'Invalid CSRF token. Pass x-csrf-token header.' });
   }
 
-  // Form submissions: check body._csrf
-  const token = req.body._csrf || req.headers['x-csrf-token'];
+  // Form submissions: check body._csrf. In Express 5 req.body is undefined when no
+  // parser matched the Content-Type, so read it optionally — a request with an
+  // unparsed body must fail CSRF, not throw a 500 on the way there.
+  const token = req.body?._csrf || req.headers['x-csrf-token'];
   if (!token || token !== req.session?.csrfToken) {
     return res.status(403).render('error', {
       user: req.session?.user || null,
@@ -107,14 +122,6 @@ app.use((req, res, next) => {
   }
   next();
 });
-
-// ============================================================================
-// STATIC ASSETS & VIEW ENGINE
-// ============================================================================
-
-app.use(express.static(path.join(__dirname, '../public')));
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, '../views'));
 
 // ============================================================================
 // ROUTES
@@ -175,7 +182,7 @@ app.use('/management/nurse', availabilityRoutes);
 app.use('/management/admin', adminRoutes);
 
 // Admin CSV export
-app.get('/management/admin/reports/export-csv', requireAuth, exportAppointmentsCSV);
+app.get('/management/admin/reports/export-csv', requireRole(ROLES.ADMIN), exportAppointmentsCSV);
 
 // Database state management API (admin-only, browser console)
 app.use('/api/admin/state', statesApi);
@@ -209,13 +216,32 @@ async function startServer() {
     await query('SELECT 1');
     console.log('[Database] Connection pool verified.');
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`[Server] CampusCare running on port ${PORT}`);
     });
+
+    // Hosts (Render/Railway) send SIGTERM on deploy/scale-down. Stop accepting new
+    // connections, then close the MySQL pool so in-flight queries finish cleanly.
+    const shutdown = (signal) => {
+      console.log(`[Server] ${signal} received — shutting down.`);
+      server.close(async () => {
+        try { await pool.end(); } catch { /* pool already closed */ }
+        process.exit(0);
+      });
+      // Don't hang forever on a stuck connection.
+      setTimeout(() => process.exit(0), 10000).unref();
+    };
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
   } catch (error) {
     console.error('[FATAL] Database connection failed:', error.message);
     process.exit(1);
   }
 }
+
+// An unhandled rejection would otherwise take the process down silently in Node 18+.
+process.on('unhandledRejection', (reason) => {
+  console.error('[UnhandledRejection]', reason instanceof Error ? reason.stack : reason);
+});
 
 startServer();

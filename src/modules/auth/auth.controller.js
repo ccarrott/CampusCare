@@ -11,6 +11,34 @@ import { ROLES } from '../../constants.js';
 
 const SALT_ROUNDS = 10;
 
+/**
+ * Regenerates the session ID before attaching the user, then persists it.
+ * Without this, a session ID an attacker planted before login stays valid
+ * afterwards (session fixation) — the fixed ID would carry their privileges.
+ */
+function startAuthenticatedSession(req, user) {
+  return new Promise((resolve, reject) => {
+    req.session.regenerate((regenErr) => {
+      if (regenErr) return reject(regenErr);
+      req.session.user = user;
+      req.session.save((saveErr) => (saveErr ? reject(saveErr) : resolve()));
+    });
+  });
+}
+
+/**
+ * Whether the on-screen password-reset link may be shown.
+ *
+ * The app has no mail server, so the reset link is rendered in the page. That is a
+ * demo shortcut, and on a public deployment it is an account-takeover path: anyone
+ * who knows a student number can mint a reset link for it. It is therefore OFF by
+ * default in production and must be switched on deliberately.
+ */
+function resetLinkIsVisible() {
+  if (process.env.ALLOW_INSECURE_PASSWORD_RESET === 'true') return true;
+  return process.env.NODE_ENV !== 'production';
+}
+
 // ============================================================================
 // LOGIN
 // ============================================================================
@@ -62,13 +90,13 @@ export const handleLogin = catchAsync(async (req, res) => {
 
   const userId = role === ROLES.STUDENT ? user.StudentNumber : user.StaffNumber;
 
-  req.session.user = {
+  await startAuthenticatedSession(req, {
     id: userId,
     name: fullName,
     firstName: role === ROLES.ADMIN ? '' : (user.FirstName || ''),
     lastName: role === ROLES.ADMIN ? '' : (user.LastName || ''),
     role
-  };
+  });
 
   res.redirect('/');
 });
@@ -112,13 +140,13 @@ export const handleRegister = catchAsync(async (req, res) => {
   });
 
   // Auto-login the new student and redirect to pin-drop location page
-  req.session.user = {
+  await startAuthenticatedSession(req, {
     id: studentNumber,
     name: `${firstName} ${lastName}`,
     firstName,
     lastName,
     role: ROLES.STUDENT
-  };
+  });
 
   res.redirect('/profile/location');
 });
@@ -155,8 +183,12 @@ export const handleForgotPassword = catchAsync(async (req, res) => {
   if (!user) { user = await AuthModel.findNurseById(idNumber); if (user) userType = 'nurse'; }
   if (!user) { user = await AuthModel.findAdminById(idNumber); if (user) userType = 'admin'; }
 
+  // Neutral acknowledgement either way — a different message for "no such account"
+  // turns this form into a username oracle for enumerating real student numbers.
+  const neutral = 'If an account exists for that username, a password reset link has been issued.';
+
   if (!user) {
-    return res.render('auth/forgot-password', { error: 'No account found with that username.', success: null });
+    return res.render('auth/forgot-password', { error: null, success: neutral });
   }
 
   const token = crypto.randomBytes(32).toString('hex');
@@ -164,11 +196,19 @@ export const handleForgotPassword = catchAsync(async (req, res) => {
 
   await AuthModel.createPasswordResetToken({ userId: idNumber, userType, token, expiresAt });
 
-  // KNOWN LIMITATION: In production, this token would be sent via email to the user's
-  // registered address (e.g. studentNumber@mandela.ac.za). For this demo/capstone,
-  // the link is displayed on-screen as we have no mail server configured.
-  // This is an intentional shortcut — not a production pattern.
   const resetLink = `/auth/reset-password/${token}`;
+
+  // KNOWN LIMITATION: there is no mail server, so the token cannot be emailed to the
+  // account holder (e.g. studentNumber@mandela.ac.za). Showing the link in the page
+  // instead is a demo convenience and an account-takeover path on a public deployment,
+  // so it is gated: development shows it, production only when ALLOW_INSECURE_PASSWORD_RESET
+  // is explicitly set. Otherwise the link goes to the server log, where only an
+  // operator can read it.
+  if (!resetLinkIsVisible()) {
+    console.warn(`[PasswordReset] Reset link issued for ${userType} ${idNumber}: ${resetLink}`);
+    return res.render('auth/forgot-password', { error: null, success: neutral });
+  }
+
   res.render('auth/forgot-password', {
     error: null,
     success: `Password reset link generated. <a href="${resetLink}">Click here to reset your password</a>`

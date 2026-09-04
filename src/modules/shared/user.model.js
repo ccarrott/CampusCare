@@ -29,6 +29,13 @@ export async function findAdminById(staffNumber) {
 export async function updatePassword(userId, userType, hashedPassword) {
   const tableMap = { student: 'Student', nurse: 'Nurse', admin: 'Admin' };
   const pkMap = { student: 'StudentNumber', nurse: 'StaffNumber', admin: 'StaffNumber' };
-  const sql = `UPDATE ${tableMap[userType]} SET Password = ? WHERE ${pkMap[userType]} = ?`;
+
+  // The table/column names are interpolated, so an unrecognised userType must never
+  // reach the query — reject it here rather than emitting `UPDATE undefined ...`.
+  const table = tableMap[userType];
+  const pk = pkMap[userType];
+  if (!table || !pk) throw new Error(`updatePassword: unknown user type "${userType}"`);
+
+  const sql = `UPDATE ${table} SET Password = ? WHERE ${pk} = ?`;
   return await query(sql, [hashedPassword, userId]);
 }

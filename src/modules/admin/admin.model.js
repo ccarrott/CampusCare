@@ -103,10 +103,20 @@ export async function updateStudent(studentNumber, { firstName, lastName, medica
 }
 
 export async function deleteStudent(studentNumber) {
+  // Child rows first, deepest first. SymptomLogEntry hangs off SymptomLog by LogID,
+  // so it has to go before the parent logs — otherwise its rows are orphaned and keep
+  // inflating the trend rollups after the student is gone. NurseReviews and any
+  // outstanding reset tokens were likewise being left behind.
+  await query(
+    'DELETE FROM SymptomLogEntry WHERE LogID IN (SELECT LogID FROM SymptomLog WHERE StudentNumber = ?)',
+    [studentNumber]
+  );
   await query('DELETE FROM SymptomLog WHERE StudentNumber = ?', [studentNumber]);
   await query('DELETE FROM StudentZone WHERE StudentNumber = ?', [studentNumber]);
+  await query('DELETE FROM NurseReviews WHERE StudentNumber = ?', [studentNumber]);
   await query('DELETE FROM Rating WHERE StudentNumber = ?', [studentNumber]);
   await query('DELETE FROM Appointment WHERE StudentNumber = ?', [studentNumber]);
+  await query("DELETE FROM PasswordResetToken WHERE UserID = ? AND UserType = 'student'", [studentNumber]);
   await query('DELETE FROM Student WHERE StudentNumber = ?', [studentNumber]);
 }
 

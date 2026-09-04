@@ -196,36 +196,3 @@ export const showPatientHistory = catchAsync(async (req, res) => {
     error: null
   });
 });
-
-// ============================================================================
-// BIO EDITOR
-// ============================================================================
-
-export const showBioEditor = catchAsync(async (req, res) => {
-  const staffNumber = req.session.user.id;
-  const bioData = await NurseModel.getNurseBioData(staffNumber);
-
-  res.render('nurse/edit-bio', {
-    user: req.session.user,
-    bio: bioData?.Bio || '',
-    yearsExperience: bioData?.YearsExperience || 0,
-    error: null,
-    success: null
-  });
-});
-
-export const updateBio = catchAsync(async (req, res) => {
-  const staffNumber = req.session.user.id;
-  const bio = sanitize(req.body.bio).substring(0, 300);
-  const yearsExperience = Math.max(0, Math.min(50, parseInt(req.body.yearsExperience) || 0));
-
-  await NurseModel.updateNurseProfile(staffNumber, { bio, yearsExperience });
-
-  res.render('nurse/edit-bio', {
-    user: req.session.user,
-    bio,
-    yearsExperience,
-    error: null,
-    success: 'Profile updated successfully.'
-  });
-});

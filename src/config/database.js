@@ -21,6 +21,16 @@ const ssl = ca
   // like Aiven requires SSL). Set DB_CA_CERT in production for full verification.
   : { rejectUnauthorized: false };
 
+if (!ca && process.env.NODE_ENV === 'production') {
+  // Encrypted but unauthenticated: the connection is TLS, yet nothing proves the
+  // server on the other end is really the database. Anyone able to intercept the
+  // route can present their own certificate and read every query. Set DB_CA_CERT.
+  console.warn(
+    '[Database] WARNING: no DB_CA_CERT set in production — connecting over TLS ' +
+    'WITHOUT certificate verification. Paste the provider CA into DB_CA_CERT.'
+  );
+}
+
 export const pool = mysql.createPool({
   host: process.env.DB_HOST,
   port: Number(process.env.DB_PORT) || 3306,
