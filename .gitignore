@@ -5,6 +5,10 @@ node_modules/
 .env.*
 !.env.example
 *.pem
+# ...except the database CA. It is a public certificate, not a secret, and having
+# it in the repo means the host needs no DB_CA_CERT env var (which mangles PEM
+# newlines and silently drops you to an unverified TLS connection).
+!ca.pem
 
 # Logs & scratch
 *.log

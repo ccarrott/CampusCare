@@ -30,8 +30,9 @@ services:
         sync: false
       - key: DB_NAME
         sync: false
-      - key: DB_CA_CERT
-        sync: false
+      # DB_CA_CERT is deliberately absent. The CA is committed as ca.pem and read
+      # from disk. Setting it here means pasting a multi-line PEM into a field that
+      # strips newlines, which breaks the TLS handshake.
       # App
       - key: SESSION_SEED
         generateValue: true      # Render generates a strong random secret

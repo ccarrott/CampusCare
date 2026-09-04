@@ -68,7 +68,7 @@ git ls-files | grep -E '\.env$|\.pem$'      # must print nothing
 | `DB_USER` | `avnadmin` |
 | `DB_PASSWORD` | your Aiven password |
 | `DB_NAME` | `defaultdb` |
-| `DB_CA_CERT` | the whole CA certificate, pasted as-is (Render accepts multi-line values) |
+| `DB_CA_CERT` | **leave unset.** The CA ships in the repo as `ca.pem` and is read from disk. |
 | `SESSION_SEED` | a long random hex string — the Blueprint generates one for you |
 | `APP_TIMEZONE` | `Africa/Johannesburg` (already in `render.yaml`) |
 | `DB_TIMEZONE` | `+02:00` (already in `render.yaml`) |
@@ -169,12 +169,17 @@ boot prints the reason and exits rather than hanging.
 
 ## Security checklist before sharing the URL
 
-- [ ] `.env` and `ca.pem` are not in the repo — `git ls-files` shows neither.
+- [ ] `.env` is not in the repo — `git ls-files | grep '\.env$'` shows nothing.
+      (`ca.pem` **is** committed on purpose: it is the database's public CA
+      certificate, holds no secret, and pasting it into `DB_CA_CERT` instead gets
+      its newlines stripped by most dashboards — which silently drops you to an
+      unverified TLS connection, or fails the handshake outright.)
 - [ ] If the repo is public, **rotate** anything that was ever in your local `.env`:
       the Aiven password, `SESSION_SEED`, and the Daily API key and webhook secret.
       Set the new values only in Render's Environment tab.
-- [ ] `DB_CA_CERT` is set. Without it the database connection is encrypted but
-      unauthenticated, and the app says so on boot.
+- [ ] `DB_CA_CERT` is **unset** in the dashboard, so `ca.pem` from the repo is used.
+      Set it only on a host with no filesystem. Without either, the database
+      connection is encrypted but unauthenticated, and the app says so on boot.
 - [ ] The demo passwords are overridden via `DEMO_*_PASSWORD`, and you have re-run
       `npm run state:naked`. The repo defaults are public knowledge.
 - [ ] `ALLOW_INSECURE_PASSWORD_RESET` is **unset**. There is no mail server, so the
