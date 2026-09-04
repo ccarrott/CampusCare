@@ -64,10 +64,14 @@ document.querySelectorAll('.sidebar-arrow-btn').forEach(function(btn) {
   // Fit the greeting so it always spans ~half the container width, regardless
   // of how long the greeting text is. We measure at a reference font-size and
   // scale linearly (font width scales with font-size for a given string).
-  const TARGET_RATIO = 0.58;  // a bit over half the page (container) width
+  const TARGET_RATIO = 0.72;  // fraction of the container width the greeting spans
   const REF_PX = 100;         // measure at 100px, then scale
-  const MIN_PX = 40;
-  const MAX_PX = 320;
+  const MIN_PX = 48;
+  const MAX_PX = 240;
+
+  // Also cap relative to viewport height so the hero never dominates a short
+  // screen and push the dashboard cards below the fold.
+  function heightCap() { return Math.max(MIN_PX, Math.min(MAX_PX, window.innerHeight * 0.22)); }
 
   function fitGreeting() {
     const container = el.parentElement || el;
@@ -84,7 +88,7 @@ document.querySelectorAll('.sidebar-arrow-btn').forEach(function(btn) {
     if (!refWidth) return;
 
     let target = (available * TARGET_RATIO) * (REF_PX / refWidth);
-    target = Math.max(MIN_PX, Math.min(MAX_PX, target));
+    target = Math.max(MIN_PX, Math.min(MAX_PX, target, heightCap()));
     el.style.fontSize = target.toFixed(1) + 'px';
   }
 

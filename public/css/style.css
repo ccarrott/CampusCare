@@ -36,20 +36,20 @@
   --radius-glass: 18px;
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  --sidebar-width: 330px;
-  --sidebar-collapsed: 80px;
+  --sidebar-width: 22rem;
+  --sidebar-collapsed: 5.5rem;
   --topbar-height: 56px;
 
   /* ---- Glass (Phase 30 "Calm Clinical Glass") ---- */
   /* ---- Glass (Fixup 1: lower alpha = more see-through; richer lighting) ---- */
-  /* ---- Glass (Fixup 2: real see-through pane — luminous rim + corner bloom) ---- */
-  --glass-bg: rgba(255, 255, 255, 0.30);
-  --glass-bg-strong: rgba(255, 255, 255, 0.44);
+  /* ---- Glass (clearer: more see-through, less frosted) ---- */
+  --glass-bg: rgba(255, 255, 255, 0.18);
+  --glass-bg-strong: rgba(255, 255, 255, 0.32);
   --glass-border: rgba(255, 255, 255, 0.7);
   --glass-hairline: rgba(15, 23, 42, 0.06);
-  --glass-blur: 20px;
-  --glass-blur-strong: 28px;
-  --glass-saturate: 1.6;
+  --glass-blur: 12px;
+  --glass-blur-strong: 18px;
+  --glass-saturate: 1.4;
   /* deep soft float shadow */
   --glass-shadow: 0 20px 48px -14px rgba(15, 23, 42, 0.28);
   /* lit top edge (inner) — subtle convex feel */
@@ -84,14 +84,14 @@
   --motion-slow: 0.6s;
   --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
-  --space-7: 48px;
-  --space-8: 64px;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
   --elev-flat: none;
   --elev-raised: var(--shadow-md);
   --elev-glass: var(--glass-shadow);
@@ -117,17 +117,23 @@
   display: none;
 }
 
-/* Fixup 4 (Item 2): the UI was tuned at ~80% zoom, so shrink the root a touch.
-   All rem-based sizing scales down proportionally for more breathing room. */
+/* The UI reads best at ~80–90% zoom, so the root is shrunk a touch: all rem-based
+   sizing scales down proportionally for more surrounding breathing room. On small
+   screens we hold at 15px so text stays legible on phones. */
 html {
-  font-size: 93.75%;              /* 15px from the implicit 16px */
+  font-size: 75%;                /* 12px root — more zoomed-out; whole UI scales down together */
+}
+@media (max-width: 640px) {
+  html { font-size: 93.75%; }    /* 15px on phones for readability */
 }
 
 body {
   font-family: 'Cantarell', -apple-system, BlinkMacSystemFont, 'Segoe UI',
     Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  font-size: 1rem;
-  line-height: 1.6;
+  /* Root is small (12px) for a zoomed-out layout; body text is bumped well up so
+     copy reads large and comfortable (~17px) while layout spacing stays compact. */
+  font-size: 1.45rem;
+  line-height: 1.5;
   color: var(--text-dark);
   background-color: var(--bg-base);
   min-height: 100vh;
@@ -157,63 +163,63 @@ body {
   width: 60vmax; height: 60vmax;
   background: radial-gradient(circle, var(--aurora-1), transparent 62%);
   top: -14%; left: -8%;
-  animation: auroraDrift1 28s var(--ease-soft) infinite alternate;
+  animation: auroraDrift1 16s var(--ease-soft) infinite alternate;
 }
 .aurora-blob.b2 { /* secondary blue */
   width: 64vmax; height: 64vmax;
   background: radial-gradient(circle, var(--aurora-2), transparent 62%);
   bottom: -18%; right: -12%;
-  animation: auroraDrift2 34s ease-in-out infinite alternate;
+  animation: auroraDrift2 20s ease-in-out infinite alternate;
 }
 .aurora-blob.b3 { /* teal complement */
   width: 44vmax; height: 44vmax;
   background: radial-gradient(circle, var(--aurora-3), transparent 60%);
   top: 22%; right: 14%;
-  animation: auroraDrift3 40s var(--ease-soft) infinite alternate;
+  animation: auroraDrift3 24s var(--ease-soft) infinite alternate;
 }
 .aurora-blob.b4 { /* secondary yellow */
   width: 50vmax; height: 50vmax;
   background: radial-gradient(circle, var(--aurora-4), transparent 62%);
   bottom: 4%; left: 20%;
-  animation: auroraDrift4 46s ease-in-out infinite alternate;
+  animation: auroraDrift4 27s ease-in-out infinite alternate;
 }
 .aurora-blob.b5 { /* brand navy */
   width: 56vmax; height: 56vmax;
   background: radial-gradient(circle, var(--aurora-5), transparent 60%);
   top: 40%; left: -6%;
-  animation: auroraDrift5 52s var(--ease-soft) infinite alternate;
+  animation: auroraDrift5 30s var(--ease-soft) infinite alternate;
 }
 .aurora-blob.b6 { /* teal (small, top-centre) */
   width: 36vmax; height: 36vmax;
   background: radial-gradient(circle, var(--aurora-6), transparent 60%);
   top: -6%; left: 46%;
-  animation: auroraDrift6 38s ease-in-out infinite alternate;
+  animation: auroraDrift6 22s ease-in-out infinite alternate;
 }
 @keyframes auroraDrift1 {
   from { transform: translate(0, 0) scale(1); }
-  to   { transform: translate(9vw, 7vh) scale(1.18); }
+  to   { transform: translate(22vw, 18vh) scale(1.35); }
 }
 @keyframes auroraDrift2 {
-  from { transform: translate(0, 0) scale(1.12); }
-  to   { transform: translate(-7vw, -9vh) scale(0.98); }
+  from { transform: translate(0, 0) scale(1.2); }
+  to   { transform: translate(-20vw, -22vh) scale(0.9); }
 }
 @keyframes auroraDrift3 {
   0%   { transform: translate(0, 0) scale(1); opacity: 0.85; }
-  50%  { transform: translate(-6vw, 6vh) scale(1.12); opacity: 1; }
-  100% { transform: translate(4vw, -4vh) scale(0.95); opacity: 0.8; }
+  50%  { transform: translate(-18vw, 16vh) scale(1.28); opacity: 1; }
+  100% { transform: translate(14vw, -12vh) scale(0.9); opacity: 0.8; }
 }
 @keyframes auroraDrift4 {
-  from { transform: translate(0, 0) scale(0.95); }
-  to   { transform: translate(6vw, -6vh) scale(1.15); }
+  from { transform: translate(0, 0) scale(0.9); }
+  to   { transform: translate(18vw, -18vh) scale(1.32); }
 }
 @keyframes auroraDrift5 {
-  0%   { transform: translate(0, 0) scale(1.05); opacity: 0.85; }
-  50%  { transform: translate(7vw, -5vh) scale(0.95); opacity: 1; }
-  100% { transform: translate(-4vw, 6vh) scale(1.1); opacity: 0.9; }
+  0%   { transform: translate(0, 0) scale(1.1); opacity: 0.85; }
+  50%  { transform: translate(20vw, -14vh) scale(0.88); opacity: 1; }
+  100% { transform: translate(-14vw, 16vh) scale(1.25); opacity: 0.9; }
 }
 @keyframes auroraDrift6 {
   from { transform: translate(0, 0) scale(1); }
-  to   { transform: translate(-8vw, 5vh) scale(1.2); }
+  to   { transform: translate(-22vw, 14vh) scale(1.4); }
 }
 @media (prefers-reduced-motion: reduce) {
   .aurora-blob { animation: none !important; }
@@ -310,14 +316,14 @@ img {
 }
 
 .sidebar-logo {
-  width: 92px;
-  height: 92px;
+  width: 6.5rem;
+  height: 6.5rem;
   border-radius: 50%;
   background: var(--accent-gold);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 10px;
+  margin-bottom: 0.7rem;
   flex-shrink: 0;
   box-shadow: 0 0 16px rgba(255, 204, 0, 0.45);
   transition: width 0.3s ease, height 0.3s ease;
@@ -331,7 +337,7 @@ img {
 }
 
 .sidebar-brand {
-  font-size: 1.1rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-dark);
   white-space: nowrap;
@@ -347,8 +353,8 @@ img {
 }
 
 .sidebar.collapsed .sidebar-logo {
-  width: 40px;
-  height: 40px;
+  width: 3rem;
+  height: 3rem;
 }
 
 .sidebar.collapsed .logo-text {
@@ -371,8 +377,8 @@ img {
 .sidebar-link {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 13px 16px;
+  gap: 0.9rem;
+  padding: 0.85rem 1.1rem;
   border-radius: var(--radius-md);
   color: var(--text-dark);
   text-decoration: none;
@@ -395,7 +401,7 @@ img {
 }
 
 .sidebar-icon {
-  width: 30px;
+  width: 2.6rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -420,15 +426,15 @@ img {
   height: 1em;
 }
 
-/* Inline SVG icons sit at ~21px and inherit link colour (Fixup 3) */
+/* Inline SVG icons — large, inherit link colour */
 .sidebar-icon svg {
-  width: 21px;
-  height: 21px;
+  width: 2.2rem;
+  height: 2.2rem;
   display: block;
 }
 
 .sidebar-label {
-  font-size: 0.95rem;
+  font-size: 1.3rem;
   font-weight: 500;
   overflow: hidden;
   transition: opacity 0.2s;
@@ -438,6 +444,15 @@ img {
   opacity: 0;
   width: 0;
 }
+
+/* Collapsed rail: center the icon in each link so nothing looks lob-sided */
+.sidebar.collapsed .sidebar-link {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+  gap: 0;
+}
+.sidebar.collapsed .sidebar-nav { padding-left: 0; padding-right: 0; }
 
 .sidebar-spacer {
   flex: 1;
@@ -524,8 +539,8 @@ img {
 .main-content {
   /* Clear the floating rail: left gap + rail width + right gap */
   margin-left: calc(var(--space-4) + var(--sidebar-width) + var(--space-4));
-  /* Top space so content clears the floating controls cluster */
-  padding-top: calc(var(--space-4) + 44px);
+  /* Modest top space — content sits higher (floating controls are top-right) */
+  padding-top: var(--space-3);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -547,7 +562,7 @@ img {
 
 .page-wrapper {
   flex: 1;
-  padding: clamp(20px, 3vh, 36px) clamp(16px, 3vw, 40px);
+  padding: clamp(8px, 1.5vh, 18px) clamp(16px, 3vw, 40px);
 }
 
 /* ---------- Page Headers ---------- */
@@ -569,12 +584,14 @@ img {
 
 /* Site-wide back button (Fixup 3): simple "< back", spaced from the content below */
 .back-btn {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 4px;
-  margin-bottom: var(--space-5);
+  width: fit-content;
   font-size: 0.9rem;
   font-weight: 600;
+  /* Spacing above + below ~= the font size itself (site-wide normalisation) */
+  margin: 1em 0;
   color: var(--text-muted);
   text-decoration: none;
   transition: color var(--motion-fast) var(--ease-soft), transform var(--motion-fast) var(--ease-soft);
@@ -627,8 +644,19 @@ img {
   box-shadow: none;
   border-radius: 0;
   overflow: visible;
-  padding: var(--space-4) 0 var(--space-2);
-  margin-bottom: var(--space-6);
+  padding: 0 0 var(--space-1);
+  margin-bottom: var(--space-3);
+}
+
+/* Rein in the script greeting on smaller viewports (JS still fits it larger on
+   wide screens). Kept generously large — bigger, not bolder (weight stays 550). */
+@media (max-width: 1100px) {
+  .dash-hero .dash-greeting,
+  .dash-greeting { font-size: clamp(4rem, 9vw, 8rem) !important; margin: var(--space-2) 0; }
+}
+@media (max-width: 640px) {
+  .dash-hero .dash-greeting,
+  .dash-greeting { font-size: clamp(3rem, 13vw, 5rem) !important; white-space: normal; }
 }
 .dash-hero--bare::before { display: none; }
 
@@ -637,11 +665,11 @@ img {
    the generic `.dash-hero h1 { font-size: 2rem }` rule. */
 .dash-hero .dash-greeting,
 .dash-greeting {
-  font-family: 'WindSong', 'Segoe Script', cursive;
+  font-family: 'Ephesis', 'Segoe Script', cursive;
   /* JS fits this so the greeting spans ~half the container width (see sidebar.js).
      This value is the pre-JS fallback. */
-  font-size: 4rem;
-  font-weight: 500;
+  font-size: 10rem;
+  font-weight: 550;
   line-height: 1.12;
   white-space: nowrap;
   letter-spacing: 0.005em;
@@ -1042,28 +1070,32 @@ body.immersive-page .site-footer { display: none; }
 
 /* ---------- Alerts ---------- */
 .alert {
-  padding: 12px 16px;
-  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  border-radius: var(--radius-glass);
   margin-bottom: 20px;
   font-size: 0.9rem;
   line-height: 1.5;
+  /* Glass: translucent tint + blur, keeps its semantic colour */
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  box-shadow: var(--glass-shadow), var(--glass-rim);
 }
 
 .alert-danger {
-  background-color: #fef2f2;
-  border: 1px solid #fecaca;
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.35);
   color: #991b1b;
 }
 
 .alert-success {
-  background-color: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(16, 185, 129, 0.35);
   color: #166534;
 }
 
 .alert-warning {
-  background-color: #fffbeb;
-  border: 1px solid #fde68a;
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(245, 158, 11, 0.38);
   color: #92400e;
 }
 
@@ -1264,17 +1296,33 @@ textarea.form-control {
 /* ---------- Dashboard Grid ---------- */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1.5rem;
 }
 
 .dashboard-grid .content-card {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 200px;
-  padding: 28px;
+  min-height: 13rem;
+  padding: 1.5rem;
 }
+
+/* Whole card is clickable via a stretched link overlay. Real buttons/links
+   inside sit above it (z-index) so they still work individually. */
+.card-clickable { cursor: pointer; }
+.card-stretch {
+  position: absolute;
+  inset: 0;
+  z-index: 2;               /* above watermark, below the real button */
+  border-radius: inherit;
+  text-indent: -9999px;     /* keep aria-label but no visible text */
+  overflow: hidden;
+}
+.card-clickable > h2,
+.card-clickable > p,
+.card-clickable > .btn { position: relative; z-index: 3; }
+.card-clickable > .btn { pointer-events: auto; }
 
 .dashboard-grid .content-card .card-icon {
   font-size: 2rem;
@@ -1325,7 +1373,7 @@ textarea.form-control {
 .dashboard-grid .content-card { overflow: hidden; }
 .card-watermark {
   position: absolute;
-  top: 18px;               /* near the top, with a little breathing space */
+  top: 6px;                /* near the top, small breathing space */
   left: 50%;
   transform: translateX(-50%);   /* horizontally centered */
   width: 150px;
@@ -1875,9 +1923,9 @@ textarea.form-control {
   --slot-unavailable-border: #4b5563;
   --slot-booked: #5c4a1a;
   --slot-booked-border: #b8860b;
-  /* Dark-mode glass + aurora (Fixup 2: see-through pane, luminous rim, living bg) */
-  --glass-bg: rgba(30, 41, 59, 0.34);
-  --glass-bg-strong: rgba(20, 28, 43, 0.50);
+  /* Dark-mode glass (clearer: more see-through, less frosted) */
+  --glass-bg: rgba(30, 41, 59, 0.22);
+  --glass-bg-strong: rgba(20, 28, 43, 0.38);
   --glass-border: rgba(255, 255, 255, 0.16);
   --glass-hairline: rgba(255, 255, 255, 0.08);
   --glass-blur: 20px;
@@ -1936,20 +1984,20 @@ textarea.form-control {
 }
 
 [data-theme="dark"] .alert-danger {
-  background-color: #3b1a1a;
-  border-color: #7f1d1d;
+  background: rgba(239, 68, 68, 0.20);
+  border-color: rgba(239, 68, 68, 0.4);
   color: #fca5a5;
 }
 
 [data-theme="dark"] .alert-success {
-  background-color: #1a3b2a;
-  border-color: #166534;
+  background: rgba(16, 185, 129, 0.18);
+  border-color: rgba(16, 185, 129, 0.4);
   color: #86efac;
 }
 
 [data-theme="dark"] .alert-warning {
-  background-color: #3b2e1a;
-  border-color: #92400e;
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.4);
   color: #fcd34d;
 }
 
@@ -2157,25 +2205,26 @@ textarea.form-control {
   .mobile-menu-btn {
     position: fixed;
     top: 12px;
-    left: 14px;
+    left: 12px;
     z-index: 10000;
-    background: var(--surface-white);
-    border: 1px solid var(--border-color);
+    background: var(--glass-bg-strong);
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
     border-radius: var(--radius-md);
-    padding: 8px 10px;
+    padding: 8px;
     cursor: pointer;
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-    box-shadow: var(--shadow-sm);
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--glass-shadow);
+    color: var(--text-dark);
   }
 
-  .mobile-menu-btn span {
+  .mobile-menu-btn svg {
     display: block;
-    width: 18px;
-    height: 2px;
-    background: var(--text-dark);
-    border-radius: 1px;
+    width: 24px;
+    height: 24px;
   }
 
   .mobile-backdrop {
@@ -3203,4 +3252,274 @@ textarea.form-control {
   .cp-step.cp-active .cp-node { animation: none; }
   .consult-progress.cp-celebrate .cp-node { animation: none; }
   .cp-bar::after { transition: none; }
+}
+
+/* ==========================================================================
+   HEALTH TRENDS — Phase 30G (MapLibre density heatmap + rich stats)
+   The map is a full-bleed density surface with FLOATING GLASS overlays.
+   Stats/charts below use the glass card system + brand palette.
+   ========================================================================== */
+
+.trends-hero { margin-bottom: var(--space-4); }
+.trends-page .subtitle { color: var(--text-muted); max-width: 62ch; }
+
+/* Health-trends title: plain heading (no shimmer/marquee) */
+.trends-title {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0 0 var(--space-2);
+  letter-spacing: -0.01em;
+}
+
+/* --- Map stage: a tall, rounded, edge-to-edge canvas that scrolls with page --- */
+.trends-map-stage {
+  position: relative;
+  height: clamp(560px, 74vh, 820px);
+  border-radius: var(--radius-glass);
+  overflow: hidden;
+  box-shadow: var(--glass-shadow), var(--glass-rim);
+  margin-bottom: var(--space-6);
+  isolation: isolate;
+}
+.trends-map-canvas {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  background: #e8edf3;
+}
+[data-theme="dark"] .trends-map-canvas { background: #0f172a; }
+
+/* MapLibre creates its own nested elements inside #healthMap — force them to
+   fill so the WebGL canvas is actually visible (tiles-load-but-blank fix). */
+.trends-map-canvas .maplibregl-map,
+.trends-map-canvas .maplibregl-canvas-container,
+.trends-map-canvas .maplibregl-canvas {
+  position: absolute !important;
+  top: 0 !important; left: 0 !important;
+  width: 100% !important; height: 100% !important;
+  outline: none;
+}
+.trends-map-canvas .maplibregl-canvas { display: block; }
+
+.map-fallback {
+  position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted); font-size: 0.9rem; padding: 20px; text-align: center;
+}
+
+/* Cursor-following suburb label chip (Idea 3: hover anywhere → named suburb) */
+.map-hover-chip {
+  position: absolute; z-index: 6; pointer-events: none;
+  display: none; flex-direction: column; gap: 1px;
+  padding: 6px 11px; border-radius: 12px;
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+  backdrop-filter: blur(var(--glass-blur-strong));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  color: var(--text-dark);
+  font-size: 0.82rem; line-height: 1.25;
+  transform: translateY(-2px);
+  transition: opacity var(--motion-fast) var(--ease-soft);
+}
+.map-hover-chip.is-visible { display: flex; }
+.map-hover-chip strong { font-weight: 700; }
+.map-hover-chip span { font-size: 0.72rem; color: var(--text-muted); }
+.map-hover-chip.is-outbreak { border-color: rgba(229,72,77,0.6); }
+.map-hover-chip.is-outbreak span { color: #e5484d; font-weight: 600; }
+
+/* MapLibre chrome retuned to the glass language */
+.trends-map-stage .maplibregl-ctrl-group {
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  box-shadow: var(--glass-shadow);
+  overflow: hidden;
+}
+.trends-map-stage .maplibregl-ctrl-group button + button { border-top: 1px solid var(--glass-hairline); }
+.trends-map-stage .maplibregl-ctrl-attrib {
+  background: var(--glass-bg-strong);
+  border-radius: 8px 0 0 0;
+  font-size: 0.68rem;
+}
+[data-theme="dark"] .trends-map-stage .maplibregl-ctrl-icon { filter: invert(0.9); }
+
+/* --- Floating glass overlays over the map --- */
+.map-overlay {
+  position: absolute;
+  z-index: 5;
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), var(--glass-rim);
+  color: var(--text-dark);
+}
+
+/* Period switch — segmented pill (top-left) */
+.map-period-switch {
+  top: var(--space-4); left: var(--space-4);
+  display: flex; gap: 2px; padding: 4px; border-radius: 999px;
+}
+.map-period-switch button {
+  border: none; background: transparent; cursor: pointer;
+  padding: 6px 12px; border-radius: 999px;
+  font-size: 0.78rem; font-weight: 600; color: var(--text-muted);
+  transition: background var(--motion-fast) var(--ease-soft), color var(--motion-fast) var(--ease-soft);
+}
+.map-period-switch button:hover { color: var(--text-dark); }
+.map-period-switch button.active {
+  background: var(--brand-yellow); color: var(--brand-blue);
+  box-shadow: 0 2px 8px rgba(255,204,0,0.4);
+}
+.map-period-switch button:focus-visible { outline: 2px solid var(--brand-yellow); outline-offset: 2px; }
+
+/* Legend (bottom-left) */
+.map-legend {
+  bottom: var(--space-4); left: var(--space-4);
+  padding: 10px 12px; border-radius: 14px; min-width: 160px;
+}
+.map-legend-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+.map-legend-ramp {
+  height: 10px; border-radius: 999px; margin: 8px 0 4px;
+  background: linear-gradient(90deg, #12b9b9, #3fb950, #ffcc00, #f5a623, #e5484d);
+}
+.map-legend-labels { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); }
+
+/* Zone detail card (top-right) */
+.map-zone-detail {
+  top: var(--space-4); right: var(--space-4);
+  width: 240px; max-width: 46%; padding: 14px 16px; border-radius: 16px;
+  opacity: 0.9;
+  transition: opacity var(--motion-base) var(--ease-soft), transform var(--motion-base) var(--ease-soft);
+}
+.map-zone-detail.is-visible { opacity: 1; }
+.map-zone-hint { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
+.zone-detail-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.zone-detail-head strong { font-size: 0.98rem; }
+.zone-flag {
+  font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  color: #fff; background: #e5484d; padding: 2px 8px; border-radius: 999px;
+}
+.zone-detail-stats { display: flex; gap: 14px; margin-bottom: 10px; }
+.zone-detail-stats div { display: flex; flex-direction: column; }
+.zone-detail-stats b { font-size: 1.3rem; line-height: 1; color: var(--text-dark); }
+.zone-detail-stats span { font-size: 0.7rem; color: var(--text-muted); }
+.zone-detail-symptoms { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.zone-detail-symptoms li { display: flex; justify-content: space-between; font-size: 0.82rem; }
+.zone-detail-symptoms em { font-style: normal; font-weight: 700; color: var(--accent-text-yellow); }
+
+/* --- Stat tiles --- */
+.trends-stat-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-4); margin-bottom: var(--space-6);
+}
+.trends-stat-grid .stat-tile { display: flex; flex-direction: column; gap: 4px; }
+.stat-tile-value { font-size: 2rem; font-weight: 700; line-height: 1; color: var(--text-dark); }
+.stat-tile-value.stat-danger { color: #e5484d; }
+.stat-tile-value.stat-hotspot { font-size: 1.15rem; }
+.stat-tile-label { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.stat-tile-sub { font-size: 0.8rem; color: var(--accent-text-yellow); font-weight: 600; }
+.stat-tile--wide { grid-column: span 2; align-items: flex-start; }
+@media (max-width: 640px) { .stat-tile--wide { grid-column: span 1; } }
+
+/* --- Charts --- */
+.trends-chart-timeline { margin-bottom: var(--space-5); }
+.trends-chart-timeline .chart-holder { height: 280px; }
+
+/* Severity + Category: full-width row, side by side (equal halves) */
+.trends-chart-pair {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: var(--space-5); margin-bottom: var(--space-6);
+}
+.trends-chart-pair .content-card { margin-bottom: 0; }
+.chart-holder { position: relative; height: 300px; }
+@media (max-width: 720px) { .trends-chart-pair { grid-template-columns: 1fr; } }
+
+/* --- Conditions table --- */
+.trends-table-head {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: var(--space-3); margin-bottom: var(--space-4);
+}
+.trends-table-head h2 { margin: 0; border: none; padding: 0; }
+.trends-filter-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.trends-filter-bar .form-control { width: auto; min-width: 140px; padding: 6px 10px; font-size: 0.85rem; }
+.btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+
+.trends-conditions-table .cond-name { display: inline-block; font-weight: 600; }
+.trends-conditions-table .cond-bar {
+  display: block; height: 4px; margin-top: 5px; width: var(--pct, 0%);
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--brand-yellow), var(--secondary-yellow));
+  min-width: 6px;
+}
+
+@media (max-width: 768px) {
+  .map-zone-detail { width: 200px; padding: 12px; }
+  .map-period-switch button { padding: 6px 9px; font-size: 0.72rem; }
+}
+
+/* ==========================================================================
+   PORTRAIT & SMALL-SCREEN OPTIMISATION (site-wide)
+   Proper mobile UI principles: single-column stacks, comfortable tap targets,
+   tighter rhythm, no horizontal scroll, content-first. Applies to phones and
+   any narrow/portrait viewport (tablets held upright, split windows).
+   ========================================================================== */
+@media (max-width: 900px), (orientation: portrait) and (max-width: 1024px) {
+  /* Every multi-column grid collapses to one column */
+  .dashboard-grid,
+  .dashboard-grid--quad,
+  .trends-stat-grid,
+  .trends-chart-pair {
+    grid-template-columns: 1fr !important;
+  }
+  .stat-tile--wide { grid-column: span 1 !important; }
+
+  /* Tighter page rhythm so more fits per screen */
+  .page-wrapper { padding: clamp(12px, 2.4vh, 20px) clamp(12px, 4vw, 20px); }
+  .container { padding: 0 clamp(12px, 4vw, 20px); }
+  .content-card, .glass { padding: var(--space-4); }
+  .dash-hero { padding: var(--space-4); margin-bottom: var(--space-4); }
+
+  /* Comfortable tap targets (min 44px) for primary interactive elements */
+  .btn, .form-control, select, input[type="text"], input[type="email"],
+  input[type="password"], input[type="number"], textarea {
+    min-height: 44px;
+    font-size: 1rem;               /* avoids iOS zoom-on-focus */
+  }
+  .btn { padding: 12px 18px; }
+
+  /* Headings scale down a notch */
+  .page-header h1 { font-size: 1.5rem; }
+}
+
+/* Phone-scale refinements */
+@media (max-width: 560px) {
+  /* Data tables scroll horizontally inside their card rather than break layout */
+  .data-table { display: block; overflow-x: auto; white-space: nowrap; }
+
+  /* Filter bars / table heads stack */
+  .trends-table-head { flex-direction: column; align-items: stretch; }
+  .trends-filter-bar { flex-wrap: wrap; }
+  .trends-filter-bar .form-control { flex: 1 1 auto; min-width: 0; }
+
+  /* Full-width primary actions read better on a phone */
+  .dashboard-grid .content-card .btn { align-self: stretch; text-align: center; }
+}
+
+/* --- Trends map in portrait: shorter stage, overlays repositioned --- */
+@media (orientation: portrait) and (max-width: 1024px) {
+  .trends-map-stage { height: clamp(360px, 52vh, 520px); }
+  /* Keep the zone-detail card from covering the map — dock it smaller */
+  .map-zone-detail { width: 190px; padding: 11px 12px; font-size: 0.8rem; }
+  .map-period-switch { flex-wrap: wrap; max-width: 62%; }
+  .map-period-switch button { padding: 6px 10px; }
+}
+
+/* Very narrow phones: stack the period switch tighter and shrink the legend */
+@media (max-width: 400px) {
+  .map-period-switch button { padding: 5px 8px; font-size: 0.7rem; }
+  .map-legend { min-width: 128px; padding: 8px 10px; }
+  .map-zone-detail { width: 160px; }
 }

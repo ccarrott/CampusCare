@@ -1,10 +1,18 @@
 node_modules/
+
+# Secrets & env (never commit) — but keep the documented template
 .env
+.env.*
+!.env.example
 *.pem
+
+# Logs & scratch
 *.log
 t1.txt
 t2.txt
 test_out.txt
+tmp_*.js
 backup/
+
 # Kiro
 # .kiro/

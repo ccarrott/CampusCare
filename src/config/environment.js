@@ -1,7 +1,9 @@
 // src/config/environment.js
 // Validates required environment variables on boot. Fails fast with a clear message.
 
-const REQUIRED_VARS = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME', 'DB_PORT', 'APP_PORT', 'SESSION_SEED', 'DAILY_API_KEY'];
+// APP_PORT is optional in production (hosts inject PORT). DAILY_API_KEY is only
+// needed for video consultations — warn but don't hard-fail if missing.
+const REQUIRED_VARS = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME', 'DB_PORT', 'SESSION_SEED'];
 
 export function validateEnv() {
   const missing = REQUIRED_VARS.filter(key => !process.env[key]);

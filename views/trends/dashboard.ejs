@@ -1,236 +1,168 @@
 <%- include('../partials/header', { title: 'Health Trends' }) %>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="/vendor/maplibre/maplibre-gl.css?v=<%= typeof assetV !== 'undefined' ? assetV : '1' %>" />
 <%- include('../partials/navbar') %>
 
-<main class="container page-wrapper">
+<main class="container page-wrapper layout-dashboard trends-page">
   <%- include('../partials/alerts') %>
 
-  <header class="page-header">
-    <h1>Campus Health Trends</h1>
-    <p class="subtitle">Aggregated health data across NMU campus zones. No individual student data is displayed.</p>
-    <% if (user.role === 'nurse' || user.role === 'admin') { %>
-      <div class="mt-2">
-        <a href="/trends/export-csv" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;">Export CSV</a>
-      </div>
-    <% } %>
+  <header class="dash-hero dash-hero--bare trends-hero">
+    <h1 class="trends-title">Campus Health Trends</h1>
+    <p class="subtitle">A live density map of symptom reports across Gqeberha. Data is aggregated — no individual student is ever identifiable.</p>
   </header>
 
-  <!-- Map Section -->
-  <section class="content-card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-      <h2 style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">Campus Health Map</h2>
-      <select id="mapPeriodSelect" class="form-control" style="width: auto; min-width: 140px;" onchange="window.location.href='/trends?period='+this.value">
-        <option value="7d" <%= (typeof period !== 'undefined' && period === '7d') ? 'selected' : '' %>>Past 7 days</option>
-        <option value="1m" <%= (typeof period === 'undefined' || period === '1m') ? 'selected' : '' %>>Past month</option>
-        <option value="2m" <%= (typeof period !== 'undefined' && period === '2m') ? 'selected' : '' %>>Past 2 months</option>
-        <option value="6m" <%= (typeof period !== 'undefined' && period === '6m') ? 'selected' : '' %>>Past 6 months</option>
-        <option value="1y" <%= (typeof period !== 'undefined' && period === '1y') ? 'selected' : '' %>>Past year</option>
-        <option value="2m">Past 2 months</option>
-        <option value="6m">Past 6 months</option>
-        <option value="1y">Past year</option>
-      </select>
+  <!-- ============================================================= -->
+  <!-- HEATMAP — full-bleed density surface with floating glass chrome -->
+  <!-- ============================================================= -->
+  <section class="trends-map-stage" aria-label="Campus health heatmap">
+    <div id="healthMap" class="trends-map-canvas"></div>
+
+    <!-- Period selector (floating glass, top-left) -->
+    <div class="map-overlay map-period-switch" role="group" aria-label="Time period">
+      <% ['7d','1m','2m','6m','1y'].forEach(function(p){ var lbl = {'7d':'7 days','1m':'Month','2m':'2 months','6m':'6 months','1y':'Year'}[p]; %>
+        <button type="button" data-map-period="<%= p %>" class="<%= p === period ? 'active' : '' %>"><%= lbl %></button>
+      <% }); %>
     </div>
-    <p class="text-muted mb-2">Shaded zones show symptom report density across Gqeberha. Hover for details, click to zoom.</p>
-    <div id="healthMap" style="height: 450px; border-radius: 8px; overflow: hidden;"></div>
+
+    <!-- Legend (floating glass, bottom-left) -->
+    <div class="map-overlay map-legend" aria-hidden="true">
+      <span class="map-legend-title">Report density</span>
+      <div class="map-legend-ramp"></div>
+      <div class="map-legend-labels"><span>Quiet</span><span>Outbreak</span></div>
+    </div>
+
+    <!-- Zone detail (floating glass, top-right — populated on zone click) -->
+    <aside id="mapZoneDetail" class="map-overlay map-zone-detail" aria-live="polite">
+      <p class="map-zone-hint">Hover the map to see a suburb; click anywhere for its breakdown.</p>
+    </aside>
   </section>
 
-  <!-- Symptom Type Summary -->
-  <section class="content-card" id="categories">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-      <h2 style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">Symptoms by Category</h2>
-      <select id="piePeriodSelect" class="form-control" style="width: auto; min-width: 140px;" onchange="window.location.href='/trends?period='+this.value+'#categories'">
-        <option value="7d" <%= (typeof period !== 'undefined' && period === '7d') ? 'selected' : '' %>>Past 7 days</option>
-        <option value="1m" <%= (typeof period === 'undefined' || period === '1m') ? 'selected' : '' %>>Past month</option>
-        <option value="2m" <%= (typeof period !== 'undefined' && period === '2m') ? 'selected' : '' %>>Past 2 months</option>
-        <option value="6m" <%= (typeof period !== 'undefined' && period === '6m') ? 'selected' : '' %>>Past 6 months</option>
-        <option value="1y" <%= (typeof period !== 'undefined' && period === '1y') ? 'selected' : '' %>>Past year</option>
-      </select>
+  <!-- ============================================================= -->
+  <!-- HEADLINE STATS                                                -->
+  <!-- ============================================================= -->
+  <div class="trends-stat-grid">
+    <div class="stat-tile reveal">
+      <span class="stat-tile-value"><%= stats.totalReports %></span>
+      <span class="stat-tile-label">Reports in period</span>
     </div>
-    <% if (symptomsByType.length > 0) { %>
-      <div style="display: flex; align-items: center; justify-content: center;">
-        <canvas id="symptomPieChart" width="500" height="500"></canvas>
-      </div>
-    <% } else { %>
-      <p class="text-muted">No data available.</p>
-    <% } %>
+    <div class="stat-tile reveal">
+      <span class="stat-tile-value"><%= stats.reporters %></span>
+      <span class="stat-tile-label">Unique reporters</span>
+    </div>
+    <div class="stat-tile reveal">
+      <span class="stat-tile-value stat-danger"><%= stats.highReports %></span>
+      <span class="stat-tile-label">High-severity reports</span>
+    </div>
+    <div class="stat-tile reveal">
+      <span class="stat-tile-value"><%= stats.activeZones %></span>
+      <span class="stat-tile-label">Active zones</span>
+    </div>
+    <div class="stat-tile reveal stat-tile--wide">
+      <span class="stat-tile-label">Busiest zone</span>
+      <span class="stat-tile-value stat-hotspot">
+        <%= stats.hotspot ? stats.hotspot.name : '—' %>
+      </span>
+      <% if (stats.hotspot) { %><span class="stat-tile-sub"><%= stats.hotspot.reports %> reports</span><% } %>
+    </div>
+  </div>
+
+  <!-- ============================================================= -->
+  <!-- CHARTS: timeline + severity + category                        -->
+  <!-- ============================================================= -->
+  <section class="content-card reveal trends-chart-timeline">
+    <h2>Report volume over time</h2>
+    <div class="chart-holder"><canvas id="timelineChart"></canvas></div>
   </section>
 
-  <!-- Top Conditions -->
-  <section class="content-card" id="conditions">
-    <h2>Top Reported Conditions</h2>
-    <% if (symptomAggregation.length > 0) { %>
-      <table class="data-table">
+  <div class="trends-chart-pair">
+    <section class="content-card reveal">
+      <h2>Severity split</h2>
+      <div class="chart-holder"><canvas id="severityChart"></canvas></div>
+    </section>
+
+    <section class="content-card reveal">
+      <h2>By category</h2>
+      <% if (symptomsByType.length > 0) { %>
+        <div class="chart-holder"><canvas id="categoryChart"></canvas></div>
+      <% } else { %>
+        <p class="text-muted">No data available for this period.</p>
+      <% } %>
+    </section>
+  </div>
+
+  <!-- ============================================================= -->
+  <!-- TOP CONDITIONS — filterable                                   -->
+  <!-- ============================================================= -->
+  <section class="content-card reveal" id="conditions">
+    <div class="trends-table-head">
+      <h2>Top reported conditions</h2>
+      <form method="get" action="/trends#conditions" class="trends-filter-bar">
+        <input type="hidden" name="period" value="<%= period %>">
+        <select name="category" class="form-control" onchange="this.form.submit()">
+          <option value="">All categories</option>
+          <% categories.forEach(function(c){ %>
+            <option value="<%= c %>" <%= c === category ? 'selected' : '' %>><%= c %></option>
+          <% }); %>
+        </select>
+        <select name="severity" class="form-control" onchange="this.form.submit()">
+          <option value="">Any severity</option>
+          <% ['Low','Moderate','High'].forEach(function(s){ %>
+            <option value="<%= s %>" <%= s === severity ? 'selected' : '' %>><%= s %></option>
+          <% }); %>
+        </select>
+        <% if (user.role === 'nurse' || user.role === 'admin') { %>
+          <a href="/trends/export-csv" class="btn btn-secondary btn-sm">Export CSV</a>
+        <% } %>
+      </form>
+    </div>
+
+    <% if (topConditions.length > 0) { %>
+      <table class="data-table trends-conditions-table">
         <thead>
-          <tr><th>Symptom</th><th>Type</th><th>Tier</th><th>Linked Meds</th></tr>
+          <tr><th>Symptom</th><th>Category</th><th>Tier</th><th>Reports</th><th>High</th><th>Meds</th></tr>
         </thead>
         <tbody>
-          <% symptomAggregation.forEach(function(row) { %>
+          <% var _max = topConditions[0].Reports || 1; %>
+          <% topConditions.forEach(function(row){ %>
             <tr>
-              <td><%= row.SymptomName %></td>
+              <td>
+                <span class="cond-name"><%= row.SymptomName %></span>
+                <span class="cond-bar" style="--pct: <%= Math.round((row.Reports / _max) * 100) %>%"></span>
+              </td>
               <td><%= row.Type %></td>
               <td>Tier <%= row.Tier %></td>
+              <td><strong><%= row.Reports %></strong></td>
+              <td><%= row.HighCount || 0 %></td>
               <td><%= row.MedicationCount %></td>
             </tr>
           <% }); %>
         </tbody>
       </table>
     <% } else { %>
-      <p class="text-muted">No condition data available.</p>
+      <p class="text-muted">No conditions match these filters for this period.</p>
     <% } %>
   </section>
-
 </main>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- Config for the map bootstrap (map.js reads window.__mapConfig) -->
 <script>
-(function() {
-  // Initialize map centered on Gqeberha
-  const map = L.map('healthMap', { zoomControl: false }).setView([-33.955, 25.600], 12);
-  L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors',
-    maxZoom: 18
-  }).addTo(map);
-
-  let geojsonLayer = null;
-
-  // Colour + opacity scale based on severity
-  function getColor(reports) {
-    return reports > 10 ? '#dc3545' :
-           reports > 5  ? '#f5a623' :
-           reports > 2  ? '#ffc107' :
-           reports > 0  ? '#28a745' :
-                          'transparent';
-  }
-
-  function getOpacity(reports) {
-    return reports > 10 ? 0.55 :
-           reports > 5  ? 0.45 :
-           reports > 2  ? 0.35 :
-           reports > 0  ? 0.25 :
-                          0;
-  }
-
-  function zoneStyle(feature) {
-    const reports = feature.properties.totalReports;
-    return {
-      fillColor: getColor(reports),
-      weight: 0,
-      opacity: 0,
-      color: 'transparent',
-      fillOpacity: getOpacity(reports)
-    };
-  }
-
-  // Info panel (top-right)
-  const info = L.control({ position: 'topright' });
-  info.onAdd = function() {
-    this._div = L.DomUtil.create('div', 'map-info-panel');
-    this.update();
-    return this._div;
+  window.__mapConfig = {
+    maptilerKey: '<%= maptilerKey %>',
+    center: <%- JSON.stringify(mapCenter) %>,
+    zoom: <%= mapZoom %>,
+    period: '<%= period %>'
   };
-  info.update = function(props) {
-    this._div.innerHTML = props
-      ? '<strong>' + props.name + '</strong><br>' + props.totalReports + ' report' + (props.totalReports !== 1 ? 's' : '')
-      : '<span class="text-muted">Hover over a zone</span>';
-  };
-  info.addTo(map);
-
-  // Legend (bottom-right)
-  const legend = L.control({ position: 'bottomleft' });
-  legend.onAdd = function() {
-    const div = L.DomUtil.create('div', 'map-legend-panel');
-    div.innerHTML = '<strong>Activity</strong><br>' +
-      '<i style="background:#28a745; opacity:0.4;"></i> Low (1–2)<br>' +
-      '<i style="background:#ffc107; opacity:0.5;"></i> Moderate (3–5)<br>' +
-      '<i style="background:#f5a623; opacity:0.6;"></i> High (6–10)<br>' +
-      '<i style="background:#dc3545; opacity:0.7;"></i> Outbreak (11+)';
-    return div;
-  };
-  legend.addTo(map);
-
-  function highlightFeature(e) {
-    const layer = e.target;
-    layer.setStyle({ fillOpacity: 0.7 });
-    layer.bringToFront();
-    info.update(layer.feature.properties);
-  }
-
-  function resetHighlight(e) {
-    if (geojsonLayer) geojsonLayer.resetStyle(e.target);
-    info.update();
-  }
-
-  function zoomToFeature(e) {
-    map.fitBounds(e.target.getBounds());
-    const props = e.target.feature.properties;
-    let html = '<strong>' + props.name + '</strong><br>Reports: <strong>' + props.totalReports + '</strong>';
-    if (props.topSymptoms && props.topSymptoms.length > 0) {
-      html += '<br><br><em>Top symptoms:</em>';
-      props.topSymptoms.forEach(function(s) { html += '<br>• ' + s.name + ' (' + s.count + ')'; });
+  window.__trendData = {
+    timeline: <%- JSON.stringify(timeline) %>,
+    severity: <%- JSON.stringify(severityBreakdown) %>,
+    categories: {
+      labels: <%- JSON.stringify(symptomsByType.map(function(r){ return r.Type; })) %>,
+      data: <%- JSON.stringify(symptomsByType.map(function(r){ return r.Count; })) %>
     }
-    e.target.bindPopup(html).openPopup();
-  }
-
-  function onEachFeature(feature, layer) {
-    layer.on({ mouseover: highlightFeature, mouseout: resetHighlight, click: zoomToFeature });
-  }
-
-  function loadMapData(period) {
-    if (geojsonLayer) { map.removeLayer(geojsonLayer); geojsonLayer = null; }
-
-    fetch('/trends/api/map-data?period=' + period)
-      .then(r => r.json())
-      .then(geojson => {
-        if (!geojson.features) return;
-        geojsonLayer = L.geoJson(geojson, { style: zoneStyle, onEachFeature: onEachFeature }).addTo(map);
-      })
-      .catch(err => console.error('Map data load error:', err));
-  }
-
-  // Initial load
-  const pagePeriod = '<%= typeof period !== "undefined" ? period : "1m" %>';
-  loadMapData(pagePeriod);
-})();
-
-// Pie Chart: Symptoms by Category
-(function() {
-  const canvas = document.getElementById('symptomPieChart');
-  if (!canvas) return;
-
-  const labels = [<% symptomsByType.forEach(function(r, i) { %>'<%= r.Type %>'<%= i < symptomsByType.length - 1 ? ',' : '' %><% }); %>];
-  const data = [<% symptomsByType.forEach(function(r, i) { %><%= r.Count %><%= i < symptomsByType.length - 1 ? ',' : '' %><% }); %>];
-  const colours = ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
-
-  new Chart(canvas, {
-    type: 'doughnut',
-    data: {
-      labels: labels,
-      datasets: [{
-        data: data,
-        backgroundColor: colours.slice(0, labels.length),
-        borderWidth: 2,
-        borderColor: getComputedStyle(document.documentElement).getPropertyValue('--surface-white').trim() || '#fff'
-      }]
-    },
-    options: {
-      responsive: false,
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: {
-            padding: 20,
-            font: { size: 13 },
-            boxWidth: 16,
-            color: getComputedStyle(document.body).color || '#333'
-          }
-        }
-      }
-    }
-  });
-})();
+  };
 </script>
+<script src="/vendor/maplibre/maplibre-gl.js?v=<%= typeof assetV !== 'undefined' ? assetV : '1' %>"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="/js/map.js?v=<%= typeof assetV !== 'undefined' ? assetV : '1' %>"></script>
+<script src="/js/trends-charts.js?v=<%= typeof assetV !== 'undefined' ? assetV : '1' %>"></script>
 
 <%- include('../partials/footer') %>

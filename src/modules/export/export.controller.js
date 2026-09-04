@@ -77,20 +77,24 @@ export const exportAppointmentsCSV = catchAsync(async (req, res) => {
  */
 export const exportTrendsCSV = catchAsync(async (req, res) => {
   const rows = await query(`
-    SELECT cz.Name AS Zone, sl.SymptomName, COUNT(*) AS Reports, 'Last 7 days' AS Period
-    FROM SymptomLog sl
-    INNER JOIN StudentZone sz ON sl.StudentNumber = sz.StudentNumber
-    INNER JOIN CampusZone cz ON sz.ZoneID = cz.ZoneID
-    WHERE sl.LogDate >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-    GROUP BY cz.Name, sl.SymptomName
+    SELECT cz.Name AS Zone, s.Name AS Symptom, sl.Severity,
+           COUNT(*) AS Reports, 'Last 30 days' AS Period
+    FROM SymptomLogEntry sle
+    INNER JOIN SymptomLog sl ON sle.LogID = sl.LogID
+    INNER JOIN Symptom s ON sle.SymptomID = s.SymptomID
+    LEFT JOIN StudentZone sz ON sl.StudentNumber = sz.StudentNumber
+    LEFT JOIN CampusZone cz ON COALESCE(sl.ZoneID, sz.ZoneID) = cz.ZoneID
+    WHERE sl.LogDate >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+    GROUP BY cz.Name, s.Name, sl.Severity
     ORDER BY Reports DESC
   `);
 
-  let csv = 'Zone,Symptom,Reports,Period\n';
+  let csv = 'Zone,Symptom,Severity,Reports,Period\n';
   rows.forEach(r => {
     csv += [
-      csvSafe(r.Zone),
-      csvSafe(r.SymptomName),
+      csvSafe(r.Zone || 'Unzoned'),
+      csvSafe(r.Symptom),
+      csvSafe(r.Severity),
       csvSafe(r.Reports),
       csvSafe(r.Period)
     ].join(',') + '\n';

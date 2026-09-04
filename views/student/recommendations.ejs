@@ -9,6 +9,8 @@
     <p class="subtitle">Based on the <%= selectedSymptoms.length %> symptom<%= selectedSymptoms.length > 1 ? 's' : '' %> you reported.</p>
   </header>
 
+  <%- include('../partials/back-button') %>
+
   <!-- Tier Escalation Banner -->
   <% if (maxTier >= 3) { %>
     <section class="content-card" style="border: 2px solid var(--status-danger);">

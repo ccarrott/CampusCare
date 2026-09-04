@@ -1,68 +1,158 @@
 // src/modules/trends/trends.controller.js
-// Handles health trend dashboard rendering and map data API.
+// Health-trend dashboard rendering + MapLibre heatmap/zone data APIs (Phase 30G).
 
 import * as TrendsModel from './trends.model.js';
 import { catchAsync } from '../../utils/catchAsync.js';
+import { TREND, outbreakThresholdFor } from '../../constants.js';
 
-const PERIOD_MAP = { '7d': 7, '1m': 30, '2m': 60, '6m': 180, '1y': 365 };
+const PERIOD_MAP = TREND.PERIODS;
+const resolveDays = (p) => PERIOD_MAP[p] || PERIOD_MAP['1m'];
+
+// Deterministic-ish jitter around a zone centroid for reports that lack a real
+// coordinate snapshot, so legacy/pinless data still forms a density blob.
+function jitterFrom(seed, base, spread) {
+  const x = Math.sin(seed * 12.9898) * 43758.5453;
+  const frac = x - Math.floor(x);
+  return base + (frac * 2 - 1) * spread;
+}
 
 // ============================================================================
-// TRENDS DASHBOARD
+// DASHBOARD
 // ============================================================================
 
 export const renderTrendsDashboard = catchAsync(async (req, res) => {
-  const period = req.query.period || '1m';
-  const days = PERIOD_MAP[period] || 30;
+  const period = PERIOD_MAP[req.query.period] ? req.query.period : '1m';
+  const days = resolveDays(period);
+  const category = req.query.category || '';
+  const severity = req.query.severity || '';
 
-  const symptomAggregation = await TrendsModel.getSymptomAggregation();
-  const symptomsByType = await TrendsModel.getSymptomsByTypeForPeriod(days);
+  const [stats, symptomsByType, severityBreakdown, timeline, categories, topConditions] = await Promise.all([
+    TrendsModel.getHeadlineStats(days),
+    TrendsModel.getSymptomsByTypeForPeriod(days),
+    TrendsModel.getSeverityBreakdown(days),
+    TrendsModel.getDailyTimeline(days),
+    TrendsModel.getCategories(),
+    TrendsModel.getTopConditions(days, {
+      category: category || null,
+      severity: severity || null
+    })
+  ]);
 
   res.render('trends/dashboard', {
     user: req.session.user,
-    symptomAggregation,
+    stats,
     symptomsByType,
+    severityBreakdown,
+    timeline: timeline.map(t => ({
+      day: t.Day instanceof Date ? t.Day.toISOString().slice(0, 10) : String(t.Day).slice(0, 10),
+      reports: t.Reports,
+      high: t.HighReports || 0
+    })),
+    categories,
+    topConditions,
     period,
+    category,
+    severity,
+    buckets: TREND.BUCKETS,
+    outbreakThreshold: outbreakThresholdFor(days),
+    mapCenter: TREND.MAP_CENTER,
+    mapZoom: TREND.MAP_ZOOM,
+    maptilerKey: process.env.MAPTILER_KEY || '',
     error: null
   });
 });
 
 // ============================================================================
-// MAP DATA API (JSON for Leaflet)
+// HEATMAP DATA API — GeoJSON points (weighted by severity)
 // ============================================================================
 
-export const getMapDataAPI = catchAsync(async (req, res) => {
-  const period = req.query.period || '7d';
-  const days = PERIOD_MAP[period] || 7;
+export const getHeatmapAPI = catchAsync(async (req, res) => {
+  const days = resolveDays(req.query.period);
 
-  const zones = await TrendsModel.getAllZones();
-  const zoneCounts = await TrendsModel.getZoneSymptomCounts(days);
-  const zoneTotals = await TrendsModel.getZoneTotals(days);
+  const [points, zones] = await Promise.all([
+    TrendsModel.getReportPoints(days),
+    TrendsModel.getAllZones()
+  ]);
 
-  // Build lookup maps
-  const totalMap = {};
-  zoneTotals.forEach(r => { totalMap[r.ZoneID] = r.TotalReports; });
+  const zoneCentroid = {};
+  zones.forEach(z => { zoneCentroid[z.ZoneID] = { lat: Number(z.Latitude), lon: Number(z.Longitude) }; });
 
-  const symptomMap = {};
-  zoneCounts.forEach(r => {
-    if (!symptomMap[r.ZoneID]) symptomMap[r.ZoneID] = [];
-    symptomMap[r.ZoneID].push({ name: r.SymptomName, count: r.SymptomCount });
-  });
+  const weightFor = (sev) => (sev === 'High' ? 1 : sev === 'Moderate' ? 0.66 : 0.4);
 
-  // Return GeoJSON FeatureCollection for choropleth rendering
+  let seed = 1;
+  const features = [];
+  for (const p of points) {
+    let lat = p.Latitude != null ? Number(p.Latitude) : null;
+    let lon = p.Longitude != null ? Number(p.Longitude) : null;
+
+    // Fallback: synthesise a jittered point around the zone centroid.
+    if ((lat == null || lon == null) && p.ZoneID && zoneCentroid[p.ZoneID]) {
+      const c = zoneCentroid[p.ZoneID];
+      lat = jitterFrom(seed++, c.lat, 0.008);
+      lon = jitterFrom(seed++, c.lon, 0.008);
+    }
+    if (lat == null || lon == null) continue;
+
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [lon, lat] },
+      properties: { weight: weightFor(p.Severity) }
+    });
+  }
+
+  res.json({ type: 'FeatureCollection', features });
+});
+
+// ============================================================================
+// ZONE DATA API — GeoJSON polygons + rollup (outbreak outlines, click detail)
+// ============================================================================
+
+export const getZonesAPI = catchAsync(async (req, res) => {
+  const days = resolveDays(req.query.period);
+
+  const [zones, rollup] = await Promise.all([
+    TrendsModel.getAllZones(),
+    TrendsModel.getZoneRollup(days)
+  ]);
+
+  // Convert a stored [lat,lon] ring into a closed GeoJSON [lon,lat] ring.
+  const toGeoRing = (ring) => {
+    const r = ring.map(pt => [pt[1], pt[0]]);
+    const first = r[0], last = r[r.length - 1];
+    if (first[0] !== last[0] || first[1] !== last[1]) r.push([first[0], first[1]]);
+    return r;
+  };
+
   const features = zones.map(zone => {
     const boundary = typeof zone.Boundary === 'string' ? JSON.parse(zone.Boundary) : zone.Boundary;
-    // GeoJSON uses [lon, lat] order (opposite of Leaflet)
-    const coordinates = boundary ? [boundary.map(p => [p[1], p[0]]).concat([[ boundary[0][1], boundary[0][0] ]])] : null;
+    let geometry = null;
+    if (boundary && boundary.length) {
+      const isPair = (v) => Array.isArray(v) && typeof v[0] === 'number';
+      if (isPair(boundary[0])) {
+        // Single ring → Polygon.
+        geometry = { type: 'Polygon', coordinates: [toGeoRing(boundary)] };
+      } else if (Array.isArray(boundary[0]) && isPair(boundary[0][0])) {
+        // Polygon with holes → Polygon (multiple rings).
+        geometry = { type: 'Polygon', coordinates: boundary.map(toGeoRing) };
+      } else {
+        // MultiPolygon.
+        geometry = { type: 'MultiPolygon', coordinates: boundary.map(poly => poly.map(toGeoRing)) };
+      }
+    }
+    const r = rollup[zone.ZoneID] || { totalReports: 0, highReports: 0, topSymptoms: [], outbreak: false };
 
     return {
       type: 'Feature',
       properties: {
         zoneId: zone.ZoneID,
         name: zone.Name,
-        totalReports: totalMap[zone.ZoneID] || 0,
-        topSymptoms: (symptomMap[zone.ZoneID] || []).slice(0, 3)
+        totalReports: r.totalReports,
+        highReports: r.highReports,
+        outbreak: r.outbreak,
+        topSymptoms: r.topSymptoms
       },
-      geometry: coordinates ? { type: 'Polygon', coordinates } : null
+      geometry,
+      centroid: [Number(zone.Longitude), Number(zone.Latitude)]
     };
   }).filter(f => f.geometry !== null);
 

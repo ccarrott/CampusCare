@@ -129,10 +129,12 @@ export async function loadShowcaseState() {
   }
   await batchInsert('NurseReviews', ['ReviewID', 'AppointmentID', 'StudentNumber', 'StaffNumber', 'Rating', 'ReviewText', 'Verified'], reviewRows);
 
-  // 6. SYMPTOM LOGS + ENTRIES (batch)
+  // 6. SYMPTOM LOGS + ENTRIES (batch) — Phase 30G: snapshot location per report
+  //    (jittered around the student's home coords) so the density heatmap populates.
   console.log('  [6/7] Seeding 100 symptom logs (~300 entries)...');
   const logRows = [];
   const entryRows = [];
+  const jit = () => (Math.random() * 2 - 1) * 0.0015;
   for (let i = 0; i < 100; i++) {
     const student = STUDENTS[i % 19];
     let daysBack = i < 30 ? randomInt(0, 6) : i < 60 ? randomInt(7, 30) : randomInt(31, 180);
@@ -145,10 +147,13 @@ export async function loadShowcaseState() {
       const s = randomItem(SYMPTOM_IDS);
       if (!picked.includes(s)) picked.push(s);
     }
-    logRows.push([logId, student.id, picked.join(','), severity, formatDT(date)]);
+    const lat = student.lat + jit();
+    const lon = student.lon + jit();
+    const zoneId = getZoneForPoint(lat, lon, zones) || 'ZONE01';
+    logRows.push([logId, student.id, picked.join(','), severity, lat, lon, zoneId, formatDT(date)]);
     for (const symId of picked) entryRows.push([logId, symId]);
   }
-  await batchInsert('SymptomLog', ['LogID', 'StudentNumber', 'SymptomName', 'Severity', 'LogDate'], logRows);
+  await batchInsert('SymptomLog', ['LogID', 'StudentNumber', 'SymptomName', 'Severity', 'Latitude', 'Longitude', 'ZoneID', 'LogDate'], logRows);
 
   // SymptomLogEntry in chunks of 50 (MySQL max packet)
   for (let i = 0; i < entryRows.length; i += 50) {

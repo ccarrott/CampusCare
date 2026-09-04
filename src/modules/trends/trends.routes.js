@@ -10,7 +10,10 @@ const router = Router();
 // Trends dashboard (any authenticated user)
 router.get('/', requireAuth, TrendsController.renderTrendsDashboard);
 
-// Map data API (JSON)
-router.get('/api/map-data', requireAuth, TrendsController.getMapDataAPI);
+// Heatmap density points (GeoJSON, weighted by severity)
+router.get('/api/heatmap', requireAuth, TrendsController.getHeatmapAPI);
+
+// Zone polygons + rollup (GeoJSON — outbreak outlines + click detail)
+router.get('/api/zones', requireAuth, TrendsController.getZonesAPI);
 
 export default router;

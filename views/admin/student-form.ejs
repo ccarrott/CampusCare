@@ -9,6 +9,8 @@
     <p class="subtitle"><%= isEdit ? 'Update student account details.' : 'Create a new student account.' %></p>
   </header>
 
+  <%- include('../partials/back-button') %>
+
   <section class="content-card" style="max-width: 600px;">
     <% if (typeof error !== 'undefined' && error) { %>
       <div class="alert alert-danger"><%= error %></div>

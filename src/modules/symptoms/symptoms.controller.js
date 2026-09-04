@@ -78,13 +78,18 @@ export const processSymptomCheck = catchAsync(async (req, res) => {
     }
   }
 
-  // Log this check (non-blocking).
+  // Log this check (non-blocking). Phase 30G: snapshot the student's location so
+  // the health map reflects WHERE the report came from (students move zones over time).
   try {
     const logId = 'LOG-' + crypto.randomBytes(6).toString('hex');
+    const loc = await SymptomsModel.getStudentLocationSnapshot(req.session.user.id);
     await SymptomsModel.createSymptomLog(logId, req.session.user.id, severity || 'Moderate', symptoms, {
       duration: duration || null,
       trajectory: trajectory || null,
-      otherText: otherText || null
+      otherText: otherText || null,
+      latitude: loc?.latitude ?? null,
+      longitude: loc?.longitude ?? null,
+      zoneId: loc?.zoneId ?? null
     });
   } catch (logErr) {
     console.error('Symptom log write failed (non-blocking):', logErr.message);

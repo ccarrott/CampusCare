@@ -2,6 +2,34 @@
 // Database queries for the tag-based symptom checker system (Phase 22).
 
 import { query } from '../../config/database.js';
+import { getZoneForPoint } from '../../utils/geo.js';
+import { TREND } from '../../constants.js';
+
+/**
+ * Resolves the reporting student's current coordinates + zone for a report-time
+ * location snapshot (Phase 30G). A small privacy jitter is applied so the map
+ * shows density, never a pinpoint on an individual. Returns null coords if the
+ * student has not set a location.
+ */
+export async function getStudentLocationSnapshot(studentNumber) {
+  const rows = await query(
+    'SELECT Latitude, Longitude FROM Student WHERE StudentNumber = ?',
+    [studentNumber]
+  );
+  const s = rows[0];
+  if (!s || s.Latitude == null || s.Longitude == null) return { latitude: null, longitude: null, zoneId: null };
+
+  const zones = await query('SELECT ZoneID, Latitude, Longitude, Boundary FROM CampusZone');
+  const zoneId = getZoneForPoint(Number(s.Latitude), Number(s.Longitude), zones);
+
+  const j = TREND.PRIVACY_JITTER_DEG;
+  const jitter = () => (Math.random() * 2 - 1) * j;
+  return {
+    latitude: Number(s.Latitude) + jitter(),
+    longitude: Number(s.Longitude) + jitter(),
+    zoneId
+  };
+}
 
 /**
  * Gets all symptoms grouped by category (for the tag picker UI).
@@ -67,11 +95,12 @@ export async function getMedicationSymptomCoverage(medicationCode, symptomIds) {
  * Creates a symptom log entry (multi-select). Phase 29B adds duration/trajectory/otherText.
  */
 export async function createSymptomLog(logId, studentNumber, severity, symptomIds, extra = {}) {
-  const { duration = null, trajectory = null, otherText = null } = extra;
+  const { duration = null, trajectory = null, otherText = null,
+          latitude = null, longitude = null, zoneId = null } = extra;
   await query(
-    `INSERT INTO SymptomLog (LogID, StudentNumber, SymptomName, Severity, Duration, Trajectory, OtherText, LogDate)
-     VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-    [logId, studentNumber, symptomIds.join(','), severity, duration, trajectory, otherText]
+    `INSERT INTO SymptomLog (LogID, StudentNumber, SymptomName, Severity, Duration, Trajectory, OtherText, Latitude, Longitude, ZoneID, LogDate)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+    [logId, studentNumber, symptomIds.join(','), severity, duration, trajectory, otherText, latitude, longitude, zoneId]
   );
   for (const symId of symptomIds) {
     await query('INSERT INTO SymptomLogEntry (LogID, SymptomID) VALUES (?, ?)', [logId, symId]);

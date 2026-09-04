@@ -2,9 +2,9 @@
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <div class="sidebar-logo">
-      <img src="/images/nmu-george.png" alt="CampusCare" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+      <img src="/images/nmu-george.png" alt="Campus Care" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
     </div>
-    <h2 class="sidebar-brand">CampusCare</h2>
+    <h2 class="sidebar-brand">Campus Care</h2>
   </div>
 
   <nav class="sidebar-nav">
@@ -49,11 +49,11 @@
           <span class="sidebar-label">Home</span>
         </a>
         <a href="/management/nurse/dashboard" class="sidebar-link">
-          <span class="sidebar-icon"><%- include('icon', { name: 'appointment' }) %></span>
+          <span class="sidebar-icon"><%- include('icon', { name: 'clinical' }) %></span>
           <span class="sidebar-label">Clinical Dashboard</span>
         </a>
         <a href="/management/nurse/availability" class="sidebar-link">
-          <span class="sidebar-icon"><%- include('icon', { name: 'book' }) %></span>
+          <span class="sidebar-icon"><%- include('icon', { name: 'appointment' }) %></span>
           <span class="sidebar-label">Availability</span>
         </a>
         <a href="/trends" class="sidebar-link">
@@ -125,6 +125,6 @@
 <!-- Main Content Wrapper (closed in footer.ejs) -->
 <div class="mobile-backdrop" id="mobileBackdrop"></div>
 <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu">
-  <span></span><span></span><span></span>
+  <%- include('icon', { name: 'menu' }) %>
 </button>
 <div class="main-content" id="main-content">

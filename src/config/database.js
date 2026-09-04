@@ -1,18 +1,33 @@
 import 'dotenv/config';
 import mysql from 'mysql2/promise';
-import path from 'path';
 import fs from 'fs';
+
+/**
+ * Resolve the CA certificate for the managed MySQL TLS connection.
+ * Priority (so it works both locally AND on a host with no file system access):
+ *   1. DB_CA_CERT env var — the full PEM string (use this in production/hosting).
+ *   2. A ca.pem file at the project root (convenient for local dev).
+ *   3. null — falls back to a permissive TLS handshake if the provider allows it.
+ */
+function resolveCa() {
+  if (process.env.DB_CA_CERT) return process.env.DB_CA_CERT.replace(/\\n/g, '\n');
+  try { return fs.readFileSync('ca.pem', 'utf8'); } catch { return null; }
+}
+
+const ca = resolveCa();
+const ssl = ca
+  ? { ca, rejectUnauthorized: true }
+  // No CA available: still use TLS but don't verify the chain (managed MySQL
+  // like Aiven requires SSL). Set DB_CA_CERT in production for full verification.
+  : { rejectUnauthorized: false };
 
 export const pool = mysql.createPool({
   host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT),
+  port: Number(process.env.DB_PORT) || 3306,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  ssl: {
-    ca: fs.readFileSync('ca.pem'),
-    rejectUnauthorized: true
-  }
+  ssl
 });
 
 // Run a parameterised SQL query

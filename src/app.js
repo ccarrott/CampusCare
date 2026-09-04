@@ -48,6 +48,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
 
+// Behind a hosting HTTPS proxy (Render/Railway/etc.), trust it so secure
+// session cookies are set correctly in production.
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // ============================================================================
 // CORE MIDDLEWARE
 // ============================================================================
@@ -194,7 +200,8 @@ app.use(globalErrorHandler);
 // SERVER BOOT
 // ============================================================================
 
-const PORT = process.env.APP_PORT;
+// Hosts (Render/Railway/etc.) inject PORT; fall back to APP_PORT for local dev.
+const PORT = process.env.PORT || process.env.APP_PORT || 3000;
 
 async function startServer() {
   try {
@@ -202,7 +209,7 @@ async function startServer() {
     console.log('[Database] Connection pool verified.');
 
     app.listen(PORT, () => {
-      console.log(`[Server] CampusCare running at http://localhost:${PORT}`);
+      console.log(`[Server] CampusCare running on port ${PORT}`);
     });
   } catch (error) {
     console.error('[FATAL] Database connection failed:', error.message);

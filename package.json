@@ -9,11 +9,16 @@
     "db": "node src/config/test_database.js",
     "migrate": "node src/config/migrate.js",
     "seed:symptoms": "node src/config/seed-symptoms.js",
+    "seed:zones": "node src/config/seed-zones-v2.js",
+    "setup": "node src/config/migrate.js && node src/config/seed-symptoms.js && node src/config/seed-zones-v2.js",
     "state:naked": "node src/config/states/state-naked.js",
     "state:showcase": "node src/config/states/state-showcase.js",
     "state:outbreak": "node src/config/states/state-outbreak.js",
     "state:clear": "node src/config/states/state-clear-outbreak.js",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "repository": {
     "type": "git",
@@ -27,14 +32,12 @@
   },
   "homepage": "https://github.com/ccarrott/CampusCare#readme",
   "dependencies": {
-    "@daily-co/daily-js": "^0.92.2",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.4.2",
     "ejs": "^6.0.1",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
-    "motion": "^13.2.0",
     "mysql2": "^3.23.1"
   }
 }

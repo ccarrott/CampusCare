@@ -210,7 +210,14 @@ const migrations = [
   // Phase 29B: symptom-checker intelligence fields
   { name: 'Add Duration to SymptomLog', sql: `ALTER TABLE SymptomLog ADD COLUMN Duration varchar(20) NULL` },
   { name: 'Add Trajectory to SymptomLog', sql: `ALTER TABLE SymptomLog ADD COLUMN Trajectory varchar(20) NULL` },
-  { name: 'Add OtherText to SymptomLog', sql: `ALTER TABLE SymptomLog ADD COLUMN OtherText varchar(255) NULL` }
+  { name: 'Add OtherText to SymptomLog', sql: `ALTER TABLE SymptomLog ADD COLUMN OtherText varchar(255) NULL` },
+  // Phase 30G: per-report location snapshot — powers the MapLibre density heatmap.
+  // We snapshot the reporting student's coordinates + resolved zone AT report time,
+  // so the map reflects where symptoms were actually reported (students move zones).
+  { name: 'Add Latitude to SymptomLog', sql: `ALTER TABLE SymptomLog ADD COLUMN Latitude DECIMAL(10,7) NULL` },
+  { name: 'Add Longitude to SymptomLog', sql: `ALTER TABLE SymptomLog ADD COLUMN Longitude DECIMAL(10,7) NULL` },
+  { name: 'Add ZoneID to SymptomLog', sql: `ALTER TABLE SymptomLog ADD COLUMN ZoneID varchar(20) NULL` },
+  { name: 'Index SymptomLog LogDate', sql: `ALTER TABLE SymptomLog ADD INDEX idx_symptomlog_logdate (LogDate)` }
 ];
 
 async function runMigrations() {
@@ -227,7 +234,7 @@ async function runMigrations() {
       success++;
     } catch (error) {
       // Duplicate column errors are acceptable (migration already applied)
-      if (error.code === 'ER_DUP_FIELDNAME') {
+      if (error.code === 'ER_DUP_FIELDNAME' || error.code === 'ER_DUP_KEYNAME') {
         console.log(`  [SKIP] ${migration.name} (already exists)`);
         success++;
       } else {

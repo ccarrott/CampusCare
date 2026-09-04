@@ -1,0 +1,42 @@
+# Render Blueprint for Campus Care.
+# In Render: New → Blueprint → connect this repo. Render reads this file.
+# Secret values are NOT stored here — set them in the dashboard (sync: false prompts you).
+services:
+  - type: web
+    name: campus-care
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /auth/login
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Database (Aiven MySQL) — enter these in the dashboard when prompted
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_CA_CERT
+        sync: false
+      # App
+      - key: SESSION_SEED
+        generateValue: true      # Render generates a strong random secret
+      - key: APP_BASE_URL
+        sync: false              # set to your https://<app>.onrender.com URL
+      # Daily.co (video) — optional
+      - key: DAILY_API_KEY
+        sync: false
+      - key: DAILY_DOMAIN
+        sync: false
+      - key: DAILY_WEBHOOK_SECRET
+        sync: false
+      # MapTiler (public browser key; optional — map falls back to free tiles)
+      - key: MAPTILER_KEY
+        sync: false

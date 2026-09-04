@@ -9,6 +9,8 @@
     <p class="subtitle"><%= isEdit ? 'Update nurse staff details.' : 'Register a new nurse to the system.' %></p>
   </header>
 
+  <%- include('../partials/back-button') %>
+
   <section class="content-card" style="max-width: 600px;">
     <% if (typeof error !== 'undefined' && error) { %>
       <div class="alert alert-danger"><%= error %></div>
