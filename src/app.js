@@ -186,6 +186,7 @@ app.use('/api/admin/state', statesApi);
 
 // 404 handler
 app.use((req, res) => {
+  console.warn(`[404] ${req.method} ${req.originalUrl} (session user: ${req.session?.user?.role || 'none'})`);
   res.status(404).render('error', {
     user: req.session?.user || null,
     statusCode: 404,
