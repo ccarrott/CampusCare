@@ -4,12 +4,10 @@
   if (!toggle) return;
 
   const STORAGE_KEY = 'campuscare_theme';
-  const SUN = '\u2600\uFE0F';  // ☀️
-  const MOON = '\uD83C\uDF19'; // 🌙
 
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
-    toggle.textContent = theme === 'dark' ? SUN : MOON;
+    // Icon visibility is driven by CSS off [data-theme] — no text to set.
     localStorage.setItem(STORAGE_KEY, theme);
   }
 

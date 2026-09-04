@@ -64,8 +64,21 @@ export const showNurseProfile = catchAsync(async (req, res) => {
     date: r.CreatedAt
   }));
 
+  // Review-from-profile (Fixup 3): if a student has a completed, unreviewed
+  // consultation with this nurse, offer a CTA into the existing review flow.
+  let reviewAppointmentId = null;
+  if (req.session.user && req.session.user.role === 'student') {
+    const studentNumber = req.session.user.id;
+    const alreadyReviewed = await ReviewsModel.hasReviewedNurse(studentNumber, nurse.StaffNumber);
+    if (!alreadyReviewed) {
+      const apt = await ReviewsModel.getMostRecentCompletedAppointment(studentNumber, nurse.StaffNumber);
+      if (apt) reviewAppointmentId = apt.AppointmentID;
+    }
+  }
+
   res.render('staff/nurse-profile', {
     user: req.session.user,
+    reviewAppointmentId,
     nurse: {
       staffNumber: nurse.StaffNumber,
       firstName: nurse.FirstName,

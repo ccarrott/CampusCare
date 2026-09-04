@@ -36,25 +36,47 @@
   --radius-glass: 18px;
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  --sidebar-width: 300px;
+  --sidebar-width: 330px;
   --sidebar-collapsed: 80px;
   --topbar-height: 56px;
 
   /* ---- Glass (Phase 30 "Calm Clinical Glass") ---- */
-  --glass-bg: rgba(255, 255, 255, 0.62);
-  --glass-bg-strong: rgba(255, 255, 255, 0.78);
-  --glass-border: rgba(255, 255, 255, 0.55);
+  /* ---- Glass (Fixup 1: lower alpha = more see-through; richer lighting) ---- */
+  /* ---- Glass (Fixup 2: real see-through pane — luminous rim + corner bloom) ---- */
+  --glass-bg: rgba(255, 255, 255, 0.30);
+  --glass-bg-strong: rgba(255, 255, 255, 0.44);
+  --glass-border: rgba(255, 255, 255, 0.7);
   --glass-hairline: rgba(15, 23, 42, 0.06);
-  --glass-blur: 16px;
-  --glass-blur-strong: 22px;
-  --glass-shadow: 0 8px 30px rgba(15, 23, 42, 0.10);
-  --glass-highlight: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0) 40%);
+  --glass-blur: 20px;
+  --glass-blur-strong: 28px;
+  --glass-saturate: 1.6;
+  /* deep soft float shadow */
+  --glass-shadow: 0 20px 48px -14px rgba(15, 23, 42, 0.28);
+  /* lit top edge (inner) — subtle convex feel */
+  --glass-rim: inset 0 1px 0 rgba(255,255,255,0.65), inset 0 -1px 0 rgba(15,23,42,0.05);
+  /* Directional luminous rim gradient (bright top-left → faint bottom-right).
+     Rendered via a masked pseudo ring so it follows border-radius. */
+  --glass-rim-gradient: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.25) 32%, rgba(255,255,255,0.05) 60%, rgba(255,255,255,0.28) 100%);
+  /* Soft off-centre bloom anchored top-left (replaces the old diagonal stripe) */
+  --glass-bloom: radial-gradient(120% 90% at 12% 6%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.12) 26%, rgba(255,255,255,0) 55%);
+  /* Back-compat: surfaces with their own ::before highlight reuse the bloom */
+  --glass-highlight: var(--glass-bloom);
 
-  /* ---- Breathing background stops ---- */
-  --aurora-1: rgba(255, 204, 0, 0.10);
-  --aurora-2: rgba(19, 46, 81, 0.14);
-  --aurora-3: rgba(20, 28, 43, 0.05);
-  --bg-base: #f4f7fb;
+
+  /* ---- Breathing background stops (Fixup 2: LIVING, colour-rich) ---- */
+  /* Complementary accent to the yellow/navy scheme */
+  --accent-teal: #12b9b9;
+  --aurora-1: rgba(255, 204, 0, 0.38);   /* brand yellow */
+  --aurora-2: rgba(19, 46, 81, 0.42);    /* secondary blue */
+  --aurora-3: rgba(18, 185, 185, 0.30);  /* teal complement */
+  --aurora-4: rgba(249, 178, 42, 0.34);  /* secondary yellow */
+  --aurora-5: rgba(20, 28, 43, 0.30);    /* brand navy */
+  --aurora-6: rgba(18, 185, 185, 0.20);  /* teal (2nd, smaller) */
+  /* Tinted gradient-mesh canvas so even between blobs the page has life */
+  --bg-base: #e6ecf6;
+  --bg-mesh: radial-gradient(80% 70% at 15% 20%, rgba(19,46,81,0.10), transparent 60%),
+             radial-gradient(70% 60% at 85% 15%, rgba(255,204,0,0.10), transparent 60%),
+             radial-gradient(90% 80% at 75% 90%, rgba(18,185,185,0.10), transparent 60%);
 
   /* ---- Motion + spacing + elevation ---- */
   --motion-fast: 0.18s;
@@ -84,10 +106,27 @@
   padding: 0;
 }
 
+/* Fixup 4 (Item 3): hide scrollbars site-wide, keep scroll functional. */
+* {
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* legacy Edge/IE */
+}
+*::-webkit-scrollbar {            /* Chrome/Safari/Edge */
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* Fixup 4 (Item 2): the UI was tuned at ~80% zoom, so shrink the root a touch.
+   All rem-based sizing scales down proportionally for more breathing room. */
+html {
+  font-size: 93.75%;              /* 15px from the implicit 16px */
+}
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-    Ubuntu, Cantarell, sans-serif;
-  font-size: 16px;
+  font-family: 'Cantarell', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-size: 1rem;
   line-height: 1.6;
   color: var(--text-dark);
   background-color: var(--bg-base);
@@ -102,42 +141,82 @@ body {
   inset: 0;
   z-index: -1;
   overflow: hidden;
-  background: var(--bg-base);
+  background: var(--bg-mesh), var(--bg-base);
   pointer-events: none;
 }
-#app-aurora::before,
-#app-aurora::after {
-  content: "";
+/* Six drifting blobs (Fixup 2) — full palette + teal complement, brighter,
+   staggered durations/easings so the composition never visibly repeats.
+   This gives the glass something colourful to refract. GPU-only. */
+.aurora-blob {
   position: absolute;
-  width: 60vmax;
-  height: 60vmax;
   border-radius: 50%;
-  filter: blur(60px);
-  will-change: transform;
+  filter: blur(72px);
+  will-change: transform, opacity;
 }
-#app-aurora::before {
-  background: radial-gradient(circle, var(--aurora-1), transparent 60%);
-  top: -12%;
-  left: -10%;
-  animation: breathe1 28s var(--ease-soft) infinite alternate;
+.aurora-blob.b1 { /* brand yellow */
+  width: 60vmax; height: 60vmax;
+  background: radial-gradient(circle, var(--aurora-1), transparent 62%);
+  top: -14%; left: -8%;
+  animation: auroraDrift1 28s var(--ease-soft) infinite alternate;
 }
-#app-aurora::after {
-  background: radial-gradient(circle, var(--aurora-2), transparent 60%);
-  bottom: -15%;
-  right: -10%;
-  animation: breathe2 32s var(--ease-soft) infinite alternate;
+.aurora-blob.b2 { /* secondary blue */
+  width: 64vmax; height: 64vmax;
+  background: radial-gradient(circle, var(--aurora-2), transparent 62%);
+  bottom: -18%; right: -12%;
+  animation: auroraDrift2 34s ease-in-out infinite alternate;
 }
-@keyframes breathe1 {
+.aurora-blob.b3 { /* teal complement */
+  width: 44vmax; height: 44vmax;
+  background: radial-gradient(circle, var(--aurora-3), transparent 60%);
+  top: 22%; right: 14%;
+  animation: auroraDrift3 40s var(--ease-soft) infinite alternate;
+}
+.aurora-blob.b4 { /* secondary yellow */
+  width: 50vmax; height: 50vmax;
+  background: radial-gradient(circle, var(--aurora-4), transparent 62%);
+  bottom: 4%; left: 20%;
+  animation: auroraDrift4 46s ease-in-out infinite alternate;
+}
+.aurora-blob.b5 { /* brand navy */
+  width: 56vmax; height: 56vmax;
+  background: radial-gradient(circle, var(--aurora-5), transparent 60%);
+  top: 40%; left: -6%;
+  animation: auroraDrift5 52s var(--ease-soft) infinite alternate;
+}
+.aurora-blob.b6 { /* teal (small, top-centre) */
+  width: 36vmax; height: 36vmax;
+  background: radial-gradient(circle, var(--aurora-6), transparent 60%);
+  top: -6%; left: 46%;
+  animation: auroraDrift6 38s ease-in-out infinite alternate;
+}
+@keyframes auroraDrift1 {
   from { transform: translate(0, 0) scale(1); }
-  to   { transform: translate(8vw, 6vh) scale(1.15); }
+  to   { transform: translate(9vw, 7vh) scale(1.18); }
 }
-@keyframes breathe2 {
-  from { transform: translate(0, 0) scale(1.1); }
-  to   { transform: translate(-6vw, -8vh) scale(1); }
+@keyframes auroraDrift2 {
+  from { transform: translate(0, 0) scale(1.12); }
+  to   { transform: translate(-7vw, -9vh) scale(0.98); }
+}
+@keyframes auroraDrift3 {
+  0%   { transform: translate(0, 0) scale(1); opacity: 0.85; }
+  50%  { transform: translate(-6vw, 6vh) scale(1.12); opacity: 1; }
+  100% { transform: translate(4vw, -4vh) scale(0.95); opacity: 0.8; }
+}
+@keyframes auroraDrift4 {
+  from { transform: translate(0, 0) scale(0.95); }
+  to   { transform: translate(6vw, -6vh) scale(1.15); }
+}
+@keyframes auroraDrift5 {
+  0%   { transform: translate(0, 0) scale(1.05); opacity: 0.85; }
+  50%  { transform: translate(7vw, -5vh) scale(0.95); opacity: 1; }
+  100% { transform: translate(-4vw, 6vh) scale(1.1); opacity: 0.9; }
+}
+@keyframes auroraDrift6 {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(-8vw, 5vh) scale(1.2); }
 }
 @media (prefers-reduced-motion: reduce) {
-  #app-aurora::before,
-  #app-aurora::after { animation: none; }
+  .aurora-blob { animation: none !important; }
 }
 
 a {
@@ -165,33 +244,52 @@ img {
   left: var(--space-4);
   width: var(--sidebar-width);
   height: calc(100vh - var(--space-4) * 2);
-  background: var(--glass-bg-strong);
-  -webkit-backdrop-filter: blur(var(--glass-blur-strong));
-  backdrop-filter: blur(var(--glass-blur-strong));
-  border: 1px solid var(--glass-border);
+  /* Same glass recipe as the dashboard blocks (.content-card) */
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: none;
   border-radius: var(--radius-glass);
-  box-shadow: var(--glass-shadow);
+  box-shadow: var(--glass-shadow), var(--glass-rim);
   display: flex;
   flex-direction: column;
   z-index: 1000;
-  transition: width 0.32s var(--ease-soft), transform 0.3s var(--ease-soft), box-shadow 0.3s ease;
+  transform-origin: left center;
+  isolation: isolate;
+  /* Slow, subtle "edging" grow + glow on hover (Fixup 3) */
+  transition: width 0.32s var(--ease-soft), transform 1.1s var(--ease-soft), box-shadow 1.1s var(--ease-soft);
   overflow-x: hidden;
   overflow-y: auto;
 }
 
-/* Specular top highlight on the rail */
-.sidebar::before {
+/* Luminous directional rim to match the dashboard glass blocks */
+.sidebar::after {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background: var(--glass-highlight);
-  z-index: 0;
+  padding: 1px;
+  background: var(--glass-rim-gradient);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask-composite: exclude;
+  z-index: 3;
 }
 
+/* Hover: gently swells a touch + the glow behind it intensifies, slowly —
+   like it's edging to be clicked. */
 .sidebar:hover {
-  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.16);
+  transform: scale(1.015);
+  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.22), 0 0 46px rgba(255, 204, 0, 0.28);
+}
+[data-theme="dark"] .sidebar:hover {
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55), 0 0 46px rgba(255, 204, 0, 0.22);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar { transition: width 0.2s ease; }
+  .sidebar:hover { transform: none; }
 }
 
 .sidebar.navigating {
@@ -212,8 +310,8 @@ img {
 }
 
 .sidebar-logo {
-  width: 70px;
-  height: 70px;
+  width: 92px;
+  height: 92px;
   border-radius: 50%;
   background: var(--accent-gold);
   display: flex;
@@ -221,7 +319,7 @@ img {
   justify-content: center;
   margin-bottom: 10px;
   flex-shrink: 0;
-  box-shadow: 0 0 12px rgba(255, 204, 0, 0.4);
+  box-shadow: 0 0 16px rgba(255, 204, 0, 0.45);
   transition: width 0.3s ease, height 0.3s ease;
 }
 
@@ -288,19 +386,45 @@ img {
   text-decoration: none;
 }
 
-/* Active link — brand accent */
+/* Active link — brand fill + soft glow (Fixup 1: no left edge bar) */
 .sidebar-link.active {
-  background: rgba(255, 204, 0, 0.16);
+  background: rgba(255, 204, 0, 0.20);
   color: var(--text-dark);
   font-weight: 600;
-  box-shadow: inset 3px 0 0 0 var(--brand-yellow);
+  box-shadow: 0 2px 10px rgba(255, 204, 0, 0.22);
 }
 
 .sidebar-icon {
-  font-size: 1.5rem;
   width: 30px;
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  color: currentColor;
+}
+/* Fixup 4 (Item 9): inline icon utility for icons placed in body content
+   (replacing decorative emoji). Inherits currentColor; sized via em. */
+.inline-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: -0.14em;
+}
+.inline-icon svg {
+  width: 1.1em;
+  height: 1.1em;
+  display: block;
+}
+.empty-state-icon .inline-icon svg {
+  width: 1em;
+  height: 1em;
+}
+
+/* Inline SVG icons sit at ~21px and inherit link colour (Fixup 3) */
+.sidebar-icon svg {
+  width: 21px;
+  height: 21px;
+  display: block;
 }
 
 .sidebar-label {
@@ -350,6 +474,8 @@ img {
   position: relative;
 }
 
+/* Fixup 4 (Item 4): static, non-interactive identity chip (first name only).
+   Profile/Logout now live in the sidebar — no dropdown here. */
 .identity-btn {
   display: inline-flex;
   align-items: center;
@@ -360,21 +486,15 @@ img {
   border: 1px solid var(--glass-border);
   border-radius: 999px;
   padding: 5px 12px 5px 5px;
-  cursor: pointer;
   color: var(--text-dark);
   font-size: 0.85rem;
   font-weight: 600;
   box-shadow: var(--glass-shadow);
-  transition: box-shadow var(--motion-fast) var(--ease-soft), transform var(--motion-fast) var(--ease-soft);
 }
 
-.identity-btn:hover {
-  box-shadow: 0 10px 32px rgba(15, 23, 42, 0.16);
-  transform: translateY(-1px);
-}
-
-.identity-btn:active {
-  transform: translateY(0) scale(0.98);
+.identity-btn--static {
+  cursor: default;
+  user-select: none;
 }
 
 .identity-avatar {
@@ -395,90 +515,7 @@ img {
   white-space: nowrap;
 }
 
-.identity-caret {
-  font-size: 0.6rem;
-  color: var(--text-muted);
-  transition: transform 0.15s;
-}
-
-.topbar-identity.open .identity-caret {
-  transform: rotate(180deg);
-}
-
-.identity-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  min-width: 200px;
-  background: var(--glass-bg-strong);
-  -webkit-backdrop-filter: blur(var(--glass-blur-strong));
-  backdrop-filter: blur(var(--glass-blur-strong));
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-glass);
-  box-shadow: var(--glass-shadow);
-  padding: 6px;
-  display: none;
-  z-index: 1200;
-}
-
-.topbar-identity.open .identity-menu {
-  display: block;
-  animation: identityMenuIn 0.16s ease-out;
-  transform-origin: top right;
-}
-
-@keyframes identityMenuIn {
-  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.identity-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: var(--radius-md);
-  color: var(--text-dark);
-  text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: background-color 0.15s ease, color 0.15s ease, padding-left 0.15s ease;
-}
-
-.identity-menu-item span {
-  transition: transform 0.15s ease;
-}
-
-.identity-menu-item:hover,
-.identity-menu-item:focus-visible {
-  background: var(--bg-canvas);
-  text-decoration: none;
-  padding-left: 16px;
-  outline: none;
-}
-
-.identity-menu-item:hover span {
-  transform: scale(1.15);
-}
-
-.identity-menu-item:active {
-  transform: scale(0.98);
-}
-
-.identity-menu-danger {
-  color: var(--status-danger);
-}
-
-.identity-menu-danger:hover,
-.identity-menu-danger:focus-visible {
-  background: rgba(239, 68, 68, 0.12);
-  color: var(--status-danger);
-}
-
 [data-theme="dark"] .identity-btn { color: #e2e8f0; }
-[data-theme="dark"] .identity-menu-item { color: #e2e8f0; }
-[data-theme="dark"] .identity-menu-item:hover,
-[data-theme="dark"] .identity-menu-item:focus-visible { background: #2d3748; }
 
 /* ==========================================================================
    MAIN CONTENT AREA
@@ -501,15 +538,16 @@ img {
 
 /* ---------- Layout Containers ---------- */
 .container {
+  /* Fixup 1: wider on large screens, fluid clamp gutters to kill dead side space */
   width: 100%;
-  max-width: 960px;
+  max-width: 1320px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 clamp(16px, 3vw, 40px);
 }
 
 .page-wrapper {
   flex: 1;
-  padding: 30px 24px;
+  padding: clamp(20px, 3vh, 36px) clamp(16px, 3vw, 40px);
 }
 
 /* ---------- Page Headers ---------- */
@@ -529,6 +567,21 @@ img {
   font-size: 0.95rem;
 }
 
+/* Site-wide back button (Fixup 3): simple "< back", spaced from the content below */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: var(--space-5);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color var(--motion-fast) var(--ease-soft), transform var(--motion-fast) var(--ease-soft);
+}
+.back-btn:hover { color: var(--text-dark); text-decoration: none; transform: translateX(-2px); }
+.back-btn-chevron { font-size: 1.3rem; line-height: 1; }
+
 /* ==========================================================================
    DASHBOARD ARCHETYPE (Phase 30C) — hero zone + glass card grid
    ========================================================================== */
@@ -545,15 +598,7 @@ img {
   box-shadow: var(--glass-shadow);
   position: relative;
   overflow: hidden;
-}
-
-.dash-hero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background: var(--glass-highlight);
+  isolation: isolate;
 }
 
 .dash-hero > * { position: relative; z-index: 1; }
@@ -569,6 +614,54 @@ img {
 .dash-hero .subtitle {
   color: var(--text-muted);
   font-size: 1rem;
+}
+
+/* ---- Fixup 4 (Item 1): "Wow" block-less greeting header ----
+   Drops the glass box; the greeting reads as a large editorial title
+   floating over the aurora, in a distinctive display font. */
+.dash-hero--bare {
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  overflow: visible;
+  padding: var(--space-4) 0 var(--space-2);
+  margin-bottom: var(--space-6);
+}
+.dash-hero--bare::before { display: none; }
+
+/* ---- Dashboard greeting (WindSong script) — big and white ----
+   Selector is intentionally specific (.dash-hero .dash-greeting) so it beats
+   the generic `.dash-hero h1 { font-size: 2rem }` rule. */
+.dash-hero .dash-greeting,
+.dash-greeting {
+  font-family: 'WindSong', 'Segoe Script', cursive;
+  /* JS fits this so the greeting spans ~half the container width (see sidebar.js).
+     This value is the pre-JS fallback. */
+  font-size: 4rem;
+  font-weight: 500;
+  line-height: 1.12;
+  white-space: nowrap;
+  letter-spacing: 0.005em;
+  margin: var(--space-3) 0 var(--space-4);
+  padding: 0.06em 0.08em 0.12em;   /* room for tall script descenders */
+  color: var(--brand-blue);        /* light mode: brand navy (readable on light aurora) */
+  text-shadow: 0 2px 14px rgba(15, 23, 42, 0.15);
+  animation: greetReveal var(--motion-slow) var(--ease-soft) both;
+}
+[data-theme="dark"] .dash-hero .dash-greeting,
+[data-theme="dark"] .dash-greeting {
+  color: #ffffff;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.45);
+}
+@keyframes greetReveal {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dash-greeting { animation: none; }
 }
 
 /* Optional shimmer heading — subtle brand sweep, reduced-motion safe */
@@ -675,7 +768,7 @@ img {
    FOCUSED-FLOW ARCHETYPE (Phase 30D) — centered single-column glass sheet
    ========================================================================== */
 .layout-focused {
-  max-width: 760px;
+  max-width: 820px;
   margin-left: auto;
   margin-right: auto;
   width: 100%;
@@ -706,7 +799,7 @@ img {
    ========================================================================== */
 /* Feed: a vertical stack of glass sections, comfortably centered */
 .layout-feed {
-  max-width: 920px;
+  max-width: 1040px;
   margin-left: auto;
   margin-right: auto;
   width: 100%;
@@ -833,50 +926,111 @@ body.immersive-page .site-footer { display: none; }
   .immersive-overlay.overlay-bottom-right { bottom: 14px; right: 14px; }
 }
 
-/* ---------- Glass utility (Phase 30) ---------- */
-.glass {
+/* ==========================================================================
+   GLASS RECIPE (Fixup 2) — real see-through pane
+   ::before = soft top-left corner bloom · ::after = luminous directional rim
+   (masked gradient ring that follows border-radius). No border on base — the
+   rim ring IS the edge. No more uniform diagonal reflection stripe.
+   ========================================================================== */
+.glass, .content-card {
   background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--glass-border);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: none;
   border-radius: var(--radius-glass);
-  box-shadow: var(--glass-shadow);
+  box-shadow: var(--glass-shadow), var(--glass-rim);
   position: relative;
+  isolation: isolate;
 }
-.glass::before {
+/* Luminous directional rim — a 1px gradient ring masked to the rounded edge */
+.glass::after, .content-card::after {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background: var(--glass-highlight);
+  padding: 1px;
+  background: var(--glass-rim-gradient);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask-composite: exclude;
 }
-.glass-strong {
+.glass-strong, .content-card.content-card--strong {
   background: var(--glass-bg-strong);
-  -webkit-backdrop-filter: blur(var(--glass-blur-strong));
-  backdrop-filter: blur(var(--glass-blur-strong));
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
 }
 
-/* ---------- Content Cards (upgraded to glass) ---------- */
+/* Extra glass surfaces that should carry the spotlight overlay too. */
+.stat-tile, .glass-note, .staff-card {
+  position: relative;
+  isolation: isolate;
+}
+
+/* ==========================================================================
+   SPOTLIGHT (rebuilt) — a soft light that follows the cursor on each card.
+   A dedicated .spotlight overlay div is injected per surface by glass-light.js.
+   It sits above the glass fill but below content, fades in on hover, and its
+   radial highlight is centred on the pointer via --spot-x / --spot-y.
+   ========================================================================== */
+.spotlight {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: var(--glow, 0);   /* driven by proximity ramp in glass-light.js */
+  transition: opacity 0.18s linear;
+  z-index: 1;                /* above the card background, below content (z-index:2) */
+  background: radial-gradient(
+    var(--spot-size, 320px) circle at var(--spot-x, 50%) var(--spot-y, 0%),
+    rgba(255, 255, 255, 0.24),
+    rgba(255, 255, 255, 0.08) 40%,
+    transparent 70%
+  );
+  mix-blend-mode: soft-light;
+}
+/* Content rides above the spotlight overlay. */
+.content-card > *:not(.spotlight),
+.glass > *:not(.spotlight),
+.stat-tile > *:not(.spotlight),
+.glass-note > *:not(.spotlight),
+.staff-card > *:not(.spotlight),
+.auth-card > *:not(.spotlight),
+.dash-hero > *:not(.spotlight),
+.sidebar > *:not(.spotlight) {
+  position: relative;
+  z-index: 2;
+}
+[data-theme="dark"] .spotlight {
+  background: radial-gradient(
+    var(--spot-size, 320px) circle at var(--spot-x, 50%) var(--spot-y, 0%),
+    rgba(255, 255, 255, 0.16),
+    rgba(255, 255, 255, 0.05) 40%,
+    transparent 70%
+  );
+  mix-blend-mode: screen;
+}
+@media (prefers-reduced-motion: reduce) {
+  .spotlight { transition: none; }
+}
+
+/* Content Cards — inherit the glass recipe above; add layout spacing. */
 .content-card {
-  background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-glass);
-  box-shadow: var(--glass-shadow);
   padding: 24px;
   margin-bottom: 24px;
-  position: relative;
 }
-/* Opt-out for dense/data-heavy pages: raised (shadow) instead of live blur (perf). */
+/* Opt-out for dense/data-heavy pages: solid (shadow) instead of live blur (perf). */
 .content-card--solid {
   background: var(--surface-white);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   box-shadow: var(--elev-raised);
 }
+.content-card--solid::before,
+.content-card--solid::after { display: none; }
 
 .content-card h2 {
   font-size: 1.25rem;
@@ -912,6 +1066,23 @@ body.immersive-page .site-footer { display: none; }
   border: 1px solid #fde68a;
   color: #92400e;
 }
+
+/* Glass note (Fixup 3): translucent callout for inline prompts/hints/disclaimers
+   so text blocks sit on the glass UI instead of flat coloured boxes. */
+.glass-note {
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-dark);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-rim);
+}
+.glass-note--accent { box-shadow: var(--glass-rim), inset 3px 0 0 rgba(255,204,0,0.5); }
 
 /* ---------- Forms ---------- */
 .form-group {
@@ -957,9 +1128,11 @@ textarea.form-control {
   flex: 1;
 }
 
-/* ---------- Buttons ---------- */
+/* ---------- Buttons (Fixup 2: light-reactive sheen sweep on hover) ---------- */
 .btn {
   display: inline-block;
+  position: relative;
+  overflow: hidden;
   padding: 10px 20px;
   font-size: 0.95rem;
   font-weight: 600;
@@ -968,13 +1141,31 @@ textarea.form-control {
   cursor: pointer;
   text-align: center;
   text-decoration: none;
-  transition: background-color 0.2s, transform 0.1s;
+  transition: background-color 0.2s, transform 0.1s, box-shadow var(--motion-fast) var(--ease-soft);
+}
+
+/* Sheen: a bright diagonal streak that sweeps across on hover */
+.btn::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -130%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,0.55), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.6s var(--ease-soft);
+  pointer-events: none;
+}
+
+.btn:hover::after {
+  left: 130%;
 }
 
 .btn:hover {
   text-decoration: none;
   transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
 }
 
 .btn:active {
@@ -983,6 +1174,7 @@ textarea.form-control {
 
 @media (prefers-reduced-motion: reduce) {
   .btn:hover, .btn:active { transform: none; }
+  .btn::after { display: none; }
 }
 
 .btn-primary {
@@ -1013,13 +1205,20 @@ textarea.form-control {
 }
 
 .btn-secondary {
-  background-color: #64748b;
-  color: #ffffff;
+  /* Fixup 1: glassy secondary button (primary stays solid brand-yellow) */
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  color: var(--text-dark);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-rim);
 }
 
 .btn-secondary:hover {
-  background-color: #475569;
+  box-shadow: var(--glass-shadow), var(--glass-rim);
 }
+
+[data-theme="dark"] .btn-secondary { color: #e2e8f0; }
 
 .btn-block {
   display: block;
@@ -1112,6 +1311,47 @@ textarea.form-control {
   }
 }
 
+/* Quad grid (Fixup 1): student 4-card row snaps 4x1 / 2x2 / 1x4 by viewport */
+.dashboard-grid--quad { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 1200px) {
+  .dashboard-grid--quad { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .dashboard-grid--quad { grid-template-columns: 1fr; }
+}
+
+/* Fixup 4 (Item 10): faded background icon watermark on dashboard cards —
+   the card's concept icon, big, offset bottom-right, barely visible. */
+.dashboard-grid .content-card { overflow: hidden; }
+.card-watermark {
+  position: absolute;
+  top: 18px;               /* near the top, with a little breathing space */
+  left: 50%;
+  transform: translateX(-50%);   /* horizontally centered */
+  width: 150px;
+  height: 150px;
+  color: #64748b;          /* whitish-gray, neutral */
+  opacity: 0.10;           /* more visible in light mode */
+  pointer-events: none;
+  z-index: 0;
+}
+.card-watermark svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+[data-theme="dark"] .card-watermark {
+  color: #cbd5e1;          /* light gray on dark */
+  opacity: 0.05;
+}
+/* Keep card text/actions above the watermark */
+.dashboard-grid .content-card > h2,
+.dashboard-grid .content-card > p,
+.dashboard-grid .content-card > .btn {
+  position: relative;
+  z-index: 1;
+}
+
 /* ---------- Data Tables ---------- */
 .data-table {
   width: 100%;
@@ -1129,12 +1369,26 @@ textarea.form-control {
 .data-table th {
   font-weight: 600;
   color: var(--text-muted);
-  background-color: var(--bg-canvas);
+  /* Fixup 3: glassy translucent header strip (sharp text) */
+  background: rgba(255, 255, 255, 0.18);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .data-table tr:hover {
-  background-color: #f1f5f9;
+  background-color: rgba(120, 130, 150, 0.12);
 }
+
+/* Fixup 3: seamless table edges on glass — row backgrounds/hover highlights
+   fade out toward the left/right edges instead of hard-clipping the card. */
+.data-table {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 3%, #000 97%, transparent 100%);
+          mask-image: linear-gradient(to right, transparent 0, #000 3%, #000 97%, transparent 100%);
+}
+/* Remove hard side cell padding-edges so highlights dissolve, not cut */
+.data-table th:first-child, .data-table td:first-child { padding-left: 18px; }
+.data-table th:last-child,  .data-table td:last-child  { padding-right: 18px; }
 
 /* ---------- Sortable Table Headers ---------- */
 .data-table th.sortable-th {
@@ -1293,8 +1547,8 @@ textarea.form-control {
 }
 
 .auth-logo .sidebar-logo {
-  width: 64px;
-  height: 64px;
+  width: 104px;
+  height: 104px;
   margin: 0 auto 12px;
 }
 
@@ -1324,18 +1578,10 @@ textarea.form-control {
   padding: 32px;
   width: 100%;
   position: relative;
+  isolation: isolate;
 }
 
-.auth-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background: var(--glass-highlight);
-}
-
-.auth-card > * { position: relative; z-index: 1; }
+.auth-card > *:not(.spotlight) { position: relative; z-index: 2; }
 
 .auth-title {
   font-size: 1.4rem;
@@ -1369,13 +1615,22 @@ textarea.form-control {
    AVAILABILITY GRID (Nurse Weekly Schedule - 27 slots, drag-select)
    ========================================================================== */
 
+/* Fixup 4 (Item 5): glassify the timetable picker — translucent container,
+   header row and slot cells so the aurora shows through the grid. */
 .availability-grid-wrapper {
   overflow-x: auto;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border-radius: var(--radius-glass);
+  box-shadow: var(--glass-shadow), var(--glass-rim);
+  padding: 6px;
 }
 
 .availability-grid {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 2px;
   font-size: 0.8rem;
   min-width: 650px;
   user-select: none;
@@ -1385,22 +1640,23 @@ textarea.form-control {
 .availability-grid td {
   padding: 4px 3px;
   text-align: center;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--glass-hairline);
   min-width: 100px;
 }
 
 .availability-grid th {
-  background-color: var(--primary-navy);
-  color: #ffffff;
+  background-color: rgba(19, 46, 81, 0.28);
+  color: var(--text-dark);
   font-weight: 600;
   font-size: 0.75rem;
   padding: 8px 4px;
+  border-radius: var(--radius-md);
 }
 
 .availability-grid .time-col {
   font-weight: 600;
   color: var(--text-dark);
-  background-color: var(--bg-canvas);
+  background-color: rgba(255, 255, 255, 0.22);
   min-width: 95px;
   white-space: nowrap;
   font-size: 0.7rem;
@@ -1418,19 +1674,19 @@ textarea.form-control {
 }
 
 .slot-cell.slot-available {
-  background-color: var(--slot-available);
+  background-color: rgba(16, 185, 129, 0.28);
 }
 
 .slot-cell.slot-available:hover {
-  background-color: #a7f3d0;
+  background-color: rgba(16, 185, 129, 0.45);
 }
 
 .slot-cell.slot-unavailable {
-  background-color: var(--slot-unavailable);
+  background-color: rgba(148, 163, 184, 0.22);
 }
 
 .slot-cell.slot-unavailable:hover {
-  background-color: #94a3b8;
+  background-color: rgba(148, 163, 184, 0.38);
 }
 
 /* Availability grid day header with date */
@@ -1475,7 +1731,7 @@ textarea.form-control {
 [data-theme="dark"] .severity-moderate { background-color: rgba(245, 158, 11, 0.15); color: #fcd34d; }
 [data-theme="dark"] .severity-high { background-color: rgba(239, 68, 68, 0.15); color: #fca5a5; }
 
-/* ---------- Booking Grid: Selected Slot ---------- */
+/* ---------- Booking Grid: Selected Slot (stays crisp + obvious) ---------- */
 .slot-cell.slot-selected {
   background-color: var(--accent-cyan) !important;
   box-shadow: inset 0 0 0 2px var(--primary-navy);
@@ -1486,12 +1742,12 @@ textarea.form-control {
 }
 
 .slot-cell.slot-bookable:hover {
-  background-color: #6ee7b7;
+  background-color: rgba(16, 185, 129, 0.55);
 }
 
 /* ---------- Availability: Booked State (locked) ---------- */
 .slot-cell.slot-booked {
-  background-color: var(--slot-booked);
+  background-color: rgba(217, 119, 6, 0.32);
   cursor: not-allowed;
 }
 
@@ -1619,17 +1875,30 @@ textarea.form-control {
   --slot-unavailable-border: #4b5563;
   --slot-booked: #5c4a1a;
   --slot-booked-border: #b8860b;
-  /* Dark-mode glass + aurora (Phase 30) */
-  --glass-bg: rgba(30, 41, 59, 0.55);
-  --glass-bg-strong: rgba(20, 28, 43, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.12);
+  /* Dark-mode glass + aurora (Fixup 2: see-through pane, luminous rim, living bg) */
+  --glass-bg: rgba(30, 41, 59, 0.34);
+  --glass-bg-strong: rgba(20, 28, 43, 0.50);
+  --glass-border: rgba(255, 255, 255, 0.16);
   --glass-hairline: rgba(255, 255, 255, 0.08);
-  --glass-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
-  --glass-highlight: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0) 40%);
-  --aurora-1: rgba(255, 204, 0, 0.08);
-  --aurora-2: rgba(19, 46, 81, 0.40);
-  --aurora-3: rgba(10, 15, 26, 0.6);
-  --bg-base: #0b1120;
+  --glass-blur: 20px;
+  --glass-blur-strong: 26px;
+  --glass-saturate: 1.35;
+  --glass-shadow: 0 20px 48px -14px rgba(0, 0, 0, 0.6);
+  --glass-rim: inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(0,0,0,0.2);
+  --glass-rim-gradient: linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.08) 32%, rgba(255,255,255,0.02) 60%, rgba(255,255,255,0.12) 100%);
+  --glass-bloom: radial-gradient(120% 90% at 12% 6%, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.04) 26%, rgba(255,255,255,0) 55%);
+  --glass-highlight: var(--glass-bloom);
+  --accent-teal: #16d0d0;
+  --aurora-1: rgba(255, 204, 0, 0.16);
+  --aurora-2: rgba(19, 46, 81, 0.55);
+  --aurora-3: rgba(18, 185, 185, 0.22);
+  --aurora-4: rgba(249, 178, 42, 0.15);
+  --aurora-5: rgba(10, 15, 26, 0.5);
+  --aurora-6: rgba(18, 185, 185, 0.14);
+  --bg-base: #0a0f1a;
+  --bg-mesh: radial-gradient(80% 70% at 15% 20%, rgba(19,46,81,0.5), transparent 60%),
+             radial-gradient(70% 60% at 85% 15%, rgba(255,204,0,0.06), transparent 60%),
+             radial-gradient(90% 80% at 75% 90%, rgba(18,185,185,0.14), transparent 60%);
 }
 
 /* Dark glass rail — link contrast tuned for the darker translucent surface */
@@ -1652,12 +1921,12 @@ textarea.form-control {
 }
 
 [data-theme="dark"] .data-table th {
-  background-color: #1e293b;
+  background: rgba(255, 255, 255, 0.06);
   color: #94a3b8;
 }
 
 [data-theme="dark"] .data-table tr:hover {
-  background-color: #334155;
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 [data-theme="dark"] .form-control {
@@ -1698,18 +1967,28 @@ textarea.form-control {
 }
 
 [data-theme="dark"] .availability-grid th {
-  background-color: #0f172a;
+  background-color: rgba(15, 23, 42, 0.5);
+  color: #e2e8f0;
 }
 
 [data-theme="dark"] .availability-grid .time-col {
-  background-color: #1e293b;
+  background-color: rgba(255, 255, 255, 0.06);
   color: #94a3b8;
+}
+
+[data-theme="dark"] .availability-grid-wrapper {
+  background: var(--glass-bg);
 }
 
 /* Dark Mode Toggle Button — glass control in the floating top-right cluster (Phase 30B) */
 .theme-toggle {
-  width: 40px;
-  height: 40px;
+  /* Fixup 3: fixed bottom-right, app-wide (auth + shell) */
+  position: fixed;
+  bottom: var(--space-4);
+  right: var(--space-4);
+  z-index: 1001;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   border: 1px solid var(--glass-border);
   background: var(--glass-bg-strong);
@@ -1727,12 +2006,29 @@ textarea.form-control {
 
 .theme-toggle:hover {
   box-shadow: 0 10px 32px rgba(15, 23, 42, 0.16);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 .theme-toggle:active {
   transform: translateY(0) scale(0.95);
 }
+
+/* Theme-toggle icons (Fixup: use provided lightmode/darkmode SVGs) */
+.theme-toggle .theme-icon {
+  display: none;
+  color: var(--text-dark);
+  line-height: 0;
+}
+.theme-toggle .theme-icon svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+/* Light theme → show the moon (switches to dark). Dark theme → show the sun. */
+.theme-toggle .theme-icon--dark { display: inline-flex; }
+[data-theme="dark"] .theme-toggle .theme-icon--dark { display: none; }
+[data-theme="dark"] .theme-toggle .theme-icon--light { display: inline-flex; }
+[data-theme="dark"] .theme-toggle .theme-icon { color: #f1f5f9; }
 
 /* ---------- Dark Mode: Extended Text Readability ---------- */
 [data-theme="dark"] .page-header h1 { color: #f1f5f9; }
@@ -1908,8 +2204,10 @@ textarea.form-control {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 80px;
+  min-width: 84px;
   height: 32px;
+  padding: 0 14px;
+  box-sizing: border-box;
   font-size: 0.78rem;
   font-weight: 600;
   border: none;
@@ -2133,13 +2431,8 @@ textarea.form-control {
   text-decoration: none;
 }
 
-/* ---------- Sidebar Active Link ---------- */
-.sidebar-link.active {
-  background-color: #334155;
-  color: #ffffff;
-  border-left: 3px solid var(--accent-cyan);
-  padding-left: 11px;
-}
+/* (Legacy solid sidebar-active override removed in Fixup 1 — the glass
+   fill+glow .sidebar-link.active earlier in the file now governs.) */
 
 /* ---------- Toast Notifications ---------- */
 .toast {
@@ -2241,7 +2534,7 @@ textarea.form-control {
 }
 
 .row-upcoming {
-  border-left: 3px solid var(--accent-cyan);
+  background-color: rgba(14, 165, 233, 0.08);
 }
 
 .row-cancelled td:nth-child(3) {
@@ -2274,24 +2567,35 @@ textarea.form-control {
   color: var(--text-dark);
 }
 
+/* Wrapper form (My Appointments, Fixup 3) — toggles .open on the .kebab wrapper */
+.kebab { position: relative; display: inline-block; }
+
 .kebab-menu {
   display: none;
   position: absolute;
   right: 0;
   top: 100%;
-  background: var(--surface-white);
-  border: 1px solid var(--border-color);
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-  min-width: 130px;
+  box-shadow: var(--glass-shadow);
+  min-width: 150px;
   z-index: 200;
   overflow: hidden;
 }
 
-.kebab-menu.open {
+.kebab-menu.open,
+.kebab.open .kebab-menu {
   display: block;
   animation: modalSlideIn 0.15s ease;
 }
+
+.kebab-item-muted { color: var(--text-muted); cursor: default; }
+.kebab-item-muted:hover { background: none; }
+.kebab-item-danger { color: var(--status-danger); }
+.kebab-item-danger:hover { background: rgba(239,68,68,0.12); }
 
 .kebab-item {
   display: block;
@@ -2324,11 +2628,6 @@ textarea.form-control {
 [data-theme="dark"] .kebab-btn:hover {
   background: #374151;
   color: #f1f5f9;
-}
-
-[data-theme="dark"] .kebab-menu {
-  background: #2d3748;
-  border-color: #475569;
 }
 
 [data-theme="dark"] .kebab-item {
@@ -2404,14 +2703,17 @@ textarea.form-control {
    PHASE 22: SYMPTOM TAG PICKER
    ========================================================================== */
 
-/* Symptom tag pill */
+/* Symptom tag pill (Fixup 1: glassy unselected state) */
 .symptom-tag {
   display: inline-block;
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 0.82rem;
   cursor: pointer;
-  border: 1px solid var(--border-color);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
   transition: all 0.15s;
   margin: 3px;
   user-select: none;
@@ -2435,7 +2737,7 @@ textarea.form-control {
   flex-wrap: wrap;
   gap: 6px;
   padding: 12px;
-  background: var(--bg-canvas);
+  background: rgba(120, 130, 150, 0.10);
   border-radius: var(--radius-md);
   min-height: 44px;
   align-items: center;
@@ -2450,8 +2752,10 @@ textarea.form-control {
   gap: 6px;
   padding: 8px 10px;
   min-height: 48px;
-  background: var(--surface-white);
-  border: 1px solid var(--border-color);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   cursor: text;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -2475,18 +2779,18 @@ textarea.form-control {
 
 .symptom-token-input::placeholder { color: var(--text-muted); }
 
-[data-theme="dark"] .symptom-tokenbar { background: #1e293b; border-color: #475569; }
 [data-theme="dark"] .symptom-token-input { color: #f1f5f9; }
 
 .symptom-summary-tag {
+  /* Fixup 1: match the display .symptom-tag exactly (shape + size) */
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border-radius: 12px;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
   background: var(--accent-cyan);
   color: var(--primary-navy);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 600;
 }
 
@@ -2566,9 +2870,7 @@ textarea.form-control {
   color: var(--primary-navy);
 }
 
-[data-theme="dark"] .symptom-summary {
-  background: #1e293b;
-}
+[data-theme="dark"] .symptom-summary { background: rgba(255,255,255,0.05); }
 
 [data-theme="dark"] .symptom-category-header {
   color: #f1f5f9;
@@ -2671,9 +2973,10 @@ textarea.form-control {
   align-items: flex-start;
 }
 
+/* Fixup 4 (Item 7): much larger nurse photos. Directory card ~104px. */
 .staff-avatar {
-  width: 52px;
-  height: 52px;
+  width: 104px;
+  height: 104px;
   border-radius: 50%;
   background: var(--brand-yellow);
   color: var(--primary-navy);
@@ -2681,24 +2984,25 @@ textarea.form-control {
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 1.4rem;
+  font-size: 2.6rem;
   flex-shrink: 0;
   overflow: hidden;
 }
 
 /* Real photo avatar (Phase 30E) — object-fit cover fills the circle */
 .staff-photo {
-  width: 52px;
-  height: 52px;
+  width: 104px;
+  height: 104px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
   border: 2px solid var(--glass-border);
 }
 
-.staff-photo-lg { width: 88px; height: 88px; }
+/* Profile hero photo ~180px */
+.staff-photo-lg { width: 180px; height: 180px; }
 
-.staff-avatar-lg { width: 72px; height: 72px; font-size: 2rem; }
+.staff-avatar-lg { width: 180px; height: 180px; font-size: 4rem; }
 
 .staff-head-info { flex: 1; min-width: 0; }
 
@@ -2832,18 +3136,19 @@ textarea.form-control {
   justify-content: center;
   font-size: 0.8rem;
   font-weight: 700;
-  background: var(--bg-canvas);
-  border: 2px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.14);
+  border: 2px solid rgba(255, 255, 255, 0.35);
   color: var(--text-muted);
   transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease, transform 0.3s ease;
 }
+[data-theme="dark"] .cp-node { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2); }
 
 .cp-label { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; transition: color 0.4s ease; }
 
 .cp-bar {
   flex: 1;
   height: 3px;
-  background: var(--border-color);
+  background: rgba(120, 130, 150, 0.25);
   margin: 0 4px;
   position: relative;
   border-radius: 2px;

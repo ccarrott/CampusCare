@@ -1,8 +1,10 @@
   </div><!-- .auth-container -->
-  <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode"></button>
-  <footer class="auth-footer">
-    <p>&copy; 2025 CampusCare | Campus Health Helpline: <strong>0800-CARE-HUB</strong></p>
-  </footer>
-  <script src="/js/darkmode.js"></script>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+    <span class="theme-icon theme-icon--dark"><%- include('icon', { name: 'darkmode' }) %></span>
+    <span class="theme-icon theme-icon--light"><%- include('icon', { name: 'lightmode' }) %></span>
+  </button>
+  <% var _v = (typeof assetV !== 'undefined' ? assetV : '1'); %>
+  <script src="/js/darkmode.js?v=<%= _v %>"></script>
+  <script src="/js/glass-light.js?v=<%= _v %>"></script>
 </body>
 </html>

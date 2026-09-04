@@ -4,7 +4,7 @@
 <main class="container page-wrapper layout-feed">
   <%- include('../partials/alerts') %>
 
-  <a href="/staff" class="text-muted" style="font-size:0.85rem;">&larr; Back to Meet Our Staff</a>
+  <%- include('../partials/back-button', { fallback: '/staff' }) %>
 
   <% var _photo = '/images/nurses/' + ((nurse.firstName || '') + '.' + (nurse.lastName || '')).toLowerCase() + '.PNG'; %>
   <% var _initial = (nurse.firstName || '?').charAt(0).toUpperCase(); %>
@@ -25,6 +25,11 @@
           <%= nurse.averageRating ? nurse.averageRating + ' / 5 from ' + nurse.ratingCount + ' review' + (nurse.ratingCount !== 1 ? 's' : '') : 'No ratings yet' %>
         </span>
       </div>
+      <% if (typeof reviewAppointmentId !== 'undefined' && reviewAppointmentId) { %>
+        <div style="margin-top:14px;">
+          <a href="/consultations/review/<%= reviewAppointmentId %>" class="btn btn-primary">Review this nurse</a>
+        </div>
+      <% } %>
     </div>
   </section>
 

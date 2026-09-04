@@ -2,7 +2,7 @@
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <div class="sidebar-logo">
-      <img src="/images/nmu-logo.jpg" alt="CampusCare" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+      <img src="/images/nmu-george.png" alt="CampusCare" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
     </div>
     <h2 class="sidebar-brand">CampusCare</h2>
   </div>
@@ -12,160 +12,115 @@
 
       <% if (user.role === 'student') { %>
         <a href="/" class="sidebar-link">
-          <span class="sidebar-icon">&#127968;</span>
+          <span class="sidebar-icon"><%- include('icon', { name: 'home' }) %></span>
           <span class="sidebar-label">Home</span>
         </a>
         <a href="/symptoms" class="sidebar-link">
-          <span class="sidebar-icon">&#129657;</span>
+          <span class="sidebar-icon"><%- include('icon', { name: 'symptoms' }) %></span>
           <span class="sidebar-label">Symptom Checker</span>
         </a>
         <a href="/consultations/book" class="sidebar-link">
-          <span class="sidebar-icon">&#128197;</span>
+          <span class="sidebar-icon"><%- include('icon', { name: 'book' }) %></span>
           <span class="sidebar-label">Book Consultation</span>
         </a>
         <a href="/consultations/my-appointments" class="sidebar-link">
-          <span class="sidebar-icon">&#128203;</span>
+          <span class="sidebar-icon"><%- include('icon', { name: 'appointment' }) %></span>
           <span class="sidebar-label">My Appointments</span>
         </a>
         <a href="/trends" class="sidebar-link">
-          <span class="sidebar-icon">&#128200;</span>
+          <span class="sidebar-icon"><%- include('icon', { name: 'trend' }) %></span>
           <span class="sidebar-label">Health Trends</span>
         </a>
         <a href="/staff" class="sidebar-link">
-          <span class="sidebar-icon">&#128101;</span>
+          <span class="sidebar-icon"><%- include('icon', { name: 'meet' }) %></span>
           <span class="sidebar-label">Meet Our Staff</span>
         </a>
-        <a href="/consultations/nurse-reviews" class="sidebar-link">
-          <span class="sidebar-icon">&#11088;</span>
-          <span class="sidebar-label">Review Nurse</span>
-        </a>
+
+        <div class="sidebar-spacer"></div>
+
         <a href="/profile" class="sidebar-link">
-          <span class="sidebar-icon">&#128100;</span>
+          <span class="sidebar-icon"><%- include('icon', { name: 'profile' }) %></span>
           <span class="sidebar-label">Profile</span>
         </a>
 
       <% } else if (user.role === 'nurse') { %>
         <a href="/" class="sidebar-link">
-          <span class="sidebar-icon">&#127968;</span>
+          <span class="sidebar-icon"><%- include('icon', { name: 'home' }) %></span>
           <span class="sidebar-label">Home</span>
         </a>
         <a href="/management/nurse/dashboard" class="sidebar-link">
-          <span class="sidebar-icon">&#128203;</span>
+          <span class="sidebar-icon"><%- include('icon', { name: 'appointment' }) %></span>
           <span class="sidebar-label">Clinical Dashboard</span>
         </a>
         <a href="/management/nurse/availability" class="sidebar-link">
-          <span class="sidebar-icon">&#128197;</span>
+          <span class="sidebar-icon"><%- include('icon', { name: 'book' }) %></span>
           <span class="sidebar-label">Availability</span>
         </a>
         <a href="/trends" class="sidebar-link">
-          <span class="sidebar-icon">&#128200;</span>
+          <span class="sidebar-icon"><%- include('icon', { name: 'trend' }) %></span>
           <span class="sidebar-label">Health Trends</span>
         </a>
+
+        <div class="sidebar-spacer"></div>
+
         <a href="/profile" class="sidebar-link">
-          <span class="sidebar-icon">&#128100;</span>
+          <span class="sidebar-icon"><%- include('icon', { name: 'profile' }) %></span>
           <span class="sidebar-label">Profile</span>
         </a>
 
       <% } else if (user.role === 'admin') { %>
         <a href="/" class="sidebar-link">
-          <span class="sidebar-icon">&#127968;</span>
+          <span class="sidebar-icon"><%- include('icon', { name: 'home' }) %></span>
           <span class="sidebar-label">Home</span>
         </a>
         <a href="/management/admin/reports" class="sidebar-link">
-          <span class="sidebar-icon">&#128202;</span>
+          <span class="sidebar-icon"><%- include('icon', { name: 'report' }) %></span>
           <span class="sidebar-label">Reports</span>
         </a>
         <a href="/management/admin/students" class="sidebar-link">
-          <span class="sidebar-icon">&#128101;</span>
+          <span class="sidebar-icon"><%- include('icon', { name: 'manage.student' }) %></span>
           <span class="sidebar-label">Manage Students</span>
         </a>
         <a href="/management/admin/nurses" class="sidebar-link">
-          <span class="sidebar-icon">&#129658;</span>
+          <span class="sidebar-icon"><%- include('icon', { name: 'manage.nurse' }) %></span>
           <span class="sidebar-label">Manage Nurses</span>
         </a>
         <a href="/trends" class="sidebar-link">
-          <span class="sidebar-icon">&#128200;</span>
+          <span class="sidebar-icon"><%- include('icon', { name: 'trend' }) %></span>
           <span class="sidebar-label">Health Trends</span>
         </a>
+
+        <div class="sidebar-spacer"></div>
+
         <a href="/profile" class="sidebar-link">
-          <span class="sidebar-icon">&#128100;</span>
+          <span class="sidebar-icon"><%- include('icon', { name: 'profile' }) %></span>
           <span class="sidebar-label">Profile</span>
         </a>
       <% } %>
 
-      <div class="sidebar-spacer"></div>
-
       <a href="/auth/logout" class="sidebar-link sidebar-logout">
-        <span class="sidebar-icon">&#128682;</span>
+        <span class="sidebar-icon"><%- include('icon', { name: 'logout' }) %></span>
         <span class="sidebar-label">Logout</span>
       </a>
 
     <% } else { %>
       <a href="/auth/login" class="sidebar-link">
-        <span class="sidebar-icon">&#128274;</span>
+        <span class="sidebar-icon"><%- include('icon', { name: 'profile' }) %></span>
         <span class="sidebar-label">Login</span>
       </a>
       <a href="/auth/register" class="sidebar-link">
-        <span class="sidebar-icon">&#128221;</span>
+        <span class="sidebar-icon"><%- include('icon', { name: 'profile' }) %></span>
         <span class="sidebar-label">Register</span>
       </a>
     <% } %>
   </nav>
 </aside>
 
-<!-- Floating glass controls (Phase 30B) — identity chip + theme toggle, top-right -->
-<div class="floating-controls">
-  <% if (typeof user !== 'undefined' && user) { %>
-    <%
-      // "F. Lastname" for students/nurses; admins have no first/last → use their name or "Admin".
-      var hasName = user.lastName && user.lastName.trim();
-      var chipLabel = hasName
-        ? ((user.firstName ? user.firstName.charAt(0).toUpperCase() + '. ' : '') + user.lastName)
-        : (user.name && user.name.trim() ? user.name : (user.role.charAt(0).toUpperCase() + user.role.slice(1)));
-      var chipInitial = (hasName ? user.firstName || user.lastName : (user.name || user.role)).charAt(0).toUpperCase();
-    %>
-    <div class="topbar-identity" id="identityChip">
-      <button type="button" class="identity-btn" aria-haspopup="true" aria-expanded="false" onclick="toggleIdentityMenu(this)">
-        <span class="identity-avatar"><%= chipInitial %></span>
-        <span class="identity-name"><%= chipLabel %></span>
-        <span class="identity-caret">&#9662;</span>
-      </button>
-      <div class="identity-menu" role="menu">
-        <a href="/profile" class="identity-menu-item" role="menuitem">
-          <span>&#128100;</span> Profile
-        </a>
-        <a href="/auth/logout" class="identity-menu-item identity-menu-danger" role="menuitem">
-          <span>&#128682;</span> Logout
-        </a>
-      </div>
-    </div>
-  <% } %>
-  <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode"></button>
-</div>
-
-<script>
-function toggleIdentityMenu(btn) {
-  var chip = btn.closest('.topbar-identity');
-  var open = chip.classList.toggle('open');
-  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-}
-document.addEventListener('click', function(e) {
-  if (!e.target.closest('#identityChip')) {
-    var chip = document.getElementById('identityChip');
-    if (chip) {
-      chip.classList.remove('open');
-      var b = chip.querySelector('.identity-btn');
-      if (b) b.setAttribute('aria-expanded', 'false');
-    }
-  }
-});
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') {
-    var chip = document.getElementById('identityChip');
-    if (chip) chip.classList.remove('open');
-  }
-});
-</script>
+<!-- Theme toggle: fixed bottom-right (Fixup 3), app-wide -->
+<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+  <span class="theme-icon theme-icon--dark"><%- include('icon', { name: 'darkmode' }) %></span>
+  <span class="theme-icon theme-icon--light"><%- include('icon', { name: 'lightmode' }) %></span>
+</button>
 
 <!-- Main Content Wrapper (closed in footer.ejs) -->
 <div class="mobile-backdrop" id="mobileBackdrop"></div>

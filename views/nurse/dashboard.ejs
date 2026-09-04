@@ -31,11 +31,11 @@
     <div style="margin-top:16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
       <form action="/management/nurse/demo-consultation" method="POST" style="margin:0;">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-        <button type="submit" class="btn btn-primary">&#127909; Create Demo Video Consultation</button>
+        <button type="submit" class="btn btn-primary"><span class="inline-icon" aria-hidden="true"><%- include('../partials/icon', { name: 'video' }) %></span> Create Demo Video Consultation</button>
       </form>
       <form action="/management/nurse/demo-consultation/clear" method="POST" style="margin:0;" onsubmit="return confirm('Delete all demo consultations (and their video rooms)?');">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-        <button type="submit" class="btn btn-secondary">&#128465; Clear Demo Consultations</button>
+        <button type="submit" class="btn btn-secondary"><span class="inline-icon" aria-hidden="true"><%- include('../partials/icon', { name: 'trash' }) %></span> Clear Demo Consultations</button>
       </form>
       <span class="text-muted" style="font-size:0.85rem;">Create instantly books &amp; confirms a joinable online consultation. Clear removes all demo rows and their rooms.</span>
     </div>
@@ -104,7 +104,7 @@
           <div class="form-group">
             <label for="appointmentId">Select Appointment</label>
             <select id="appointmentId" name="appointmentId" class="form-control" required>
-              <option value="" disabled selected>-- Select --</option>
+              <option value="" disabled selected>Select appointment</option>
               <% activeApts.forEach(function(apt) { %>
                 <option value="<%= apt.AppointmentID %>"><%= apt.StudentFirstName %> <%= apt.StudentLastName %> — <%= new Date(apt.Time).toLocaleDateString('en-ZA') %> (<%= apt.Status || 'Pending' %>)</option>
               <% }); %>
@@ -122,7 +122,7 @@
   <% } else { %>
     <section class="content-card">
       <div class="empty-state">
-        <div class="empty-state-icon">&#128197;</div>
+        <div class="empty-state-icon"><span class="inline-icon" aria-hidden="true"><%- include('../partials/icon', { name: 'calendar' }) %></span></div>
         <p class="empty-state-text">No patients scheduled. Check back after students book consultations.</p>
         <a href="/management/nurse/availability" class="btn btn-primary">Set Your Availability</a>
       </div>

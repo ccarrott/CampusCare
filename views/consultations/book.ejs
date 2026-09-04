@@ -10,7 +10,7 @@
   </header>
 
   <% if (typeof recentBooking !== 'undefined' && recentBooking) { %>
-    <div class="alert alert-warning" style="border-left: 4px solid var(--status-warning);">
+    <div class="glass-note glass-note--accent">
       You booked a consultation recently. If it's for the <strong>same reason</strong>, please mention that to your nurse so they have the full picture and can follow up on your care.
     </div>
   <% } %>
@@ -36,7 +36,7 @@
         <div class="form-group">
           <label for="appointmentType">Consultation Type</label>
           <select id="appointmentType" name="appointmentType" class="form-control" required>
-            <option value="" disabled selected>-- Select type --</option>
+            <option value="" disabled selected>Select type</option>
             <option value="Physical">Physical (In-Person)</option>
             <option value="Online">Online (Video Consultation)</option>
           </select>
@@ -49,13 +49,13 @@
         <div class="form-group">
           <label for="campus">Nelson Mandela University Campus</label>
           <select id="campus" name="campus" class="form-control">
-            <option value="" disabled selected>-- Select campus --</option>
-            <option value="South">South Campus</option>
-            <option value="North">North Campus</option>
-            <option value="Second Avenue">Second Avenue Campus</option>
-            <option value="Missionvale">Missionvale Campus</option>
-            <option value="Bird Street">Bird Street Campus</option>
-            <option value="George">George Campus</option>
+            <option value="" disabled selected>Select campus</option>
+            <option value="South Campus">South Campus</option>
+            <option value="North Campus">North Campus</option>
+            <option value="Second Avenue Campus">Second Avenue Campus</option>
+            <option value="Missionvale Campus">Missionvale Campus</option>
+            <option value="Bird Street Campus">Bird Street Campus</option>
+            <option value="George Campus">George Campus</option>
           </select>
         </div>
       </div>
@@ -66,11 +66,12 @@
         <div class="form-group">
           <label for="staffNumber">Available Nurses</label>
           <select id="staffNumber" name="staffNumber" class="form-control" required>
-            <option value="" disabled selected>-- Select a nurse --</option>
+            <option value="" disabled selected>Select a nurse</option>
             <% nurses.forEach(function(nurse) { %>
-              <option value="<%= nurse.StaffNumber %>"><%= nurse.FirstName %> <%= nurse.LastName %></option>
+              <option value="<%= nurse.StaffNumber %>" data-campus="<%= nurse.Campus || '' %>"><%= nurse.FirstName %> <%= nurse.LastName %></option>
             <% }); %>
           </select>
+          <p class="text-muted" id="nurseCampusNote" style="display:none; font-size:0.85rem; margin-top:6px;">No nurses at this campus yet — try another campus, or choose an Online consultation.</p>
         </div>
       </div>
 
@@ -78,7 +79,7 @@
       <input type="hidden" name="time" id="selectedTime">
 
       <!-- Nurse Profile Card (loaded via AJAX after nurse selection) -->
-      <div id="nurseProfileCard" class="content-card mt-3" style="display:none; border-left: 4px solid var(--accent-cyan);">
+      <div id="nurseProfileCard" class="content-card mt-3" style="display:none;">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
           <div>
             <h3 id="npName" style="margin:0;"></h3>
@@ -122,7 +123,7 @@
         <div class="form-group">
           <label for="preferredLanguage">Select your preferred language</label>
           <select id="preferredLanguage" name="preferredLanguage" class="form-control">
-            <option value="" disabled selected>-- Select language --</option>
+            <option value="" disabled selected>Select language</option>
             <option value="English">English</option>
             <option value="Afrikaans">Afrikaans</option>
             <option value="isiZulu">isiZulu</option>
@@ -223,21 +224,24 @@
       stepCampus.style.display = 'block';
       campusSelect.setAttribute('required', 'required');
       languageSelect.removeAttribute('required');
+      // Nurse list stays hidden until a campus is chosen (then filtered).
     } else {
       stepCampus.style.display = 'none';
       campusSelect.removeAttribute('required');
       campusSelect.value = '';
       languageSelect.setAttribute('required', 'required');
-      // For Online, go straight to nurse
+      // For Online, show ALL nurses (no campus constraint) and go straight to nurse.
+      showAllNurses();
       stepNurse.style.display = 'block';
     }
     updateStepTitles();
     updateStepIndicator(2);
   });
 
-  // Step 2a: Campus selected (Physical only)
+  // Step 2a: Campus selected (Physical only) — filter nurses to that campus
   campusSelect.addEventListener('change', function() {
     if (this.value) {
+      filterNursesByCampus(this.value);
       stepNurse.style.display = 'block';
       // Reset downstream
       staffSelect.value = '';
@@ -246,6 +250,32 @@
       submitBtn.disabled = true;
     }
   });
+
+  // Show only nurses whose campus matches (Physical flow). Online shows all.
+  function filterNursesByCampus(campus) {
+    var note = document.getElementById('nurseCampusNote');
+    var options = staffSelect.querySelectorAll('option[data-campus]');
+    var matches = 0;
+    options.forEach(function(opt) {
+      var match = !campus || opt.dataset.campus === campus;
+      opt.hidden = !match;
+      opt.disabled = !match;
+      if (match) matches++;
+    });
+    staffSelect.value = '';
+    if (note) note.style.display = matches === 0 ? 'block' : 'none';
+    staffSelect.disabled = matches === 0;
+  }
+
+  // When switching to Online, restore the full nurse list.
+  function showAllNurses() {
+    var note = document.getElementById('nurseCampusNote');
+    staffSelect.querySelectorAll('option[data-campus]').forEach(function(opt) {
+      opt.hidden = false; opt.disabled = false;
+    });
+    staffSelect.disabled = false;
+    if (note) note.style.display = 'none';
+  }
 
   // Step: Nurse selected -> load grid
   staffSelect.addEventListener('change', function() {

@@ -1,0 +1,8 @@
+<%
+// Site-wide back control (Fixup 3). Simple "< back" — returns to the previous
+// page (history.back) with a safe fallback for direct loads. Spaced from content.
+var _fallback = (typeof fallback !== 'undefined' && fallback) ? fallback : '/';
+%>
+<a href="<%= _fallback %>" class="back-btn" data-fallback="<%= _fallback %>" onclick="if(document.referrer&&history.length>1){history.back();return false;}">
+  <span class="back-btn-chevron" aria-hidden="true">&lsaquo;</span> back
+</a>

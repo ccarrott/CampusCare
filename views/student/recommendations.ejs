@@ -13,7 +13,7 @@
   <% if (maxTier >= 3) { %>
     <section class="content-card" style="border: 2px solid var(--status-danger);">
       <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
-        <span style="font-size:2.5rem;">&#128680;</span>
+        <span class="inline-icon" style="font-size:2.5rem; color:var(--status-danger);" aria-hidden="true"><%- include('../partials/icon', { name: 'alert' }) %></span>
         <div>
           <h2 style="color: var(--status-danger); border-bottom:none; margin:0; padding:0; font-size:1.4rem;">Go to Your Nearest Emergency Room</h2>
           <p class="text-muted" style="margin:4px 0 0;">One or more of your symptoms requires immediate emergency care.</p>
@@ -22,7 +22,7 @@
 
       <!-- Hospital Results -->
       <div id="hospitalResult" style="display:none;">
-        <div class="content-card" style="margin-bottom:12px; border-left: 4px solid var(--status-danger);">
+        <div class="content-card" style="margin-bottom:12px;">
           <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
             <div>
               <h3 style="margin:0;" id="hospitalName"></h3>
@@ -44,8 +44,8 @@
       </details>
 
       <!-- Loading / fallback -->
-      <p id="locationStatus" style="margin-top:12px; font-size:0.85rem; color:var(--text-muted);">
-        &#128205; Requesting your location...
+      <p id="locationStatus" style="margin-top:12px; font-size:0.85rem; color:var(--text-muted); display:flex; align-items:center; gap:6px;">
+        <span class="inline-icon" aria-hidden="true"><%- include('../partials/icon', { name: 'location' }) %></span> Requesting your location...
       </p>
     </section>
 
@@ -88,9 +88,9 @@
         document.getElementById('directionsLink').href = dirUrl(nearest);
 
         if (detected) {
-          document.getElementById('locationStatus').innerHTML = '&#9989; Based on your current location';
+          document.getElementById('locationStatus').innerHTML = 'Based on your current location';
         } else {
-          document.getElementById('locationStatus').innerHTML = '&#9888;&#65039; Location unavailable — showing hospitals nearest to NMU campus. <br>Call <strong>10177</strong> (national ambulance) if unsure where to go. <button type="button" id="retryLocation" class="btn btn-secondary" style="margin-top:8px; padding:4px 12px; font-size:0.85rem;">Retry location</button>';
+          document.getElementById('locationStatus').innerHTML = 'Location unavailable — showing hospitals nearest to NMU campus. <br>Call <strong>10177</strong> (national ambulance) if unsure where to go. <button type="button" id="retryLocation" class="btn btn-secondary" style="margin-top:8px; padding:4px 12px; font-size:0.85rem;">Retry location</button>';
           var retry = document.getElementById('retryLocation');
           if (retry) retry.addEventListener('click', requestLocation);
         }
@@ -128,7 +128,7 @@
     })();
     </script>
   <% } else if (maxTier >= 2) { %>
-    <div class="alert alert-warning" style="border-left: 4px solid var(--status-warning);">
+    <div class="alert alert-warning">
       <strong>You need to book a nurse consultation.</strong><br>
       One or more of your symptoms requires professional assessment. OTC medication alone is not appropriate for these symptoms.
       <% if (typeof escalationReasons !== 'undefined' && escalationReasons && escalationReasons.length > 0) { %>
@@ -198,7 +198,7 @@
   <% } %>
 
   <!-- Disclaimer -->
-  <section class="content-card" style="border-left: 3px solid var(--text-muted);">
+  <section class="glass-note">
     <p class="text-muted" style="font-size: 0.82rem; margin: 0;">
       <strong>Disclaimer:</strong> These recommendations are for informational purposes only and do not constitute medical advice. Always consult a healthcare professional if symptoms persist or worsen.
     </p>

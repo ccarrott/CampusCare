@@ -6,7 +6,7 @@
 <main class="<%= (typeof user !== 'undefined' && user) ? 'container page-wrapper' : 'auth-page' %>">
   <section class="content-card" style="max-width: 500px; margin: 60px auto; text-align: center;">
     <div class="empty-state-icon" style="font-size: 4rem; margin-bottom: 16px;">
-      <% if (statusCode === 403) { %>&#128683;<% } else if (statusCode === 404) { %>&#128270;<% } else { %>&#9888;&#65039;<% } %>
+      <span class="inline-icon" aria-hidden="true"><% if (statusCode === 404) { %><%- include('partials/icon', { name: 'search' }) %><% } else { %><%- include('partials/icon', { name: 'alert' }) %><% } %></span>
     </div>
     <h1 style="font-size: 2rem; margin-bottom: 8px;"><%= statusCode %></h1>
     <p class="text-muted" style="margin-bottom: 24px;"><%= message %></p>

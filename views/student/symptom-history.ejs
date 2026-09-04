@@ -41,7 +41,7 @@
   <% } else { %>
     <section class="content-card">
       <div class="empty-state">
-        <div class="empty-state-icon">&#129657;</div>
+        <div class="empty-state-icon"><span class="inline-icon" aria-hidden="true"><%- include('../partials/icon', { name: 'symptoms' }) %></span></div>
         <p class="empty-state-text">No symptom checks recorded yet. Try the Symptom Checker to get personalised recommendations.</p>
         <a href="/symptoms" class="btn btn-primary">Check Symptoms</a>
       </div>

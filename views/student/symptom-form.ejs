@@ -14,7 +14,7 @@
   <% } %>
 
   <% if (typeof lastCheck !== 'undefined' && lastCheck) { %>
-    <div class="alert alert-warning" id="prefillPrompt" data-ids="<%= lastCheck.ids.join(',') %>">
+    <div class="glass-note" id="prefillPrompt" data-ids="<%= lastCheck.ids.join(',') %>">
       Experiencing the same symptoms as your last check on <strong><%= new Date(lastCheck.date).toLocaleDateString('en-ZA', { dateStyle: 'medium' }) %></strong>?
       <button type="button" class="btn btn-secondary" id="prefillYes" style="margin-left:8px; padding:4px 12px; font-size:0.85rem;">Yes, fill them in</button>
     </div>

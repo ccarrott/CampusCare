@@ -52,7 +52,7 @@
       <div class="form-group">
         <label for="campus">Campus</label>
         <select id="campus" name="campus" class="form-control">
-          <option value="">-- Select campus --</option>
+          <option value="">Select campus</option>
           <% campuses.forEach(function(camp) { %>
             <option value="<%= camp %>" <%= (nurse && (nurse.Campus || nurse.campus) === camp) ? 'selected' : '' %>><%= camp %></option>
           <% }); %>
@@ -62,7 +62,7 @@
       <div class="form-group">
         <label for="clinicId">Assigned Clinic</label>
         <select id="clinicId" name="clinicId" class="form-control">
-          <option value="">-- No assignment --</option>
+          <option value="">No assignment</option>
           <% clinics.forEach(function(c) { %>
             <option value="<%= c.RegNum %>" <%= (nurse && (nurse.ClinicID || nurse.clinicId) === c.RegNum) ? 'selected' : '' %>><%= c.Name %></option>
           <% }); %>

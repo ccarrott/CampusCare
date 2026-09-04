@@ -9,7 +9,7 @@ import { APPOINTMENT_STATUS } from '../../constants.js';
 // ============================================================================
 
 export async function getAvailableNurses() {
-  const sql = 'SELECT StaffNumber, FirstName, LastName FROM Nurse';
+  const sql = 'SELECT StaffNumber, FirstName, LastName, Campus FROM Nurse';
   return await query(sql);
 }
 

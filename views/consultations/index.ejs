@@ -37,46 +37,44 @@
               <td><%= new Date(apt.Time).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }) %></td>
               <td><span class="status-badge status-<%= status.toLowerCase() %>"><%= status %></span></td>
               <td>
-                <div class="action-btns">
-
-                  <% if (status === 'Pending' || status === 'Confirmed') { %>
-                    <%/* Online video consultation join states (Phase 28) */%>
-                    <% if (apt.AppointmentType === 'Online') { %>
-                      <%
-                        var t = new Date(apt.Time).getTime();
-                        var opensAt = t - 15 * 60 * 1000;
-                        var closesAt = t + 60 * 60 * 1000;
-                        var nowMs = Date.now();
-                        var withinWindow = nowMs >= opensAt && nowMs <= closesAt;
-                      %>
+                <%
+                  var t = new Date(apt.Time).getTime();
+                  var withinWindow = Date.now() >= (t - 15*60*1000) && Date.now() <= (t + 60*60*1000);
+                  var isRated = (ratedIds || []).includes(apt.AppointmentID);
+                %>
+                <div class="kebab" data-kebab>
+                  <button type="button" class="kebab-btn" aria-haspopup="true" aria-expanded="false" aria-label="Actions" onclick="toggleApptMenu(this)">&#8942;</button>
+                  <div class="kebab-menu" role="menu">
+                    <% if ((status === 'Pending' || status === 'Confirmed') && apt.AppointmentType === 'Online') { %>
                       <% if (status === 'Confirmed' && withinWindow) { %>
-                        <a href="/consultations/<%= apt.AppointmentID %>/join" class="action-btn action-btn-teams">Join Consultation</a>
+                        <a href="/consultations/<%= apt.AppointmentID %>/join" class="kebab-item" role="menuitem">Join consultation</a>
                       <% } else if (status === 'Confirmed') { %>
-                        <span class="action-btn action-btn-disabled">Join opens 15 min before</span>
+                        <span class="kebab-item kebab-item-muted">Join opens 15 min before</span>
                       <% } else { %>
-                        <span class="action-btn action-btn-disabled">Awaiting confirmation</span>
+                        <span class="kebab-item kebab-item-muted">Awaiting confirmation</span>
                       <% } %>
                     <% } %>
-                    <%/* Cancel button for Pending/Confirmed */%>
-                    <form action="/consultations/cancel" method="POST" style="display:inline;" onsubmit="return confirm('Cancel this appointment?');">
-                      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                      <input type="hidden" name="appointmentId" value="<%= apt.AppointmentID %>">
-                      <button type="submit" class="action-btn action-btn-cancel">Cancel</button>
-                    </form>
-                  <% } %>
 
-                  <% if (status === 'Completed') { %>
-                    <% if (!(ratedIds || []).includes(apt.AppointmentID)) { %>
-                      <button type="button" class="action-btn action-btn-rate"
+                    <a href="/staff/<%= apt.StaffNumber %>" class="kebab-item" role="menuitem">View nurse</a>
+
+                    <% if (status === 'Completed' && !isRated) { %>
+                      <button type="button" class="kebab-item"
                         data-appointment-id="<%= apt.AppointmentID %>"
                         data-nurse-name="<%= apt.NurseFirstName %> <%= apt.NurseLastName %>"
                         data-date="<%= new Date(apt.Time).toLocaleDateString('en-ZA', { dateStyle: 'medium' }) %>"
                         onclick="openRatingModal(this)">Rate</button>
-                    <% } else { %>
-                      <span class="status-badge status-completed">&#10003; Rated</span>
+                    <% } else if (status === 'Completed' && isRated) { %>
+                      <span class="kebab-item kebab-item-muted"><span class="inline-icon" aria-hidden="true"><%- include('../partials/icon', { name: 'check' }) %></span> Rated</span>
                     <% } %>
-                  <% } %>
 
+                    <% if (status === 'Pending' || status === 'Confirmed') { %>
+                      <form action="/consultations/cancel" method="POST" onsubmit="return confirm('Cancel this appointment?');">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <input type="hidden" name="appointmentId" value="<%= apt.AppointmentID %>">
+                        <button type="submit" class="kebab-item kebab-item-danger" role="menuitem">Cancel</button>
+                      </form>
+                    <% } %>
+                  </div>
                 </div>
               </td>
             </tr>
@@ -117,7 +115,7 @@
   <% } else { %>
     <section class="content-card">
       <div class="empty-state">
-        <div class="empty-state-icon">&#128197;</div>
+        <div class="empty-state-icon"><span class="inline-icon" aria-hidden="true"><%- include('../partials/icon', { name: 'calendar' }) %></span></div>
         <p class="empty-state-text">You have no appointments yet. Book your first consultation to get started.</p>
         <a href="/consultations/book" class="btn btn-primary">Book Your First Appointment</a>
       </div>
@@ -125,6 +123,22 @@
   <% } %>
 
 </main>
+
+<script>
+// Kebab menu (My Appointments row actions)
+function toggleApptMenu(btn) {
+  var wrap = btn.closest('[data-kebab]');
+  var isOpen = wrap.classList.contains('open');
+  document.querySelectorAll('[data-kebab].open').forEach(function(k){ k.classList.remove('open'); var b=k.querySelector('.kebab-btn'); if(b) b.setAttribute('aria-expanded','false'); });
+  if (!isOpen) { wrap.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
+}
+document.addEventListener('click', function(e){
+  if (!e.target.closest('[data-kebab]')) {
+    document.querySelectorAll('[data-kebab].open').forEach(function(k){ k.classList.remove('open'); var b=k.querySelector('.kebab-btn'); if(b) b.setAttribute('aria-expanded','false'); });
+  }
+});
+document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document.querySelectorAll('[data-kebab].open').forEach(function(k){ k.classList.remove('open'); }); } });
+</script>
 
 <script>
 (function() {

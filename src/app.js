@@ -58,8 +58,13 @@ app.use(cookieParser());
 app.use(securityHeaders);
 app.use(createSessionMiddleware());
 
+// Asset cache-bust token — changes each server start so browsers always fetch
+// fresh CSS/JS after a deploy/restart (no stale-cache surprises).
+const ASSET_VERSION = Date.now().toString(36);
+
 // CSRF protection (session-based token)
 app.use((req, res, next) => {
+  res.locals.assetV = ASSET_VERSION;
   if (req.session) {
     if (!req.session.csrfToken) {
       req.session.csrfToken = crypto.randomBytes(32).toString('hex');

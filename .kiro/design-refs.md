@@ -46,6 +46,26 @@ React + Tailwind + Motion component kit (reference only). Notable looks to emula
 - Key is public (browser) → protect via **HTTP-origin restriction** in the MapTiler dashboard (localhost during dev, real domain in prod). Not via secrecy.
 - Data layers: add our `CampusZone` polygons as a GeoJSON source, render a `fill` layer (choropleth, opacity/colour by severity) + optional `heatmap` layer for outbreak density.
 
+## 7. Uiverse — https://uiverse.io/elements?search=glassmorphism
+Community gallery of open (MIT) HTML/CSS UI elements — **directly usable technique reference** (plain CSS, no framework). Great for glass buttons/cards/toggles.
+**Liked reference — glass button:** `https://uiverse.io/MuhammadHasann/tough-tiger-78` (MIT). The look we want for buttons:
+- **Light-reactive sheen** — a highlight that *moves*/responds (hover or pointer), not a static baked gradient.
+- Bright crisp top-edge rim + soft **inner glow**, layered colored translucent tint (not flat white fill), blur carrying the see-through.
+- We re-implement in vanilla CSS; the pointer-follow sheen can use the Motion One we already load. (Uiverse renders CSS client-side, so copy the snippet from the site's code panel when implementing.)
+
+## 8. Hype4 Glassmorphism Generator — https://hype4.academy/tools/glassmorphism-generator
+Tool that outputs the canonical glass recipe (background alpha, blur, 1px border, shadow). Use to sanity-check token values. Confirms: translucent bg + `backdrop-filter: blur()` + subtle border + soft shadow.
+
+## Zentak Glass UI — https://github.com/akilakeshara/zentak-glass-ui  (REFERENCE ONLY — cannot adopt as a library)
+Nice-looking glassmorphism kit, BUT it's **React + Tailwind CSS**, shipped as an npm package with `react`/`react-dom` peer deps and a Tailwind build requirement. **This violates our no-framework / no-Tailwind / no-build-step contract (tech.md §9).** We do NOT install or import it. It's a *visual* reference like KokonutUI. Everything desirable from it (see-through, light-reactive, layered glass) is achievable in our own hand-written CSS.
+
+## Glass DIRECTION correction (user feedback, Fixup 2)
+Current glass reads **too flat + repetitive**. Target instead:
+- **See-through + light-reactive** (Uiverse/hype4 feel), not a flat frosted slab.
+- **NO identical diagonal reflection sweep on every block** — it looks fake/cookie-cutter. Keep only a subtle top-edge highlight on static panels; make the moving **sheen/reflection an *interaction* effect** (hover / pointer-move) on interactive surfaces (buttons, hoverable cards).
+- Add a faint **colored translucent tint + inner glow + crisp bright rim**; let higher transparency + blur do the "real glass" work.
+- Buttons: adopt the Uiverse "tough-tiger" light-reactive glass button style (vanilla CSS + optional Motion One pointer sheen).
+
 ## Our constraints (always apply)
 - Vanilla JS + EJS SSR + hand-written CSS only. Motion One + MapLibre GL are the only new client libs (both vanilla, loaded like Chart.js).
 - Everything must work in light AND dark mode, respect `prefers-reduced-motion`, and keep AA contrast on glass.

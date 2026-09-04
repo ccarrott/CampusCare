@@ -25,7 +25,7 @@
      data-appt="<%= apt.AppointmentID %>" data-complete="<%= pStatus === 'Completed' ? '1' : '0' %>">
   <% stages.forEach(function(stage, i) { %>
     <div class="cp-step <%= i < current ? 'cp-done' : (i === current ? 'cp-active' : '') %>">
-      <span class="cp-node"><%= i < current || (i === current && current === 4) ? '&#10003;' : (i + 1) %></span>
+      <span class="cp-node"><% if (i < current || (i === current && current === 4)) { %><span class="inline-icon" aria-hidden="true"><%- include('icon', { name: 'check' }) %></span><% } else { %><%= i + 1 %><% } %></span>
       <span class="cp-label"><%= stage %></span>
     </div>
     <% if (i < stages.length - 1) { %>

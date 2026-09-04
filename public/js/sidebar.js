@@ -60,6 +60,44 @@ document.querySelectorAll('.sidebar-arrow-btn').forEach(function(btn) {
   }
 
   el.innerHTML = greeting;
+
+  // Fit the greeting so it always spans ~half the container width, regardless
+  // of how long the greeting text is. We measure at a reference font-size and
+  // scale linearly (font width scales with font-size for a given string).
+  const TARGET_RATIO = 0.58;  // a bit over half the page (container) width
+  const REF_PX = 100;         // measure at 100px, then scale
+  const MIN_PX = 40;
+  const MAX_PX = 320;
+
+  function fitGreeting() {
+    const container = el.parentElement || el;
+    const available = container.clientWidth;
+    if (!available) return;
+
+    const prevSize = el.style.fontSize;
+    const prevWS = el.style.whiteSpace;
+    el.style.whiteSpace = 'nowrap';
+    el.style.fontSize = REF_PX + 'px';
+    const refWidth = el.scrollWidth;
+    el.style.fontSize = prevSize;
+    el.style.whiteSpace = prevWS;
+    if (!refWidth) return;
+
+    let target = (available * TARGET_RATIO) * (REF_PX / refWidth);
+    target = Math.max(MIN_PX, Math.min(MAX_PX, target));
+    el.style.fontSize = target.toFixed(1) + 'px';
+  }
+
+  fitGreeting();
+  let raf;
+  window.addEventListener('resize', function () {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(fitGreeting);
+  });
+  // Refit once webfonts have loaded (WindSong metrics differ from fallback).
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(fitGreeting);
+  }
 })();
 
 

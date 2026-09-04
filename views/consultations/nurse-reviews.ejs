@@ -21,7 +21,7 @@
         <div class="form-group">
           <label for="staffNumber">Select Nurse</label>
           <select id="staffNumber" name="staffNumber" class="form-control" required>
-            <option value="" disabled selected>-- Choose a nurse to review --</option>
+            <option value="" disabled selected>Choose a nurse to review</option>
             <% reviewableNurses.forEach(function(nurse) { %>
               <option value="<%= nurse.StaffNumber %>"><%= nurse.FirstName %> <%= nurse.LastName %></option>
             <% }); %>
