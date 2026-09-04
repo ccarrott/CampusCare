@@ -3,34 +3,48 @@
 import { DB_TIMEZONE } from './timezone.js';
 import mysql from 'mysql2/promise';
 import fs from 'fs';
+import path from 'path';
+import { X509Certificate } from 'crypto';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
- * Resolve the CA certificate for the managed MySQL TLS connection.
- * Priority (so it works both locally AND on a host with no file system access):
- *   1. DB_CA_CERT env var — the full PEM string (use this in production/hosting).
- *   2. A ca.pem file at the project root (convenient for local dev).
- *   3. null — falls back to a permissive TLS handshake if the provider allows it.
+ * The CA certificate for the managed MySQL TLS connection.
+ *
+ * Read from ca.pem next to this repo, and from nowhere else. There used to be a
+ * DB_CA_CERT env-var override ahead of this, which is how a PEM ends up mangled:
+ * dashboards strip the newlines out of a multi-line value, Node then parses no
+ * certificate from it, silently falls back to the system trust store, and the
+ * handshake dies with "self-signed certificate in certificate chain" — while the
+ * correct cert sits unread in the repo. The CA is public, so committing it costs
+ * nothing and removes the whole failure mode.
+ *
+ * Path is resolved from this file, not the working directory, so seed scripts and
+ * `npm start` behave the same no matter where they are run from.
  */
-function resolveCa() {
-  if (process.env.DB_CA_CERT) return process.env.DB_CA_CERT.replace(/\\n/g, '\n');
-  try { return fs.readFileSync('ca.pem', 'utf8'); } catch { return null; }
+const CA_PATH = path.join(__dirname, '../../ca.pem');
+
+let ca = null;
+try {
+  ca = fs.readFileSync(CA_PATH, 'utf8');
+} catch {
+  console.warn(
+    `[Database] WARNING: no CA at ${CA_PATH} — connecting over TLS WITHOUT ` +
+    'certificate verification. The connection is encrypted, but nothing proves ' +
+    'the server on the other end is really your database.'
+  );
 }
 
-const ca = resolveCa();
-const ssl = ca
-  ? { ca, rejectUnauthorized: true }
-  // No CA available: still use TLS but don't verify the chain (managed MySQL
-  // like Aiven requires SSL). Set DB_CA_CERT in production for full verification.
-  : { rejectUnauthorized: false };
+const ssl = ca ? { ca, rejectUnauthorized: true } : { rejectUnauthorized: false };
 
-if (!ca && process.env.NODE_ENV === 'production') {
-  // Encrypted but unauthenticated: the connection is TLS, yet nothing proves the
-  // server on the other end is really the database. Anyone able to intercept the
-  // route can present their own certificate and read every query. Set DB_CA_CERT.
-  console.warn(
-    '[Database] WARNING: no DB_CA_CERT set in production — connecting over TLS ' +
-    'WITHOUT certificate verification. Paste the provider CA into DB_CA_CERT.'
-  );
+// Which CA and which host, on every boot. A "self-signed certificate in chain"
+// error with these two lines in the log is a CA/host mismatch — the cert is for a
+// different database service than DB_HOST points at — not a malformed file.
+if (ca) {
+  let subject = 'unparseable — this file is not a valid certificate';
+  try { subject = new X509Certificate(ca).subject.replace(/\n/g, ' '); } catch { /* keep the warning */ }
+  console.log(`[Database] CA: ${subject} | host: ${process.env.DB_HOST}`);
 }
 
 export const pool = mysql.createPool({

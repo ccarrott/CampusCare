@@ -37,7 +37,12 @@
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --sidebar-width: 22rem;
-  --sidebar-collapsed: 5.5rem;
+  /* Sized so a collapsed link's icon lands on the rail's centre WITHOUT changing
+     the link's padding — see .sidebar.collapsed .sidebar-link below. */
+  --sidebar-collapsed: 6.15rem;
+  /* The header holds this height in both states. It is what stops every icon
+     below it jumping when the brand text and logo shrink. */
+  --sidebar-header-h: 12.15rem;
   --topbar-height: 56px;
 
   /* ---- Glass (Phase 30 "Calm Clinical Glass") ---- */
@@ -311,6 +316,10 @@ img {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  /* Fixed in both states. The logo shrinks and the brand fades, but the box they
+     sit in does not resize, so the nav below never moves. */
+  min-height: var(--sidebar-header-h);
   position: relative;
   z-index: 1;
 }
@@ -347,9 +356,10 @@ img {
 }
 
 .sidebar.collapsed .sidebar-brand {
+  /* Fade only. Collapsing its box (height/margin 0) removed ~47px of header in a
+     single frame, which threw every nav icon upwards mid-animation. */
   opacity: 0;
-  height: 0;
-  margin: 0;
+  pointer-events: none;
 }
 
 .sidebar.collapsed .sidebar-logo {
@@ -445,14 +455,9 @@ img {
   width: 0;
 }
 
-/* Collapsed rail: center the icon in each link so nothing looks lob-sided */
-.sidebar.collapsed .sidebar-link {
-  justify-content: center;
-  padding-left: 0;
-  padding-right: 0;
-  gap: 0;
-}
-.sidebar.collapsed .sidebar-nav { padding-left: 0; padding-right: 0; }
+/* Collapsed rail: the icon is already centred, because --sidebar-collapsed is sized
+   to put the rail's centre exactly where the expanded icon sits. Re-centring it with
+   justify-content/padding overrides instead slid every icon sideways on toggle. */
 
 .sidebar-spacer {
   flex: 1;
