@@ -67,7 +67,7 @@ export const createDemoConsultation = catchAsync(async (req, res) => {
     studentNumber: DEMO_STUDENT_NUMBER,
     staffNumber,
     campus: null,
-    preferredLanguage: 'English'
+    preferredLanguage: null
   });
 
   if (!result.success) {

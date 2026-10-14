@@ -1156,6 +1156,39 @@ textarea.form-control {
   min-height: 80px;
 }
 
+/* Password visibility toggle (auth + change-password forms) */
+.pw-field { position: relative; }
+.pw-field .form-control { padding-right: 44px; }
+.pw-toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: color 0.15s;
+}
+.pw-toggle:hover { color: var(--text-dark); }
+.pw-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.45);
+  color: var(--text-dark);
+}
+.pw-toggle svg { width: 20px; height: 20px; display: block; }
+/* Show the eye by default; swap to eye-off when revealed */
+.pw-toggle .pw-icon--hide { display: none; }
+.pw-toggle.is-revealed .pw-icon--show { display: none; }
+.pw-toggle.is-revealed .pw-icon--hide { display: inline-flex; }
+
 .form-row {
   display: flex;
   gap: 12px;

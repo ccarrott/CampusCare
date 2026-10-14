@@ -25,7 +25,7 @@
         </a>
         <a href="/consultations/my-appointments" class="sidebar-link">
           <span class="sidebar-icon"><%- include('icon', { name: 'appointment' }) %></span>
-          <span class="sidebar-label">My Appointments</span>
+          <span class="sidebar-label">My Consultations</span>
         </a>
         <a href="/trends" class="sidebar-link">
           <span class="sidebar-icon"><%- include('icon', { name: 'trend' }) %></span>
@@ -115,6 +115,21 @@
     <% } %>
   </nav>
 </aside>
+
+<!-- Logged-in identity/role indicator: floating glass control, top-right (Phase 30B shell) -->
+<% if (typeof user !== 'undefined' && user) {
+     var _roleLabel = (user.role || '').charAt(0).toUpperCase() + (user.role || '').slice(1);
+     var _initial = (user.firstName || user.name || _roleLabel || '?').charAt(0).toUpperCase();
+%>
+  <div class="floating-controls">
+    <div class="topbar-identity">
+      <span class="identity-btn identity-btn--static" aria-label="Logged in as <%= _roleLabel %>">
+        <span class="identity-avatar" aria-hidden="true"><%= _initial %></span>
+        <span class="identity-name">Logged in as <%= _roleLabel %></span>
+      </span>
+    </div>
+  </div>
+<% } %>
 
 <!-- Theme toggle: fixed bottom-right (Fixup 3), app-wide -->
 <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">

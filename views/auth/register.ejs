@@ -32,7 +32,13 @@
 
         <div class="form-group">
           <label for="password">Password (min 6 characters)</label>
-          <input type="password" id="password" name="password" class="form-control" required minlength="6" autocomplete="new-password">
+          <div class="pw-field">
+            <input type="password" id="password" name="password" class="form-control" required minlength="6" autocomplete="new-password">
+            <button type="button" class="pw-toggle" aria-label="Show password" aria-pressed="false">
+              <span class="pw-icon pw-icon--show"><%- include('../partials/icon', { name: 'eye' }) %></span>
+              <span class="pw-icon pw-icon--hide"><%- include('../partials/icon', { name: 'eye-off' }) %></span>
+            </button>
+          </div>
         </div>
 
         <button type="submit" class="btn btn-success btn-block">Create Account</button>

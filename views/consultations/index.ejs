@@ -1,11 +1,11 @@
-<%- include('../partials/header', { title: 'My Appointments' }) %>
+<%- include('../partials/header', { title: 'My Consultations' }) %>
 <%- include('../partials/navbar') %>
 
 <main class="container page-wrapper layout-feed">
   <%- include('../partials/alerts') %>
 
   <header class="page-header">
-    <h1>My Appointments</h1>
+    <h1>My Consultations</h1>
     <p class="subtitle">View, manage, and rate your consultations.</p>
   </header>
 
@@ -14,7 +14,7 @@
     <%- include('../partials/consult-progress-section', { appointments: appointments }) %>
 
     <section class="content-card reveal">
-      <h2>Appointment History</h2>
+      <h2>Consultation History</h2>
       <table class="data-table">
         <thead>
           <tr>
@@ -68,7 +68,7 @@
                     <% } %>
 
                     <% if (status === 'Pending' || status === 'Confirmed') { %>
-                      <form action="/consultations/cancel" method="POST" onsubmit="return confirm('Cancel this appointment?');">
+                      <form action="/consultations/cancel" method="POST" onsubmit="return confirm('Cancel this consultation?');">
                         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                         <input type="hidden" name="appointmentId" value="<%= apt.AppointmentID %>">
                         <button type="submit" class="kebab-item kebab-item-danger" role="menuitem">Cancel</button>
@@ -87,7 +87,7 @@
     <div id="ratingModal" class="modal-backdrop" style="display:none;" onclick="closeRatingModal(event)">
       <div class="modal-card" onclick="event.stopPropagation()">
         <button type="button" class="modal-close" onclick="closeRatingModal()">&times;</button>
-        <h2 class="modal-title">Rate Your Consultation</h2>
+        <h2 class="modal-title">Review Your Nurse</h2>
         <p class="text-muted modal-subtitle" id="modalSubtitle"></p>
         <form action="/consultations/rate" method="POST" id="ratingModalForm">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
@@ -116,8 +116,8 @@
     <section class="content-card">
       <div class="empty-state">
         <div class="empty-state-icon"><span class="inline-icon" aria-hidden="true"><%- include('../partials/icon', { name: 'calendar' }) %></span></div>
-        <p class="empty-state-text">You have no appointments yet. Book your first consultation to get started.</p>
-        <a href="/consultations/book" class="btn btn-primary">Book Your First Appointment</a>
+        <p class="empty-state-text">You have no consultations yet. Book your first consultation to get started.</p>
+        <a href="/consultations/book" class="btn btn-primary">Book Your First Consultation</a>
       </div>
     </section>
   <% } %>

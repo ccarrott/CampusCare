@@ -117,31 +117,9 @@
         </div>
       </div>
 
-      <!-- Step: Preferred Language (only for Online) -->
-      <div class="booking-step" id="stepLanguage" style="display: none;">
-        <h2 id="stepLanguageTitle">4. Preferred Language for Video Consultation</h2>
-        <div class="form-group">
-          <label for="preferredLanguage">Select your preferred language</label>
-          <select id="preferredLanguage" name="preferredLanguage" class="form-control">
-            <option value="" disabled selected>Select language</option>
-            <option value="English">English</option>
-            <option value="Afrikaans">Afrikaans</option>
-            <option value="isiZulu">isiZulu</option>
-            <option value="isiXhosa">isiXhosa</option>
-            <option value="Sesotho">Sesotho</option>
-            <option value="Setswana">Setswana</option>
-            <option value="Sepedi">Sepedi</option>
-            <option value="Tshivenda">Tshivenda</option>
-            <option value="Xitsonga">Xitsonga</option>
-            <option value="siSwati">siSwati</option>
-            <option value="isiNdebele">isiNdebele</option>
-          </select>
-        </div>
-      </div>
-
       <!-- Submit -->
       <div class="mt-3" id="submitSection" style="display: none;">
-        <button type="submit" class="btn btn-primary" id="submitBtn" disabled>Book Appointment</button>
+        <button type="submit" class="btn btn-primary" id="submitBtn" disabled>Book consultation</button>
       </div>
     </form>
   </section>
@@ -153,7 +131,6 @@
   const appointmentTypeSelect = document.getElementById('appointmentType');
   const campusSelect = document.getElementById('campus');
   const staffSelect = document.getElementById('staffNumber');
-  const languageSelect = document.getElementById('preferredLanguage');
   const gridHeader = document.getElementById('gridHeader');
   const gridBody = document.getElementById('gridBody');
   const selectedTimeInput = document.getElementById('selectedTime');
@@ -164,7 +141,6 @@
   const stepCampus = document.getElementById('stepCampus');
   const stepNurse = document.getElementById('stepNurse');
   const stepSlot = document.getElementById('stepSlot');
-  const stepLanguage = document.getElementById('stepLanguage');
   const submitSection = document.getElementById('submitSection');
 
   let currentSelection = null;
@@ -192,7 +168,6 @@
     } else {
       document.getElementById('stepNurseTitle').textContent = '2. Select a Nurse';
       document.getElementById('stepSlotTitle').textContent = '3. Select a Time Slot';
-      document.getElementById('stepLanguageTitle').textContent = '4. Preferred Language for Video Consultation';
     }
   }
 
@@ -209,7 +184,6 @@
       selectedTimeInput.value = '';
       currentSelection = null;
     }
-    stepLanguage.style.display = 'none';
     submitSection.style.display = 'none';
     submitBtn.disabled = true;
   }
@@ -223,13 +197,11 @@
     if (isPhysical) {
       stepCampus.style.display = 'block';
       campusSelect.setAttribute('required', 'required');
-      languageSelect.removeAttribute('required');
       // Nurse list stays hidden until a campus is chosen (then filtered).
     } else {
       stepCampus.style.display = 'none';
       campusSelect.removeAttribute('required');
       campusSelect.value = '';
-      languageSelect.setAttribute('required', 'required');
       // For Online, show ALL nurses (no campus constraint) and go straight to nurse.
       showAllNurses();
       stepNurse.style.display = 'block';
@@ -283,13 +255,6 @@
     loadNurseGrid();
   });
 
-  // Step: Language selected (Online) -> enable submit
-  languageSelect.addEventListener('change', function() {
-    if (this.value && selectedTimeInput.value) {
-      submitBtn.disabled = false;
-    }
-  });
-
   async function loadNurseGrid() {
     const staffNumber = staffSelect.value;
     if (!staffNumber) return;
@@ -302,7 +267,6 @@
     submitBtn.disabled = true;
     selectedTimeInput.value = '';
     currentSelection = null;
-    stepLanguage.style.display = 'none';
     submitSection.style.display = 'none';
 
     gridBody.innerHTML = '';
@@ -391,21 +355,9 @@
     selectedSlotInfo.style.display = 'block';
     updateStepIndicator(4);
 
-    // Show next step based on type
+    // Slot selected — ready to submit (both Physical and Online)
     submitSection.style.display = 'block';
-
-    if (!isPhysical) {
-      // Online: show language step, submit disabled until language chosen
-      stepLanguage.style.display = 'block';
-      if (languageSelect.value) {
-        submitBtn.disabled = false;
-      } else {
-        submitBtn.disabled = true;
-      }
-    } else {
-      // Physical: ready to submit
-      submitBtn.disabled = false;
-    }
+    submitBtn.disabled = false;
   }
 
   // Load nurse profile card (called on nurse selection)

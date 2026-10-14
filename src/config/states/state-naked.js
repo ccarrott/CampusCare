@@ -39,11 +39,11 @@ export async function loadNakedState() {
   // South Campus, NOT on 2nd Avenue (correcting the earlier incorrect address).
   await query(
     "INSERT INTO Clinic (RegNum, Name, Address, TelephoneNumber, Email) VALUES (?, ?, ?, ?, ?)",
-    ['CLN001', 'South Campus', 'South Campus, University Way, Summerstrand, Gqeberha, 6019', '041 504 2174', 'StudentHealth@mandela.ac.za']
+    ['CLN001', 'South Campus Clinic', 'South Campus, University Way, Summerstrand, Gqeberha, 6019', '041 504 2174', 'StudentHealth@mandela.ac.za']
   );
   await query(
     "INSERT INTO Clinic (RegNum, Name, Address, TelephoneNumber, Email) VALUES (?, ?, ?, ?, ?)",
-    ['CLN002', 'North Campus', 'North Campus, Summerstrand, Gqeberha, 6019', '041 504 1149', 'StudentHealth@mandela.ac.za']
+    ['CLN002', 'North Campus Clinic', 'North Campus, Summerstrand, Gqeberha, 6019', '041 504 1149', 'StudentHealth@mandela.ac.za']
   );
 
   // Seed admin

@@ -4,6 +4,23 @@
     <span class="theme-icon theme-icon--light"><%- include('icon', { name: 'lightmode' }) %></span>
   </button>
   <% var _v = (typeof assetV !== 'undefined' ? assetV : '1'); %>
+  <script>
+    // Password visibility toggle (shared across auth pages). Each .pw-toggle
+    // flips the type of its sibling input and swaps icon + accessible labels.
+    (function () {
+      document.querySelectorAll('.pw-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var input = btn.parentElement.querySelector('input');
+          if (!input) return;
+          var show = input.type === 'password';
+          input.type = show ? 'text' : 'password';
+          btn.setAttribute('aria-pressed', show ? 'true' : 'false');
+          btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+          btn.classList.toggle('is-revealed', show);
+        });
+      });
+    })();
+  </script>
   <script src="/js/darkmode.js?v=<%= _v %>"></script>
   <script src="/js/glass-light.js?v=<%= _v %>"></script>
 </body>

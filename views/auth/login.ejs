@@ -20,7 +20,13 @@
 
         <div class="form-group">
           <label for="password">Password</label>
-          <input type="password" id="password" name="password" class="form-control" required autocomplete="current-password">
+          <div class="pw-field">
+            <input type="password" id="password" name="password" class="form-control" required autocomplete="current-password">
+            <button type="button" class="pw-toggle" aria-label="Show password" aria-pressed="false">
+              <span class="pw-icon pw-icon--show"><%- include('../partials/icon', { name: 'eye' }) %></span>
+              <span class="pw-icon pw-icon--hide"><%- include('../partials/icon', { name: 'eye-off' }) %></span>
+            </button>
+          </div>
         </div>
 
         <button type="submit" class="btn btn-primary btn-block">Sign In</button>

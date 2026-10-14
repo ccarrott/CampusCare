@@ -22,7 +22,7 @@
         <div class="stat-value"><%= metrics.TotalStudents %></div>
       </div>
       <div class="stat-tile reveal">
-        <div class="stat-label">Total Appointments</div>
+        <div class="stat-label">Total Consultations</div>
         <div class="stat-value"><%= metrics.TotalAppointments %></div>
       </div>
       <div class="stat-tile reveal">
@@ -52,9 +52,9 @@
       </div>
     </div>
 
-    <!-- Appointments by Type -->
+    <!-- Consultations by Type -->
     <section class="content-card mt-3" id="appointments">
-      <h2>Appointments by Type</h2>
+      <h2>Consultations by Type</h2>
       <% if (appointmentsByType.length > 0) { %>
         <table class="data-table">
           <thead>
@@ -67,14 +67,14 @@
           </tbody>
         </table>
       <% } else { %>
-        <p class="text-muted">No appointment data available.</p>
+        <p class="text-muted">No consultation data available.</p>
       <% } %>
     </section>
 
     <!-- Daily Appointments Chart -->
     <section class="content-card mt-3">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-        <h2 style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">Appointments Over Time</h2>
+        <h2 style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">Consultations Over Time</h2>
         <select id="periodSelect" class="form-control" style="width: auto; min-width: 140px;" onchange="window.location.href='/management/admin/reports?period='+this.value">
           <option value="7d" <%= (typeof period !== 'undefined' && period === '7d') ? 'selected' : '' %>>Past 7 days</option>
           <option value="1m" <%= (typeof period === 'undefined' || period === '1m') ? 'selected' : '' %>>Past month</option>
@@ -237,7 +237,7 @@
     data: {
       labels: labels,
       datasets: [{
-        label: 'Appointments',
+        label: 'Consultations',
         data: data,
         borderColor: accent,
         backgroundColor: 'rgba(14, 165, 233, 0.12)',

@@ -85,7 +85,7 @@ export const getNurseGridAPI = catchAsync(async (req, res) => {
 // ============================================================================
 
 export const handleBooking = catchAsync(async (req, res) => {
-  const { appointmentType, staffNumber, time, campus, preferredLanguage } = req.body;
+  const { appointmentType, staffNumber, time, campus } = req.body;
   const studentNumber = req.session.user.id;
 
   // Validation
@@ -100,13 +100,6 @@ export const handleBooking = catchAsync(async (req, res) => {
     const nurses = await AppointmentsModel.getAvailableNurses();
     return res.status(400).render('consultations/book', {
       user: req.session.user, nurses, error: 'Please select a campus for in-person consultations.'
-    });
-  }
-
-  if (appointmentType === APPOINTMENT_TYPE.ONLINE && !preferredLanguage) {
-    const nurses = await AppointmentsModel.getAvailableNurses();
-    return res.status(400).render('consultations/book', {
-      user: req.session.user, nurses, error: 'Please select your preferred language for the video consultation.'
     });
   }
 
@@ -130,7 +123,7 @@ export const handleBooking = catchAsync(async (req, res) => {
     studentNumber,
     staffNumber,
     campus: appointmentType === APPOINTMENT_TYPE.PHYSICAL ? campus : null,
-    preferredLanguage: appointmentType === APPOINTMENT_TYPE.ONLINE ? preferredLanguage : null
+    preferredLanguage: null
   });
 
   if (!result.success) {

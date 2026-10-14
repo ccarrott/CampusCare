@@ -20,7 +20,6 @@
   <% } %>
 
   <% if (user.role === 'student') { %>
-
     <!-- First-use Welcome Card (dismissed via localStorage) -->
     <div class="welcome-card" id="welcomeCard" style="display:none;">
       <button class="welcome-dismiss" id="welcomeDismiss" aria-label="Dismiss welcome message">&times;</button>
@@ -43,122 +42,47 @@
       });
     })();
     </script>
-
-    <div class="dashboard-grid dashboard-grid--quad">
-      <section class="content-card reveal card-clickable">
-        <a href="/symptoms" class="card-stretch" aria-label="Symptom Checker"></a>
-        <span class="card-watermark" aria-hidden="true"><%- include('./partials/icon', { name: 'symptoms' }) %></span>
-        <h2>Symptom Checker</h2>
-        <p class="text-muted">Check your symptoms and get instant OTC medication recommendations.</p>
-        <a href="/symptoms" class="btn btn-primary">Check Symptoms</a>
-      </section>
-
-      <section class="content-card reveal card-clickable">
-        <a href="/consultations/book" class="card-stretch" aria-label="Book Consultation"></a>
-        <span class="card-watermark" aria-hidden="true"><%- include('./partials/icon', { name: 'book' }) %></span>
-        <h2>Book Consultation</h2>
-        <p class="text-muted">Schedule a 15-minute in-person or online appointment with a campus nurse.</p>
-        <a href="/consultations/book" class="btn btn-primary">Book Now</a>
-      </section>
-
-      <section class="content-card reveal card-clickable">
-        <a href="/consultations/my-appointments" class="card-stretch" aria-label="My Appointments"></a>
-        <span class="card-watermark" aria-hidden="true"><%- include('./partials/icon', { name: 'appointment' }) %></span>
-        <h2>My Appointments</h2>
-        <p class="text-muted">View your upcoming and past consultations, and rate completed visits.</p>
-        <a href="/consultations/my-appointments" class="btn btn-primary">View Appointments</a>
-      </section>
-
-      <section class="content-card reveal card-clickable">
-        <a href="/trends" class="card-stretch" aria-label="Campus Health Trends"></a>
-        <span class="card-watermark" aria-hidden="true"><%- include('./partials/icon', { name: 'trend' }) %></span>
-        <h2>Campus Health Trends</h2>
-        <p class="text-muted">See what's going around campus — aggregated health data and facility info.</p>
-        <a href="/trends" class="btn btn-primary">View Trends</a>
-      </section>
-    </div>
-
-  <% } else if (user.role === 'nurse') { %>
-
-    <div class="dashboard-grid">
-      <section class="content-card reveal card-clickable">
-        <a href="/management/nurse/dashboard" class="card-stretch" aria-label="Clinical Dashboard"></a>
-        <span class="card-watermark" aria-hidden="true"><%- include('./partials/icon', { name: 'clinical' }) %></span>
-        <h2>Clinical Dashboard</h2>
-        <p class="text-muted">Manage your patient schedule, view appointments, and start video consultations.</p>
-        <a href="/management/nurse/dashboard" class="btn btn-primary">View Schedule</a>
-      </section>
-
-      <section class="content-card reveal card-clickable">
-        <a href="/trends" class="card-stretch" aria-label="Health Trends"></a>
-        <span class="card-watermark" aria-hidden="true"><%- include('./partials/icon', { name: 'trend' }) %></span>
-        <h2>Health Trends</h2>
-        <p class="text-muted">Review campus-wide health analytics and symptom distribution data.</p>
-        <a href="/trends" class="btn btn-primary">View Trends</a>
-      </section>
-
-      <section class="content-card reveal card-clickable">
-        <a href="/profile" class="card-stretch" aria-label="My Profile"></a>
-        <span class="card-watermark" aria-hidden="true"><%- include('./partials/icon', { name: 'profile' }) %></span>
-        <h2>My Profile</h2>
-        <p class="text-muted">View and manage your account details and clinic assignment.</p>
-        <a href="/profile" class="btn btn-primary">View Profile</a>
-      </section>
-
-      <section class="content-card reveal card-clickable">
-        <a href="/management/nurse/availability" class="card-stretch" aria-label="Manage Availability"></a>
-        <span class="card-watermark" aria-hidden="true"><%- include('./partials/icon', { name: 'appointment' }) %></span>
-        <h2>Manage Availability</h2>
-        <p class="text-muted">Set your weekly available time slots for student bookings.</p>
-        <a href="/management/nurse/availability" class="btn btn-primary">Set Availability</a>
-      </section>
-    </div>
-
-  <% } else if (user.role === 'admin') { %>
-
-    <div class="dashboard-grid">
-      <section class="content-card reveal card-clickable">
-        <a href="/management/admin/reports" class="card-stretch" aria-label="Operational Reports"></a>
-        <span class="card-watermark" aria-hidden="true"><%- include('./partials/icon', { name: 'report' }) %></span>
-        <h2>Operational Reports</h2>
-        <p class="text-muted">View system-wide analytics: appointments, ratings, and staff performance.</p>
-        <a href="/management/admin/reports" class="btn btn-primary">View Reports</a>
-      </section>
-
-      <section class="content-card reveal card-clickable">
-        <a href="/trends" class="card-stretch" aria-label="Health Trends"></a>
-        <span class="card-watermark" aria-hidden="true"><%- include('./partials/icon', { name: 'trend' }) %></span>
-        <h2>Health Trends</h2>
-        <p class="text-muted">Campus health overview with aggregated symptom data and zone mapping.</p>
-        <a href="/trends" class="btn btn-primary">View Trends</a>
-      </section>
-
-      <section class="content-card reveal card-clickable">
-        <a href="/management/admin/students" class="card-stretch" aria-label="Manage Students"></a>
-        <span class="card-watermark" aria-hidden="true"><%- include('./partials/icon', { name: 'manage.student' }) %></span>
-        <h2>Manage Students</h2>
-        <p class="text-muted">View, add, or remove student accounts from the system.</p>
-        <a href="/management/admin/students" class="btn btn-primary">Manage Students</a>
-      </section>
-
-      <section class="content-card reveal card-clickable">
-        <a href="/management/admin/nurses" class="card-stretch" aria-label="Manage Nurses"></a>
-        <span class="card-watermark" aria-hidden="true"><%- include('./partials/icon', { name: 'manage.nurse' }) %></span>
-        <h2>Manage Nurses</h2>
-        <p class="text-muted">Add, edit, or remove nurse staff accounts and clinic assignments.</p>
-        <a href="/management/admin/nurses" class="btn btn-primary">Manage Nurses</a>
-      </section>
-
-      <section class="content-card reveal card-clickable">
-        <a href="/profile" class="card-stretch" aria-label="My Profile"></a>
-        <span class="card-watermark" aria-hidden="true"><%- include('./partials/icon', { name: 'profile' }) %></span>
-        <h2>My Profile</h2>
-        <p class="text-muted">View your admin account details.</p>
-        <a href="/profile" class="btn btn-primary">View Profile</a>
-      </section>
-    </div>
-
   <% } %>
+
+  <!-- About CampusCare — informational, the same story for every role -->
+  <section class="content-card reveal">
+    <h2>About Campus Care</h2>
+    <p class="text-muted">
+      Campus Care is Nelson Mandela University's health platform, built to ease the pressure on
+      campus clinics by meeting students where they are. Care is organised into three tiers, so
+      the right level of help is always a step away — from quick self-care guidance to a nurse
+      consultation to full clinical escalation.
+    </p>
+  </section>
+
+  <div class="dashboard-grid">
+    <section class="content-card reveal">
+      <span class="card-watermark" aria-hidden="true"><%- include('./partials/icon', { name: 'symptoms' }) %></span>
+      <h2>Tier 1 — Self-Care &amp; Support</h2>
+      <p class="text-muted">
+        Check your symptoms and get instant over-the-counter medication guidance, plus a live
+        campus health-trend map so you can see what's going around.
+      </p>
+    </section>
+
+    <section class="content-card reveal">
+      <span class="card-watermark" aria-hidden="true"><%- include('./partials/icon', { name: 'book' }) %></span>
+      <h2>Tier 2 — Nurse Consultations</h2>
+      <p class="text-muted">
+        Book a 15-minute in-person or online consultation with a campus nurse, see real-time
+        availability, and share honest feedback through moderated reviews.
+      </p>
+    </section>
+
+    <section class="content-card reveal">
+      <span class="card-watermark" aria-hidden="true"><%- include('./partials/icon', { name: 'clinical' }) %></span>
+      <h2>Tier 3 — Clinical &amp; Admin</h2>
+      <p class="text-muted">
+        When a case needs more, nurses manage schedules and patient progress while admins handle
+        moderation, operational reporting, and nearest-clinic guidance.
+      </p>
+    </section>
+  </div>
 
 </main>
 

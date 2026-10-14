@@ -13,7 +13,7 @@
     <div class="nurse-hero-row">
       <div>
         <h1>Clinical Dashboard</h1>
-        <p class="subtitle">Manage patient appointments, update status, and record consultation notes.</p>
+        <p class="subtitle">Manage patient consultations, update status, and record consultation notes.</p>
       </div>
       <div class="nurse-hero-rating">
         <div class="star-rating-static" style="font-size:1.5rem;">
@@ -71,7 +71,7 @@
           </tbody>
         </table>
       <% } else { %>
-        <p class="text-muted">No upcoming appointments.</p>
+        <p class="text-muted">No upcoming consultations.</p>
       <% } %>
     </section>
 
@@ -90,7 +90,7 @@
           </tbody>
         </table>
       <% } else { %>
-        <p class="text-muted">No previous appointments.</p>
+        <p class="text-muted">No previous consultations.</p>
       <% } %>
     </section>
 
@@ -102,9 +102,9 @@
         <form action="/management/nurse/appointment/notes" method="POST">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <div class="form-group">
-            <label for="appointmentId">Select Appointment</label>
+            <label for="appointmentId">Select Consultation</label>
             <select id="appointmentId" name="appointmentId" class="form-control" required>
-              <option value="" disabled selected>Select appointment</option>
+              <option value="" disabled selected>Select consultation</option>
               <% activeApts.forEach(function(apt) { %>
                 <option value="<%= apt.AppointmentID %>"><%= apt.StudentFirstName %> <%= apt.StudentLastName %> — <%= new Date(apt.Time).toLocaleDateString('en-ZA') %> (<%= apt.Status || 'Pending' %>)</option>
               <% }); %>

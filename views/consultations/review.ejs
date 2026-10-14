@@ -5,7 +5,7 @@
   <%- include('../partials/alerts') %>
 
   <div class="alert alert-success">
-    <strong>Appointment booked successfully!</strong>
+    <strong>Consultation booked successfully!</strong>
   </div>
 
   <header class="page-header">
@@ -16,17 +16,14 @@
   <%- include('../partials/back-button') %>
 
   <section class="content-card">
-    <h2>Appointment Summary</h2>
+    <h2>Consultation Summary</h2>
     <ul class="profile-details">
-      <li><span class="detail-label">Appointment ID</span><span class="detail-value"><%= appointment.AppointmentID %></span></li>
+      <li><span class="detail-label">Consultation ID</span><span class="detail-value"><%= appointment.AppointmentID %></span></li>
       <li><span class="detail-label">Type</span><span class="detail-value"><%= appointment.AppointmentType %></span></li>
       <li><span class="detail-label">Nurse</span><span class="detail-value"><%= appointment.NurseFirstName %> <%= appointment.NurseLastName %></span></li>
       <li><span class="detail-label">Date & Time</span><span class="detail-value"><%= new Date(appointment.Time).toLocaleString('en-ZA', { dateStyle: 'full', timeStyle: 'short' }) %></span></li>
       <% if (appointment.AppointmentType === 'Physical' && appointment.Campus) { %>
         <li><span class="detail-label">Campus</span><span class="detail-value"><%= appointment.Campus %> Campus</span></li>
-      <% } %>
-      <% if (appointment.AppointmentType === 'Online' && appointment.PreferredLanguage) { %>
-        <li><span class="detail-label">Preferred Language</span><span class="detail-value"><%= appointment.PreferredLanguage %></span></li>
       <% } %>
       <li><span class="detail-label">Status</span><span class="detail-value">Pending (awaiting nurse confirmation)</span></li>
     </ul>
