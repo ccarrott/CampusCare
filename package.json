@@ -6,6 +6,9 @@
   "type": "module",
   "scripts": {
     "start": "node src/app.js",
+    "start:local": "node src/app.js --local",
+    "start:aiven": "node src/app.js --aiven",
+    "setup:local": "node src/app.js --local --bootstrap-only",
     "db": "node src/config/test_database.js",
     "migrate": "node src/config/migrate.js",
     "seed:symptoms": "node src/config/seed-symptoms.js",

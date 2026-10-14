@@ -193,7 +193,7 @@ const MAPPING = [
   { sym: 'SYM15', med: 'MED27' }, // Cold sores
 ];
 
-async function seedSymptoms() {
+export async function seedSymptoms({ exitOnDone = true } = {}) {
   console.log('╔══════════════════════════════════════════════════╗');
   console.log('║  CampusCare — Symptom & Med Seed (Verified)     ║');
   console.log('╚══════════════════════════════════════════════════╝');
@@ -221,7 +221,11 @@ async function seedSymptoms() {
 
   console.log('');
   console.log('  ✓ Done. ' + SYMPTOMS.length + ' symptoms, ' + MEDICATIONS.length + ' meds, ' + MAPPING.length + ' mappings.');
-  process.exit(0);
+  if (exitOnDone) process.exit(0);
+  return { success: true };
 }
 
-seedSymptoms().catch(e => { console.error(e); process.exit(1); });
+// CLI entry point only — importing this module must NOT run or exit the process.
+if (process.argv[1]?.includes('seed-symptoms')) {
+  seedSymptoms().catch(e => { console.error(e); process.exit(1); });
+}

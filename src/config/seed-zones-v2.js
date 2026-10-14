@@ -67,7 +67,7 @@ const ZONES = SUBURBS.map(([name, lat, lon], i) => ({
   name, lat, lon
 }));
 
-async function seedZones() {
+export async function seedZones({ exitOnDone = true } = {}) {
   console.log('╔══════════════════════════════════════════════════╗');
   console.log('║  CampusCare — Zone Seed v5 (Voronoi suburbs)    ║');
   console.log('╚══════════════════════════════════════════════════╝');
@@ -86,7 +86,8 @@ async function seedZones() {
   await query('INSERT INTO CampusZone (ZoneID, Name, Latitude, Longitude, Radius, Boundary) VALUES ' + placeholders, rows.flat());
 
   console.log('  ✓ Done. ' + rows.length + ' Voronoi zones — every point maps to its nearest suburb.');
-  process.exit(0);
+  if (exitOnDone) process.exit(0);
+  return { success: true };
 }
 
 if (process.argv[1]?.includes('seed-zones')) {

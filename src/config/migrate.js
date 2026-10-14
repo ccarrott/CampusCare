@@ -361,13 +361,25 @@ const ALREADY_APPLIED = new Set([
   'ER_BAD_FIELD_ERROR'         // referenced column already gone
 ]);
 
+// MySQL signals "already applied" via error codes; SQLite (node:sqlite) via
+// message text. Treat both as idempotent no-ops so re-running migrate is safe
+// on either engine.
+function isAlreadyApplied(error) {
+  if (ALREADY_APPLIED.has(error.code)) return true;
+  const m = (error.message || '').toLowerCase();
+  return m.includes('duplicate column name')   // ADD COLUMN already there
+      || m.includes('already exists')          // CREATE TABLE / CREATE INDEX
+      || m.includes('no such column')          // DROP COLUMN already gone
+      || m.includes('no such table');          // DROP on absent table
+}
+
 async function runStep(step) {
   try {
     await query(step.sql);
     console.log(`  [OK] ${step.name}`);
     return 'ok';
   } catch (error) {
-    if (ALREADY_APPLIED.has(error.code)) {
+    if (isAlreadyApplied(error)) {
       console.log(`  [SKIP] ${step.name} (already applied)`);
       return 'skip';
     }
@@ -376,7 +388,9 @@ async function runStep(step) {
   }
 }
 
-async function runMigrations() {
+// `exitOnDone` lets the CLI (`npm run migrate`) exit the process as before, while
+// the programmatic auto-bootstrap path in app.js can run migrations and keep going.
+export async function runMigrations({ exitOnDone = true } = {}) {
   console.log('[Migration] Starting database schema migration...');
   console.log(`[Migration] ${baseSchema.length} base tables + ${migrations.length} migrations to process.\n`);
 
@@ -394,7 +408,11 @@ async function runMigrations() {
   }
 
   console.log(`\n[Migration] Complete. ${success} applied, ${skipped} already in place, ${failed} failed.`);
-  process.exit(failed > 0 ? 1 : 0);
+  if (exitOnDone) process.exit(failed > 0 ? 1 : 0);
+  return { success, skipped, failed };
 }
 
-runMigrations();
+// CLI entry point only — importing this module (auto-bootstrap) must NOT run or exit.
+if (process.argv[1]?.includes('migrate')) {
+  runMigrations();
+}

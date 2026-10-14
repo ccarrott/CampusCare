@@ -30,7 +30,12 @@ export async function loadNakedState() {
   try {
     await query('DELETE FROM sessions');
   } catch (err) {
-    if (err.code !== 'ER_NO_SUCH_TABLE') throw err;
+    // MySQL raises ER_NO_SUCH_TABLE; node:sqlite (local mode) throws a message like
+    // "no such table: sessions". Tolerate both — the sessions table only exists in
+    // MySQL mode (local mode uses an in-memory session store), so its absence is fine.
+    const missing = err.code === 'ER_NO_SUCH_TABLE'
+      || /no such table/i.test(err.message || '');
+    if (!missing) throw err;
   }
 
   // Seed clinics — real NMU Student Health Services facilities (Gqeberha).
