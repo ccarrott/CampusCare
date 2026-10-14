@@ -5,7 +5,7 @@ import * as AdminModel from './admin.model.js';
 import * as ReviewsModel from '../reviews/reviews.model.js';
 import { catchAsync } from '../../utils/catchAsync.js';
 import { sanitize } from '../../utils/sanitize.js';
-import { isValidStudentNumber, isValidEmail, isValidPassword } from '../../middleware/validate.js';
+import { isValidEmail, isValidPassword } from '../../middleware/validate.js';
 import { CAMPUSES } from '../../constants.js';
 
 // ============================================================================
@@ -21,7 +21,6 @@ export const showAdminReport = catchAsync(async (req, res) => {
   const appointmentsByType = await AdminModel.getAppointmentsByType();
   const ratings = await ReviewsModel.getAllRatings();
   const dailyAppointments = await AdminModel.getDailyAppointmentCounts(days);
-  const pendingNurseReviews = await ReviewsModel.getPendingNurseReviews();
   const nurseAverages = await ReviewsModel.getAllNurseAverages();
   const videoStats = await AdminModel.getVideoConsultationStats();
 
@@ -31,7 +30,6 @@ export const showAdminReport = catchAsync(async (req, res) => {
     appointmentsByType,
     ratings,
     dailyAppointments: JSON.stringify(dailyAppointments),
-    pendingNurseReviews,
     nurseAverages,
     videoStats,
     period,
@@ -54,40 +52,10 @@ export const listStudents = catchAsync(async (req, res) => {
   });
 });
 
-export const showAddStudentForm = catchAsync(async (req, res) => {
-  res.render('admin/student-form', { user: req.session.user, student: null, isEdit: false, error: null });
-});
-
 export const showViewStudent = catchAsync(async (req, res) => {
   const student = await AdminModel.getStudentById(req.params.id);
   if (!student) return res.redirect('/management/admin/students');
   res.render('admin/student-view', { user: req.session.user, student, error: null });
-});
-
-export const handleAddStudent = catchAsync(async (req, res) => {
-  const studentNumber = sanitize(req.body.studentNumber);
-  const firstName = sanitize(req.body.firstName);
-  const lastName = sanitize(req.body.lastName);
-  const medicalHistory = sanitize(req.body.medicalHistory);
-  const password = req.body.password || '';
-
-  if (!studentNumber || !firstName || !lastName || !password) {
-    return res.render('admin/student-form', { user: req.session.user, student: req.body, isEdit: false, error: 'Student Number, Name, and Password are required.' });
-  }
-  if (!isValidStudentNumber(studentNumber)) {
-    return res.render('admin/student-form', { user: req.session.user, student: req.body, isEdit: false, error: 'Student Number must start with "s" followed by 9 digits.' });
-  }
-  if (!isValidPassword(password)) {
-    return res.render('admin/student-form', { user: req.session.user, student: req.body, isEdit: false, error: 'Password must be at least 6 characters.' });
-  }
-
-  const existing = await AdminModel.getStudentById(studentNumber);
-  if (existing) {
-    return res.render('admin/student-form', { user: req.session.user, student: req.body, isEdit: false, error: 'A student with this number already exists.' });
-  }
-
-  await AdminModel.createStudent({ studentNumber, firstName, lastName, medicalHistory, password });
-  res.redirect('/management/admin/students?toast=Student+added+successfully');
 });
 
 export const handleDeleteStudent = catchAsync(async (req, res) => {
@@ -105,7 +73,8 @@ export const listNurses = catchAsync(async (req, res) => {
     ? await AdminModel.searchNurses(search)
     : await AdminModel.getAllNurses();
   const clinics = await AdminModel.getAllClinics();
-  res.render('admin/nurses', { user: req.session.user, nurses, clinics, search, error: null, success: req.query.success || null });
+  const pendingNurseReviews = await ReviewsModel.getPendingNurseReviews();
+  res.render('admin/nurses', { user: req.session.user, nurses, clinics, pendingNurseReviews, search, error: null, success: req.query.success || null });
 });
 
 export const showAddNurseForm = catchAsync(async (req, res) => {
@@ -154,9 +123,11 @@ export const handleAddNurse = catchAsync(async (req, res) => {
 });
 
 export const handleUpdateNurse = catchAsync(async (req, res) => {
-  const { firstName, lastName, email, phoneNumber, clinicId } = req.body;
+  // Admins may only change a nurse's Campus and Assigned Clinic. All other fields
+  // (name, email, phone) are read-only on the edit form and ignored here even if posted.
   const campus = CAMPUSES.includes(req.body.campus) ? req.body.campus : null;
-  await AdminModel.updateNurse(req.params.id, { firstName, lastName, email, phoneNumber, campus, clinicId });
+  const clinicId = sanitize(req.body.clinicId);
+  await AdminModel.updateNurse(req.params.id, { campus, clinicId });
   res.redirect('/management/admin/nurses?success=Nurse updated.');
 });
 
@@ -171,16 +142,16 @@ export const handleDeleteNurse = catchAsync(async (req, res) => {
 
 export const approveNurseReview = catchAsync(async (req, res) => {
   const { reviewId } = req.body;
-  if (!reviewId) return res.redirect('/management/admin/reports');
+  if (!reviewId) return res.redirect('/management/admin/nurses');
   await ReviewsModel.updateNurseReviewVerification(reviewId, 'Approved');
-  res.redirect('/management/admin/reports');
+  res.redirect('/management/admin/nurses?success=Review approved.');
 });
 
 export const rejectNurseReview = catchAsync(async (req, res) => {
   const { reviewId } = req.body;
-  if (!reviewId) return res.redirect('/management/admin/reports');
+  if (!reviewId) return res.redirect('/management/admin/nurses');
   await ReviewsModel.updateNurseReviewVerification(reviewId, 'Rejected');
-  res.redirect('/management/admin/reports');
+  res.redirect('/management/admin/nurses?success=Review rejected.');
 });
 
 // ============================================================================

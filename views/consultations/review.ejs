@@ -25,7 +25,7 @@
       <% if (appointment.AppointmentType === 'Physical' && appointment.Campus) { %>
         <li><span class="detail-label">Campus</span><span class="detail-value"><%= appointment.Campus %> Campus</span></li>
       <% } %>
-      <li><span class="detail-label">Status</span><span class="detail-value">Pending (awaiting nurse confirmation)</span></li>
+      <li><span class="detail-label">Status</span><span class="detail-value"><%= appointment.Status %></span></li>
     </ul>
   </section>
 

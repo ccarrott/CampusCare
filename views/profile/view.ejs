@@ -31,6 +31,7 @@
           <li><span class="detail-label">Phone</span><span class="detail-value"><%= profile.PhoneNumber || 'Not set' %></span></li>
           <li><span class="detail-label">Campus</span><span class="detail-value"><%= profile.Campus || 'Not set' %></span></li>
           <li><span class="detail-label">Clinic</span><span class="detail-value"><%= profile.ClinicName || 'Not assigned' %></span></li>
+          <li><span class="detail-label">Years of Experience</span><span class="detail-value"><%= profile.YearsExperience || 0 %></span></li>
         <% } else if (user.role === 'admin') { %>
           <li><span class="detail-label">Staff Number</span><span class="detail-value"><%= profile.StaffNumber %></span></li>
           <li><span class="detail-label">Name</span><span class="detail-value"><%= profile.Name %></span></li>
@@ -55,17 +56,17 @@
     <% if (user.role === 'nurse') { %>
       <section class="content-card">
         <h2>Public Profile</h2>
-        <p class="text-muted mb-2">This info is visible to students on the "Meet Our Staff" page.</p>
+        <p class="text-muted mb-2">This info is visible to students on the "Meet Our Staff" page. You can edit your last name and bio here (and your password below). Years of experience is set by an administrator.</p>
         <form action="/profile/update-bio" method="POST">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="form-group">
+            <label for="lastName">Last Name</label>
+            <input type="text" id="lastName" name="lastName" class="form-control" required maxlength="50" value="<%= profile.LastName || '' %>" style="max-width: 280px;">
+          </div>
           <div class="form-group">
             <label for="bio">Bio <span class="text-muted" style="font-weight:normal;">(max 300 characters)</span></label>
             <textarea id="bio" name="bio" class="form-control" rows="3" maxlength="300" placeholder="Tell students about yourself..."><%= profile.Bio || '' %></textarea>
             <p class="text-muted" style="font-size:0.8rem; margin-top:4px;"><span id="bioCharCount"><%= (profile.Bio || '').length %></span> / 300</p>
-          </div>
-          <div class="form-group">
-            <label for="yearsExperience">Years of Experience</label>
-            <input type="number" id="yearsExperience" name="yearsExperience" class="form-control" min="0" max="50" value="<%= profile.YearsExperience || 0 %>" style="max-width: 120px;">
           </div>
           <button type="submit" class="btn btn-primary">Save Public Profile</button>
         </form>

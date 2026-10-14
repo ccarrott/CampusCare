@@ -73,6 +73,18 @@
               <% } %>
             </span>
           </div>
+          <%
+            var _verified = review.Verified || 'Pending';
+            var _badgeClass = _verified === 'Approved' ? 'status-completed'
+                            : _verified === 'Rejected' ? 'status-cancelled'
+                            : 'status-pending';
+            var _badgeText = _verified === 'Approved' ? 'Approved'
+                           : _verified === 'Rejected' ? 'Rejected by moderator'
+                           : 'Pending review';
+          %>
+          <div style="margin-top:6px;">
+            <span class="status-badge <%= _badgeClass %>"><%= _badgeText %></span>
+          </div>
           <% if (review.ReviewText && review.ReviewText.trim()) { %><p style="margin:8px 0 0; font-size:0.9rem;"><%= review.ReviewText %></p><% } %>
           <% if (review.CreatedAt) { %>
             <span class="text-muted" style="font-size:0.75rem;">Submitted: <%= new Date(review.CreatedAt).toLocaleDateString('en-ZA', { dateStyle: 'medium' }) %></span>

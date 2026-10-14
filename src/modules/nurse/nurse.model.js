@@ -13,17 +13,14 @@ export async function getPatientProfile(studentNumber) {
 }
 
 /**
- * Updates a nurse's bio and years of experience.
+ * Updates a nurse's editable public-profile fields: bio and last name.
+ * Years of experience is admin-managed and intentionally NOT updated here
+ * (Plan 4 Item 23 — nurses cannot change it).
  */
-export async function updateNurseProfile(staffNumber, { bio, yearsExperience }) {
-  const sql = 'UPDATE Nurse SET Bio = ?, YearsExperience = ? WHERE StaffNumber = ?';
-  return await query(sql, [bio || null, yearsExperience || 0, staffNumber]);
+export async function updateNurseProfile(staffNumber, { bio, lastName }) {
+  const sql = 'UPDATE Nurse SET Bio = ?, LastName = ? WHERE StaffNumber = ?';
+  return await query(sql, [bio || null, lastName || null, staffNumber]);
 }
 
-/**
- * Fetches a patient's symptom log history.
- */
-export async function getPatientSymptomHistory(studentNumber, limit = 30) {
-  const sql = 'SELECT * FROM SymptomLog WHERE StudentNumber = ? ORDER BY LogDate DESC LIMIT ?';
-  return await query(sql, [studentNumber, String(limit)]);
-}
+// Patient symptom history for the nurse view is served by SymptomsModel.getSymptomHistory
+// (a join that returns readable symptom names), not from here — see nurse.controller.js.

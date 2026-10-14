@@ -4,10 +4,6 @@
 <main class="container page-wrapper">
   <%- include('../partials/alerts') %>
 
-  <% if (typeof success !== 'undefined' && success) { %>
-    <div class="alert alert-success"><%= success %></div>
-  <% } %>
-
   <% if (typeof conflicts !== 'undefined' && conflicts && conflicts.length > 0) { %>
     <div class="alert alert-warning">
       <strong>Scheduling Conflicts:</strong>
@@ -44,8 +40,15 @@
               <th class="time-col">Session</th>
               <% weekDays.forEach(function(wd) { %>
                 <th class="day-header" data-day="<%= wd.key %>" style="cursor: pointer;" title="Toggle all <%= wd.dayName %>">
+                  <%
+                    // Parse YYYY-MM-DD into a local date (avoids UTC off-by-one) and show
+                    // day + short month + year so the nurse knows exactly which week this is.
+                    var _p = wd.date.split('-');
+                    var _d = new Date(Number(_p[0]), Number(_p[1]) - 1, Number(_p[2]));
+                    var _label = _d.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' });
+                  %>
                   <div class="day-name"><%= wd.dayName %></div>
-                  <div class="day-date">(<%= wd.date.slice(5).replace('-', '/') %>)</div>
+                  <div class="day-date"><%= _label %></div>
                 </th>
               <% }); %>
             </tr>

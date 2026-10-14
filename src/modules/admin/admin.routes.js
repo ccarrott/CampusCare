@@ -11,10 +11,8 @@ const router = Router();
 // Reports
 router.get('/reports', requireRole(ROLES.ADMIN), AdminController.showAdminReport);
 
-// Student CRUD
+// Student CRUD (students self-register — no admin "add" path)
 router.get('/students', requireRole(ROLES.ADMIN), AdminController.listStudents);
-router.get('/students/add', requireRole(ROLES.ADMIN), AdminController.showAddStudentForm);
-router.post('/students/add', requireRole(ROLES.ADMIN), AdminController.handleAddStudent);
 router.get('/students/:id/view', requireRole(ROLES.ADMIN), AdminController.showViewStudent);
 router.post('/students/:id/delete', requireRole(ROLES.ADMIN), AdminController.handleDeleteStudent);
 

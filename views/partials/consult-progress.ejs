@@ -6,17 +6,21 @@
   var pNow = Date.now();
   var openMs = pTime - 15 * 60 * 1000;      // join window opens 15 min before
   var closeMs = pTime + 60 * 60 * 1000;     // in-progress window closes 60 min after
-  var isSameDay = new Date(apt.Time).toDateString() === new Date().toDateString();
+  var soonMs = pTime - 30 * 60 * 1000;      // "Starting soon" lights up 30 min before (aligns
+                                            // with the 30-min reminder notification)
 
-  var stages = ['Booked', 'Confirmed', 'Today', 'In Progress', 'Complete'];
+  // NOTE: this bar is computed at render time (page load/refresh). There is no server
+  // scheduler, so the "Starting soon" stage advances when the student next loads the page
+  // within the 30-minute pre-window.
+  var stages = ['Booked', 'Confirmed', 'Starting soon', 'In Progress', 'Complete'];
   var current = 0; // index of the active/last-reached stage
 
   if (pStatus === 'Completed') {
     current = 4;
   } else if (pStatus === 'Confirmed') {
     if (pNow >= openMs && pNow <= closeMs) current = 3;      // in progress
-    else if (isSameDay && pNow < openMs) current = 2;        // today, not yet time
-    else current = 1;                                        // confirmed, future day
+    else if (pNow >= soonMs && pNow < openMs) current = 2;   // starting soon (<=30 min out)
+    else current = 1;                                        // confirmed, further out
   } else { // Pending
     current = 0; // booked
   }

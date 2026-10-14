@@ -52,7 +52,6 @@ const SYMPTOMS = [
   { id: 'SYM36', name: 'Night sweats', category: 'General', tier: 2, desc: 'Waking up drenched in sweat. Nurse referral (possible TB screening).' },
   { id: 'SYM37', name: 'Swollen glands', category: 'General', tier: 2, desc: 'Lumps in neck, armpits, or groin. Requires nurse assessment.' },
   // Mental
-  { id: 'SYM38', name: 'Anxiety', category: 'Mental', tier: 1, desc: 'Racing thoughts, constant worry, restlessness' },
   { id: 'SYM39', name: 'Panic attacks', category: 'Mental', tier: 2, desc: 'Sudden overwhelming fear with physical symptoms' },
   { id: 'SYM40', name: 'Insomnia', category: 'Mental', tier: 1, desc: 'Cannot fall asleep or stay asleep' },
   { id: 'SYM41', name: 'Low mood', category: 'Mental', tier: 2, desc: 'Persistent sadness or hopelessness lasting 2+ weeks. Nurse referral.' },

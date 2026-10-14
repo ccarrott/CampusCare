@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import * as NurseModel from './nurse.model.js';
 import * as AppointmentsModel from '../appointments/appointments.model.js';
 import * as ReviewsModel from '../reviews/reviews.model.js';
+import * as SymptomsModel from '../symptoms/symptoms.model.js';
 import * as RoomService from '../appointments/room.service.js';
 import { catchAsync } from '../../utils/catchAsync.js';
 import { sanitize } from '../../utils/sanitize.js';
@@ -187,7 +188,9 @@ export const showPatientHistory = catchAsync(async (req, res) => {
   const patient = await NurseModel.getPatientProfile(studentNumber);
   if (!patient) return res.redirect('/management/nurse/dashboard');
 
-  const logs = await NurseModel.getPatientSymptomHistory(studentNumber);
+  // Use the symptoms model's join query so the nurse sees readable symptom NAMES
+  // (SymptomNames) rather than the raw comma-joined IDs stored in SymptomLog.SymptomName.
+  const logs = await SymptomsModel.getSymptomHistory(studentNumber);
 
   res.render('nurse/patient-history', {
     user: req.session.user,

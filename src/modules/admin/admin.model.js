@@ -85,15 +85,6 @@ export async function getStudentById(studentNumber) {
   return results[0];
 }
 
-export async function createStudent({ studentNumber, firstName, lastName, medicalHistory, password }) {
-  const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-  const sql = `
-    INSERT INTO Student (StudentNumber, FirstName, LastName, MedicalHistory, Password)
-    VALUES (?, ?, ?, ?, ?)
-  `;
-  return await query(sql, [studentNumber, firstName, lastName, medicalHistory || '', hashedPassword]);
-}
-
 export async function updateStudent(studentNumber, { firstName, lastName, medicalHistory }) {
   const sql = `
     UPDATE Student SET FirstName = ?, LastName = ?, MedicalHistory = ?
@@ -177,12 +168,14 @@ export async function createNurse({ staffNumber, firstName, lastName, email, pho
   return await query(sql, [staffNumber, firstName, lastName, email || '', phoneNumber || '', campus || null, clinicId || null, hashedPassword]);
 }
 
-export async function updateNurse(staffNumber, { firstName, lastName, email, phoneNumber, campus, clinicId }) {
+// Admin nurse edit is restricted to Campus + Assigned Clinic only (Plan 3 Item 18).
+// Name/email/phone are set at creation and not editable by an admin thereafter.
+export async function updateNurse(staffNumber, { campus, clinicId }) {
   const sql = `
-    UPDATE Nurse SET FirstName = ?, LastName = ?, Email = ?, PhoneNumber = ?, Campus = ?, ClinicID = ?
+    UPDATE Nurse SET Campus = ?, ClinicID = ?
     WHERE StaffNumber = ?
   `;
-  return await query(sql, [firstName, lastName, email || '', phoneNumber || '', campus || null, clinicId || null, staffNumber]);
+  return await query(sql, [campus || null, clinicId || null, staffNumber]);
 }
 
 export async function deleteNurse(staffNumber) {

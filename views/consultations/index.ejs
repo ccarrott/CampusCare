@@ -6,14 +6,14 @@
 
   <header class="page-header">
     <h1>My Consultations</h1>
-    <p class="subtitle">View, manage, and rate your consultations.</p>
+    <p class="subtitle">View, manage, and review your consultations.</p>
   </header>
 
   <% if (appointments.length > 0) { %>
 
     <%- include('../partials/consult-progress-section', { appointments: appointments }) %>
 
-    <section class="content-card reveal">
+    <section class="content-card reveal consult-history-card">
       <h2>Consultation History</h2>
       <table class="data-table">
         <thead>
@@ -62,7 +62,7 @@
                         data-appointment-id="<%= apt.AppointmentID %>"
                         data-nurse-name="<%= apt.NurseFirstName %> <%= apt.NurseLastName %>"
                         data-date="<%= new Date(apt.Time).toLocaleDateString('en-ZA', { dateStyle: 'medium' }) %>"
-                        onclick="openRatingModal(this)">Rate</button>
+                        onclick="openRatingModal(this)">Review nurse</button>
                     <% } else if (status === 'Completed' && isRated) { %>
                       <span class="kebab-item kebab-item-muted"><span class="inline-icon" aria-hidden="true"><%- include('../partials/icon', { name: 'check' }) %></span> Rated</span>
                     <% } %>
@@ -87,7 +87,7 @@
     <div id="ratingModal" class="modal-backdrop" style="display:none;" onclick="closeRatingModal(event)">
       <div class="modal-card" onclick="event.stopPropagation()">
         <button type="button" class="modal-close" onclick="closeRatingModal()">&times;</button>
-        <h2 class="modal-title">Review Your Nurse</h2>
+        <h2 class="modal-title">Review Your Consultation</h2>
         <p class="text-muted modal-subtitle" id="modalSubtitle"></p>
         <form action="/consultations/rate" method="POST" id="ratingModalForm">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
@@ -130,7 +130,20 @@ function toggleApptMenu(btn) {
   var wrap = btn.closest('[data-kebab]');
   var isOpen = wrap.classList.contains('open');
   document.querySelectorAll('[data-kebab].open').forEach(function(k){ k.classList.remove('open'); var b=k.querySelector('.kebab-btn'); if(b) b.setAttribute('aria-expanded','false'); });
-  if (!isOpen) { wrap.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
+  if (!isOpen) {
+    wrap.classList.add('open');
+    btn.setAttribute('aria-expanded','true');
+    // Flip the menu upward if it would overflow the bottom of the viewport
+    // (prevents the last row's options being clipped by the table/card).
+    var menu = wrap.querySelector('.kebab-menu');
+    if (menu) {
+      menu.classList.remove('kebab-menu--up');
+      var rect = menu.getBoundingClientRect();
+      if (rect.bottom > (window.innerHeight || document.documentElement.clientHeight) - 8) {
+        menu.classList.add('kebab-menu--up');
+      }
+    }
+  }
 }
 document.addEventListener('click', function(e){
   if (!e.target.closest('[data-kebab]')) {

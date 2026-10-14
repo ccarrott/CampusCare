@@ -150,8 +150,19 @@ export const saveLocation = catchAsync(async (req, res) => {
 export const updateNurseBio = catchAsync(async (req, res) => {
   const staffNumber = req.session.user.id;
   const bio = sanitize(req.body.bio).substring(0, 300);
-  const yearsExperience = Math.max(0, Math.min(50, parseInt(req.body.yearsExperience) || 0));
+  const lastName = sanitize(req.body.lastName).substring(0, 50);
 
-  await NurseModel.updateNurseProfile(staffNumber, { bio, yearsExperience });
+  // A nurse may only change their last name and bio here (and password elsewhere).
+  // Years of experience is admin-managed and intentionally not accepted.
+  if (!lastName) {
+    return res.redirect('/profile?toast=' + encodeURIComponent('Last name cannot be empty.') + '&toastType=error');
+  }
+
+  await NurseModel.updateNurseProfile(staffNumber, { bio, lastName });
+
+  // Keep the session (identity chip, greeting) in step with the new last name.
+  req.session.user.lastName = lastName;
+  req.session.user.name = `${req.session.user.firstName || ''} ${lastName}`.trim();
+
   res.redirect('/profile?toast=Public+profile+updated');
 });

@@ -2204,7 +2204,8 @@ textarea.form-control {
 /* ---------- Print Stylesheet ---------- */
 @media print {
   .sidebar, .floating-controls, .theme-toggle, .session-toast,
-  .btn, .sidebar-toggle, nav, footer, .profile-actions { display: none !important; }
+  .btn, .sidebar-toggle, nav, footer, .profile-actions,
+  .action-btn, .action-btns, .report-actions, .identity-chip { display: none !important; }
   .main-content { margin-left: 0 !important; margin-top: 0 !important; padding-top: 0 !important; }
   .content-card { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
   #app-aurora { display: none !important; }
@@ -2678,6 +2679,19 @@ textarea.form-control {
   display: block;
   animation: modalSlideIn 0.15s ease;
 }
+
+/* Open upward when the row is near the bottom of the viewport/container,
+   so the last row's menu (View nurse / Review nurse) isn't clipped. */
+.kebab-menu--up {
+  top: auto;
+  bottom: 100%;
+}
+
+/* The base .content-card clips (overflow:hidden) for its rounded glass edge,
+   which would cut off the last row's kebab dropdown. Let the consultation-history
+   card overflow so the action menu can escape; the dropdown's own backdrop/blur
+   still render correctly. */
+.consult-history-card { overflow: visible; }
 
 .kebab-item-muted { color: var(--text-muted); cursor: default; }
 .kebab-item-muted:hover { background: none; }
