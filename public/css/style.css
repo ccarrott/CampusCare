@@ -990,10 +990,12 @@ body.immersive-page .site-footer { display: none; }
           mask-composite: exclude;
 }
 /* While the symptom autocomplete is open, lift the whole "Your Symptoms" card
-   above its sibling cards. Each .content-card is its own stacking context
-   (isolation: isolate), so the dropdown's own z-index can't escape — raising the
-   card is what lets the suggestions paint over the next card. */
-.content-card.tokenbar-open { z-index: 60; }
+   above its sibling cards AND let the dropdown spill past the card's rounded
+   edge. Each .content-card is its own stacking context (isolation: isolate) and
+   clips to its radius (overflow: hidden), so BOTH are needed: z-index to beat the
+   next card, overflow:visible so the suggestions aren't cut at this card's own
+   bottom edge. */
+.content-card.tokenbar-open { z-index: 60; overflow: visible; }
 
 .glass-strong, .content-card.content-card--strong {
   background: var(--glass-bg-strong);
@@ -2705,6 +2707,12 @@ textarea.form-control {
    card overflow so the action menu can escape; the dropdown's own backdrop/blur
    still render correctly. */
 .consult-history-card { overflow: visible; }
+/* While any row's kebab menu is open, lift the whole history card above the
+   sibling cards below it. The card is its own stacking context (isolation:
+   isolate), so without this the escaped dropdown paints BEHIND the next card.
+   :has() scopes the raise to exactly when a menu is open. */
+.consult-history-card:has(.kebab.open),
+.consult-history-card:has(.kebab-menu.open) { z-index: 60; position: relative; }
 
 .kebab-item-muted { color: var(--text-muted); cursor: default; }
 .kebab-item-muted:hover { background: none; }

@@ -411,21 +411,6 @@ The same four are available to a signed-in admin from the browser console:
 
 ---
 
-## Troubleshooting
-
-| Symptom | Cause and fix |
-|---------|---------------|
-| `[FATAL] Missing required environment variables` | Copy `.env.example` to `.env`; set `SESSION_SEED` (and `DB_*` in MySQL mode). |
-| `[FATAL] Database connection failed` | Wrong `DB_*` values or an IP allow-list is blocking you. In MySQL mode, check the driver error beneath. Or switch to `USE_LOCAL_DB=true`. |
-| `node:sqlite` not found / errors | You are on Node < 22.5. The local-DB mode needs Node **22.x**. |
-| Times are two hours out on the deployed app | `APP_TIMEZONE` / `DB_TIMEZONE` were overridden. Unset them to take the SAST defaults. |
-| Map is blank | Check `MAPTILER_KEY` is set and valid, and that `api.maptiler.com` is reachable (not blocked by the network). |
-| Confirmation/reminder email not received | SMTP vars unset (emails no-op by design), or the mail client is hiding the inline logo — click "show images". Booking always succeeds regardless. |
-| Video call never gets camera or mic | `DAILY_DOMAIN` does not match the subdomain your rooms are created on, so `Permissions-Policy` delegates to the wrong origin. |
-| Signed out on every page load in production | The session cookie is `secure`, so it is dropped over plain HTTP. Deploy behind HTTPS (Render does this). |
-
----
-
 ## Team
 
 | Member | Module |
