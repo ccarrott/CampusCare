@@ -17,7 +17,12 @@
   }
 
   const cfg = window.__mapConfig || {};
-  const key = (cfg.maptilerKey || '').trim();
+  // Treat an empty OR the .env.example placeholder as "no key" so we go straight
+  // to the free OSM/CARTO basemap instead of calling MapTiler with a junk key
+  // (which returns greyed "no API key" watermark tiles).
+  const rawKey = (cfg.maptilerKey || '').trim();
+  let key = rawKey === 'your_maptiler_key' ? '' : rawKey;
+  let maptilerFailed = false;
   const center = cfg.center || [25.60, -33.95];
   const zoom = cfg.zoom || 11.4;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -30,12 +35,12 @@
 
   // ---- Basemap: inline raster style (bulletproof; pans/zooms natively) ----
   function rasterTiles() {
-    if (key) {
+    if (key && !maptilerFailed) {
       // MapTiler raster 256 tiles — light + dark variants.
       const style = isDark() ? 'streets-v2-dark' : 'streets-v2';
       return [`https://api.maptiler.com/maps/${style}/256/{z}/{x}/{y}.png?key=${key}`];
     }
-    // Free OSM raster fallback (no key required).
+    // Free OSM raster fallback (no key, placeholder key, or MapTiler failed).
     return isDark()
       ? ['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
          'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png']
@@ -232,7 +237,16 @@
 
     map.on('load', function () { map.resize(); addDataLayers(); });
     map.on('error', function (e) {
-      console.error('[HealthMap] MapLibre error:', e && e.error ? e.error.message : e);
+      const msg = e && e.error ? e.error.message : '';
+      console.error('[HealthMap] MapLibre error:', msg || e);
+      // If MapTiler tiles fail (bad/placeholder/stale key, quota, offline), swap
+      // the basemap to the free OSM/CARTO tiles once — a working map beats a
+      // greyed "no API key" overlay. The data layers (heat/zones) stay intact.
+      if (!maptilerFailed && key && /api\.maptiler\.com/.test(msg)) {
+        maptilerFailed = true;
+        const src = map.getSource('basemap');
+        if (src && src.setTiles) { console.warn('[HealthMap] MapTiler tiles failed — falling back to OSM.'); src.setTiles(rasterTiles()); }
+      }
     });
 
     // Period selector.

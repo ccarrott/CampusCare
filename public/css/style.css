@@ -1203,10 +1203,16 @@ textarea.form-control {
   display: inline-block;
   position: relative;
   overflow: hidden;
+  /* border-box so a border (e.g. .btn-secondary's 1px) is absorbed into the
+     declared size rather than added on top — keeps bordered and borderless
+     buttons the exact same height/width when sitting side by side. */
+  box-sizing: border-box;
   padding: 10px 20px;
   font-size: 0.95rem;
   font-weight: 600;
-  border: none;
+  /* Transparent 1px border on the base so every variant shares the same box
+     metrics; .btn-secondary just recolours it. Primary looks unchanged. */
+  border: 1px solid transparent;
   border-radius: var(--radius-md);
   cursor: pointer;
   text-align: center;
@@ -3352,6 +3358,24 @@ textarea.form-control {
   outline: none;
 }
 .trends-map-canvas .maplibregl-canvas { display: block; }
+
+/* "Use my location" control on the pin-picker (floating glass, top-right) */
+.map-locate-btn {
+  position: absolute; z-index: 6; top: var(--space-3); right: var(--space-3);
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: 999px; cursor: pointer;
+  font-size: 0.8rem; font-weight: 600; color: var(--text-dark);
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), var(--glass-rim);
+  transition: transform var(--motion-fast) var(--ease-soft), box-shadow var(--motion-fast) var(--ease-soft);
+}
+.map-locate-btn:hover { transform: translateY(-1px); }
+.map-locate-btn:active { transform: scale(0.98); }
+.map-locate-btn:focus-visible { outline: 2px solid var(--brand-yellow); outline-offset: 2px; }
+.map-locate-btn:disabled { opacity: 0.6; cursor: default; transform: none; }
 
 .map-fallback {
   position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center;

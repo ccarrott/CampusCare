@@ -36,12 +36,13 @@ export const showProfile = catchAsync(async (req, res) => {
 export const showEditProfile = catchAsync(async (req, res) => {
   const profile = await ProfileModel.findStudentById(req.session.user.id);
   const zones = await ProfileModel.getAllZones();
+  const maptilerKey = process.env.MAPTILER_KEY || '';
 
   if (!profile) {
-    return res.status(404).render('profile/edit', { user: req.session.user, profile: {}, zones: [], error: 'Profile not found.' });
+    return res.status(404).render('profile/edit', { user: req.session.user, profile: {}, zones: [], maptilerKey, error: 'Profile not found.' });
   }
 
-  res.render('profile/edit', { user: req.session.user, profile, zones, error: null });
+  res.render('profile/edit', { user: req.session.user, profile, zones, maptilerKey, error: null });
 });
 
 export const updateProfile = catchAsync(async (req, res) => {
@@ -106,6 +107,7 @@ export const showLocationPicker = catchAsync(async (req, res) => {
   res.render('profile/location', {
     user: req.session.user,
     zones,
+    maptilerKey: process.env.MAPTILER_KEY || '',
     currentLat: student?.Latitude || null,
     currentLon: student?.Longitude || null,
     success: null
@@ -119,7 +121,8 @@ export const saveLocation = catchAsync(async (req, res) => {
   if (!latitude || !longitude) {
     const zones = await query('SELECT ZoneID, Name, Latitude, Longitude, Boundary FROM CampusZone');
     return res.render('profile/location', {
-      user: req.session.user, zones, currentLat: null, currentLon: null,
+      user: req.session.user, zones, maptilerKey: process.env.MAPTILER_KEY || '',
+      currentLat: null, currentLon: null,
       success: null, error: 'Please drop a pin on the map.'
     });
   }
@@ -141,6 +144,30 @@ export const saveLocation = catchAsync(async (req, res) => {
   }
 
   res.redirect('/?toast=Location+saved');
+});
+
+// ============================================================================
+// ZONE LOOKUP (client pin → suburb name)
+// ============================================================================
+
+/**
+ * Resolves a dropped-pin coordinate to its CampusZone, so the pin picker can
+ * show the real suburb instead of a generic "Location set". Reuses the single
+ * source of truth (getZoneForPoint) — no zoning math is duplicated in the browser.
+ * GET + read-only, so no CSRF; behind requireAuth. Returns {zoneId, name} or nulls.
+ */
+export const zoneAt = catchAsync(async (req, res) => {
+  const lat = parseFloat(req.query.lat);
+  const lon = parseFloat(req.query.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    return res.status(400).json({ zoneId: null, name: null, error: 'Invalid coordinates.' });
+  }
+
+  const zones = await query('SELECT ZoneID, Name, Latitude, Longitude, Boundary FROM CampusZone');
+  const zoneId = getZoneForPoint(lat, lon, zones);
+  const zone = zoneId ? zones.find(z => z.ZoneID === zoneId) : null;
+
+  res.json({ zoneId: zoneId || null, name: zone ? zone.Name : null });
 });
 
 // ============================================================================
