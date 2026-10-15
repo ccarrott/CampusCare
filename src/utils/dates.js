@@ -13,7 +13,10 @@ export function getUpcomingWeekDays(count = 5) {
   while (days.length < count) {
     current.setDate(current.getDate() + 1);
     if (current.getDay() !== 0 && current.getDay() !== 6) {
-      const dateStr = current.toISOString().slice(0, 10);
+      // Local Y-M-D (NOT toISOString, which is UTC and can roll to the previous
+      // calendar day in SAST — making the posted date land on a weekend and the
+      // server-side weekend check reject a valid weekday booking).
+      const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
       const formatted = current.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' });
       days.push({
         dayName: DAY_NAMES[current.getDay()],
