@@ -39,7 +39,6 @@
 [Engineering decisions worth noting](#engineering-decisions-worth-noting) ·
 [Security](#security) · [Project structure](#project-structure) ·
 [Environment variables](#environment-variables) · [Database & demo data](#database--demo-data) ·
-[Deployment](#deployment) · [Privacy & demo data](#privacy--demo-data) ·
 [Troubleshooting](#troubleshooting) · [Team](#team)
 
 ---
@@ -233,7 +232,7 @@ Database       MySQL 8.0 (mysql2/promise — pooling, transactions, TLS)
 Sessions       express-session + express-mysql-session (survive restarts)
 Auth           plaintext passwords (academic/demo build); httpOnly + sameSite cookies
 Security       session CSRF, ownership middleware, rate limiting, parameterised SQL, security headers
-Maps           MapLibre GL (heat map) + MapTiler / CARTO-OSM tiles  (Leaflet retired, Phase 30G)
+Maps           MapLibre GL (heat map) + MapTiler tiles  (Leaflet retired, Phase 30G)
 Video          Daily.co — ephemeral rooms, per-user scoped tokens, webhook attendance audit
 Email          Nodemailer over SMTP — booking confirmation + 1-hour reminder
 Charts         Chart.js 4.4
@@ -379,7 +378,7 @@ Full annotated list in [`.env.example`](.env.example). The essentials:
 | `APP_TIMEZONE` `DB_TIMEZONE` | — | Default to `Africa/Johannesburg` / `+02:00` |
 | `SMTP_HOST` `SMTP_PORT` `SMTP_USER` `SMTP_PASS` `EMAIL_FROM` | Email only | Booking confirmation + reminder emails. Optional — booking still works without them |
 | `DAILY_API_KEY` `DAILY_DOMAIN` `DAILY_WEBHOOK_SECRET` | Video only | Daily.co video consultations; `DAILY_DOMAIN` also drives the camera/mic `Permissions-Policy` |
-| `MAPTILER_KEY` | — | Nicer map tiles. Without it the map falls back to free CARTO/OSM tiles |
+| `MAPTILER_KEY` | Map | Map basemap tiles (MapTiler) |
 | `DEMO_*_PASSWORD` | — | Override the seeded demo passwords |
 | `ALLOW_INSECURE_PASSWORD_RESET` | — | Leave unset. See [Security](#security) |
 
@@ -412,31 +411,6 @@ The same four are available to a signed-in admin from the browser console:
 
 ---
 
-## Deployment
-
-Campus Care runs on a free Render web service — **[DEPLOY.md](./DEPLOY.md)** has the full walkthrough.
-Highlights: `render.yaml` describes the service and secrets go in the dashboard (never the repo); the
-database CA is passed as `DB_CA_CERT` so no file is needed on the host; the health check is `/healthz`
-(no DB/session work); `SIGTERM` drains the pool cleanly; the timezone is pinned by the app, not the
-host; and sessions live in MySQL so a free-tier cold start does not sign everyone out.
-
----
-
-## Privacy & demo data
-
-**Everything in the seed data is fictional.** Students, names, medical histories and pinned locations
-are all invented. Student numbers use the `s999…` block on purpose: real NMU numbers begin with the
-enrolment year (`s22…`, `s23…`), so nothing here can collide with a real person's number. If you
-extend the demo data, keep it that way — a real name beside a real number and a medical condition is
-health data about an identifiable person, and this repository is public.
-
-Two things worth knowing: the **nurse portraits** depict fictional nurses (the staff pages fall back
-to clean initials avatars if the files are removed), and the **clinic contact details** are NMU
-Student Health's genuine published numbers — appropriate for a campus app, but a demo user could
-actually call the clinic.
-
----
-
 ## Troubleshooting
 
 | Symptom | Cause and fix |
@@ -445,7 +419,7 @@ actually call the clinic.
 | `[FATAL] Database connection failed` | Wrong `DB_*` values or an IP allow-list is blocking you. In MySQL mode, check the driver error beneath. Or switch to `USE_LOCAL_DB=true`. |
 | `node:sqlite` not found / errors | You are on Node < 22.5. The local-DB mode needs Node **22.x**. |
 | Times are two hours out on the deployed app | `APP_TIMEZONE` / `DB_TIMEZONE` were overridden. Unset them to take the SAST defaults. |
-| Map is blank | Without `MAPTILER_KEY` the map falls back to CARTO/OSM tiles (expected); a blank canvas usually means the tile host is blocked. |
+| Map is blank | Check `MAPTILER_KEY` is set and valid, and that `api.maptiler.com` is reachable (not blocked by the network). |
 | Confirmation/reminder email not received | SMTP vars unset (emails no-op by design), or the mail client is hiding the inline logo — click "show images". Booking always succeeds regardless. |
 | Video call never gets camera or mic | `DAILY_DOMAIN` does not match the subdomain your rooms are created on, so `Permissions-Policy` delegates to the wrong origin. |
 | Signed out on every page load in production | The session cookie is `secure`, so it is dropped over plain HTTP. Deploy behind HTTPS (Render does this). |
