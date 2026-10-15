@@ -9,7 +9,7 @@
 | Views | EJS with layout partials (header, navbar, footer, alerts) + reusable component partials |
 | Database | MySQL 8.0 via `mysql2/promise` with connection pooling |
 | Sessions | `express-session` (persistent store) |
-| Security | Session-based double-submit CSRF, `cookie-parser`, bcrypt (10 rounds) |
+| Security | Session-based double-submit CSRF, `cookie-parser`; passwords stored as plaintext (no hashing — deliberate academic/demo simplification, not production guidance) |
 | Maps | **MapLibre GL JS + MapTiler theme-matched vector tiles.** *Leaflet retired in the UI haul (Phase 30G).* |
 | Charts | Chart.js 4.4 |
 | Video | Daily.co (`@daily-co/daily-js`, vendored in `public/vendor/daily/`) |
@@ -60,7 +60,7 @@ src/
 3. **Ownership checks on all resource access.** Students see only their own records; nurses only their assigned patients.
 4. **`<%= %>` for all user content.** Never `<%- %>` except `include()` and server-generated JSON.
 5. **Sanitise all text inputs** before storage: strip `<>`, trim.
-6. **bcrypt for all passwords.** 10 salt rounds minimum.
+6. **Passwords are stored and compared as plaintext.** bcrypt has been removed from the project — a deliberate simplification for this academic/demo build. This is **not** production guidance; a real deployment would hash passwords.
 
 ### Cookie & Session
 ```js

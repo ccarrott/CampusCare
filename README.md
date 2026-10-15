@@ -135,7 +135,7 @@ Framework      Express.js 5.x
 Views          EJS with layout + component partials
 Database       MySQL 8.0 (mysql2/promise — pooling, transactions, TLS)
 Sessions       express-session + express-mysql-session (survive restarts)
-Auth           bcrypt (10 rounds); httpOnly + sameSite cookies, secure in production
+Auth           plaintext passwords (no hashing — academic/demo build); httpOnly + sameSite cookies, secure in production
 Security       CSP, session CSRF, ownership middleware, rate limiting, parameterised SQL
 Maps           MapLibre GL (heat map) + Leaflet (pin-drop) + MapTiler / CARTO-OSM tiles
 Video          Daily.co — ephemeral rooms, per-user scoped tokens
@@ -258,7 +258,8 @@ walkthrough. Highlights:
 
 ## Security
 
-- **bcrypt** password hashing (10 rounds). Sessions use `httpOnly` + `sameSite` cookies,
+- **Plaintext passwords** (no hashing) — a deliberate simplification for this academic/demo
+  build; a production deployment would hash them. Sessions use `httpOnly` + `sameSite` cookies,
   `secure` in production, with a rolling one-hour expiry.
 - **Session ID regenerated on login and registration** — closes session fixation.
 - **Rate limiting** on login, registration and both password-reset endpoints.
