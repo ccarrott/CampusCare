@@ -38,7 +38,8 @@
 [Tech stack](#tech-stack) · [Architecture](#architecture) ·
 [Engineering decisions worth noting](#engineering-decisions-worth-noting) ·
 [Security](#security) · [Project structure](#project-structure) ·
-[Environment variables](#environment-variables) · [Database & demo data](#database--demo-data) · [Team](#team)
+[Environment variables](#environment-variables) · [Database & demo data](#database--demo-data) ·
+[Troubleshooting](#troubleshooting) · [Team](#team)
 
 ---
 
@@ -70,25 +71,36 @@ A five-minute path through the headline features:
 ## Quick start
 
 You need **Node 22.x** (the local-database mode uses the built-in `node:sqlite`, which requires
-Node ≥ 22.5). You can run against **either** a MySQL 8 database **or** a zero-setup local SQLite
-file.
+Node ≥ 22.5).
 
-**Option A — local SQLite (no database to provision):**
+**The `.env` file is supplied with this submission.** It is pre-configured to connect to our hosted
+Aiven MySQL database, which is already seeded with the full demo dataset — so there is nothing to
+fill in and no database to provision.
 
 ```bash
-git clone https://github.com/ccarrott/CampusCare.git
 cd CampusCare
 npm install
-cp .env.example .env          # set SESSION_SEED; leave USE_LOCAL_DB=true
-npm run setup:local           # creates + seeds local.db (schema, symptoms, zones, showcase)
-npm run start:local           # → http://localhost:3000
+# place the supplied .env in the project root (next to package.json)
+npm start                     # → http://localhost:3000
 ```
 
-**Option B — managed MySQL (Aiven/PlanetScale/Railway or local MySQL):**
+Then sign in with any of the [demo accounts](#demo-accounts) below.
+
+> **Markers:** that is the whole setup — `npm install`, drop in the `.env`, `npm start`. The hosted
+> database is already populated, so you do **not** need to run any seed or setup command.
+
+<details>
+<summary>Running against your own database instead (optional)</summary>
+
+If you would rather not use the hosted DB, the app also runs on a **zero-setup local SQLite file**
+or your **own MySQL**. Edit `.env` accordingly:
 
 ```bash
-npm install
-cp .env.example .env          # fill in DB_* values; set USE_LOCAL_DB=false
+# Local SQLite — set USE_LOCAL_DB=true in .env, then:
+npm run setup:local           # creates + seeds local.db (schema, symptoms, zones, showcase)
+npm run start:local           # → http://localhost:3000
+
+# Your own MySQL — set USE_LOCAL_DB=false and your DB_* values in .env, then:
 npm run setup                 # schema + symptom seed + zone seed (idempotent)
 npm run state:showcase        # rich demo data (students, bookings, reviews, trends)
 npm start                     # → http://localhost:3000
@@ -97,9 +109,11 @@ npm start                     # → http://localhost:3000
 `npm run setup` is safe to re-run against an empty database — already-applied steps are skipped
 rather than failing.
 
+</details>
+
 ## Demo accounts
 
-Created by `npm run state:naked` (accounts only) and `npm run state:showcase` (full dataset).
+The hosted database is already seeded with these accounts.
 
 | Role        | Username      | Password       |
 |-------------|---------------|----------------|
@@ -107,14 +121,12 @@ Created by `npm run state:naked` (accounts only) and `npm run state:showcase` (f
 | **Nurse**   | `NUR001`      | `123nurse!`    |
 | **Student** | `s999000001`  | `123student!`  |
 
-`NUR002` / `NUR003` share the nurse password; showcase students run `s999000001` through
-`s999000019`, all on the student password. You can sign in with the bare username or the full
+`NUR002` / `NUR003` share the nurse password; students run `s999000001` through `s999000019`, all on
+the student password. You can sign in with the bare username or the full
 `s999000001@mandela.ac.za` form — anything after the `@` is ignored.
 
 > **Passwords are stored as plaintext in this build** — a deliberate simplification for marking/demo
-> (see [Security](#security)). They live in a public repo, so treat them as public; override with
-> `DEMO_ADMIN_PASSWORD` / `DEMO_NURSE_PASSWORD` / `DEMO_STUDENT_PASSWORD` and re-run
-> `npm run state:naked` before pointing anyone at a real deployment.
+> (see [Security](#security)).
 
 ---
 
@@ -364,7 +376,8 @@ CampusCare/
 
 ## Environment variables
 
-Full annotated list in [`.env.example`](.env.example). The essentials:
+**These are already set in the supplied `.env`** — this table is just a reference for what each key
+does. Full annotated template in [`.env.example`](.env.example).
 
 | Variable | Required | Purpose |
 |----------|:--------:|---------|
@@ -407,6 +420,19 @@ One command puts the database into a known shape — ideal for demos and resets.
 
 The same four are available to a signed-in admin from the browser console:
 `CampusCare.showcase()`, `.outbreak()`, `.clear()`, `.naked()`.
+
+---
+
+## Troubleshooting
+
+| Symptom | Cause and fix |
+|---------|---------------|
+| App won't start / `Missing required environment variables` | The supplied `.env` isn't in the project root (it must sit next to `package.json`). |
+| `Database connection failed` | The network is blocking the outbound connection to the hosted Aiven MySQL. Try another network, or switch to local SQLite (`USE_LOCAL_DB=true` in `.env`, then `npm run setup:local` + `npm run start:local`). |
+| `node:sqlite` not found / errors | You are on Node < 22.5. This project needs Node **22.x**. |
+| Map is blank | Confirm `api.maptiler.com` is reachable (not blocked by the network). |
+| Confirmation/reminder email not received | The mail client is likely hiding the inline logo — click "show images". Booking always succeeds regardless of email delivery. |
+| Video call never gets camera or mic | A browser permission prompt was dismissed — allow camera/mic for the site and rejoin. |
 
 ---
 
