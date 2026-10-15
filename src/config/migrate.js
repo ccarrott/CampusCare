@@ -1,4 +1,4 @@
-import { query } from './database.js';
+import { query, getConnection } from './database.js';
 
 /**
  * CampusCare - Database Schema Migration Script (Formal Relational Constraints)
@@ -416,6 +416,56 @@ async function runStep(step) {
   }
 }
 
+// Runs a step on a SPECIFIC connection (used by the drop phase so FK checks can
+// be disabled on exactly one borrowed connection — see runDropPhase).
+async function runStepOnConn(conn, step) {
+  try {
+    await conn.execute(step.sql);
+    console.log(`  [OK] ${step.name}`);
+    return 'ok';
+  } catch (error) {
+    if (isAlreadyApplied(error)) {
+      console.log(`  [SKIP] ${step.name} (already applied)`);
+      return 'skip';
+    }
+    console.error(`  [FAIL] ${step.name}: ${error.message}`);
+    return 'fail';
+  }
+}
+
+/**
+ * The drop phase must not depend on perfect reverse-dependency ordering: on MySQL,
+ * `DROP TABLE` is REFUSED while a FK still references the table, and a prior
+ * partially-created rebuild can leave the ordering unsound. The robust, correct
+ * approach is to disable FK enforcement FOR THE DROP ONLY.
+ *
+ * The earlier connection-pool concern (a `SET FOREIGN_KEY_CHECKS` on one pooled
+ * connection not affecting others, and leaking "off" back into the pool) is solved
+ * by borrowing ONE dedicated connection, toggling + dropping + re-enabling all on
+ * THAT SAME connection, then releasing it. The toggle never escapes to another
+ * connection, and `query()` (which borrows arbitrary pooled connections) is never
+ * used while checks are off. On SQLite the adapter translates
+ * `SET FOREIGN_KEY_CHECKS` -> `PRAGMA foreign_keys`, and getConnection() returns a
+ * single-handle connection, so the same code path is correct on both engines.
+ */
+async function runDropPhase() {
+  const conn = await getConnection();
+  let success = 0, skipped = 0, failed = 0;
+  try {
+    await conn.execute('SET FOREIGN_KEY_CHECKS = 0');
+    for (const step of dropPhase) {
+      const r = await runStepOnConn(conn, step);
+      if (r === 'ok') success++; else if (r === 'skip') skipped++; else failed++;
+    }
+  } finally {
+    // Re-enable on the SAME connection before it returns to the pool, so no
+    // connection is ever released with enforcement left off.
+    try { await conn.execute('SET FOREIGN_KEY_CHECKS = 1'); } catch { /* best effort */ }
+    if (typeof conn.release === 'function') conn.release();
+  }
+  return { success, skipped, failed };
+}
+
 // `exitOnDone` lets the CLI (`npm run migrate`) exit the process as before, while
 // the programmatic auto-bootstrap path in app.js can run migrations and keep going.
 export async function runMigrations({ exitOnDone = true } = {}) {
@@ -433,8 +483,8 @@ export async function runMigrations({ exitOnDone = true } = {}) {
     else failed++;
   };
 
-  console.log('  -- drop phase (reverse dependency order, FK checks off) --');
-  for (const step of dropPhase) tally(await runStep(step));
+  console.log('  -- drop phase (single connection, FK checks disabled for drops only) --');
+  { const d = await runDropPhase(); success += d.success; skipped += d.skipped; failed += d.failed; }
 
   console.log('\n  -- create phase (dependency order, FK clauses inline) --');
   for (const step of createPhase) tally(await runStep(step));
