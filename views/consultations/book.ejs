@@ -276,15 +276,24 @@
 
     try {
       const resp = await fetch('/consultations/api/nurse-grid/' + staffNumber);
-      const data = await resp.json();
-
-      if (data.error) {
-        alert(data.error);
+      if (!resp.ok) {
+        // Surface WHY it failed (status + any server message) instead of a blind
+        // generic alert — e.g. 401/403 = session expired, 500 = DB/server error.
+        let detail = '';
+        try { detail = (await resp.json()).error || ''; } catch (_) { /* non-JSON error page */ }
+        console.error('[Booking] nurse-grid API failed:', resp.status, resp.statusText, detail);
+        alert('Could not load availability (error ' + resp.status + ').' +
+              (detail ? ' ' + detail : '') +
+              (resp.status === 401 || resp.status === 403 ? ' Please sign in again.' : ''));
+        gridBody.innerHTML = '';
         return;
       }
+      const data = await resp.json();
+      if (data.error) { alert(data.error); return; }
       renderGrid(data);
     } catch (err) {
-      alert('Failed to load nurse availability.');
+      console.error('[Booking] nurse-grid fetch error:', err);
+      alert('Failed to load nurse availability (network error). Check your connection and try again.');
     }
   }
 
