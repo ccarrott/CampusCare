@@ -190,6 +190,7 @@ const createPhase = [
       RoomName varchar(80) NULL,
       RoomUrl varchar(255) NULL,
       RoomExp datetime NULL,
+      ReminderSentAt datetime NULL,
       StudentNumber varchar(20) NOT NULL,
       StaffNumber varchar(20) NOT NULL,
       CONSTRAINT fk_consult_student FOREIGN KEY (StudentNumber) REFERENCES Student(StudentNumber)

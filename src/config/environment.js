@@ -7,6 +7,8 @@ import { USE_LOCAL_DB, LOCAL_DB_PATH } from './database.js';
 // zero network dependency on Aiven. SESSION_SEED is always required (session signing).
 // APP_PORT is optional in production (hosts inject PORT). DAILY_API_KEY is only
 // needed for video consultations — warn but don't hard-fail if missing.
+// SMTP_* / EMAIL_FROM are OPTIONAL too: without them booking still works and the
+// confirmation/reminder emails simply no-op (see utils/mailer.js). Not required here.
 const MYSQL_VARS = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME', 'DB_PORT'];
 
 export function validateEnv() {

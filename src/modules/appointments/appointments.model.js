@@ -271,3 +271,38 @@ export async function markSessionEnded(sessionId, endedAt, durationSeconds) {
   const sql = 'UPDATE OnlineConsultationSession SET EndedAt = ?, Duration = ? WHERE SessionID = ?';
   return await query(sql, [endedAt, durationSeconds, sessionId]);
 }
+
+// ============================================================================
+// MEETING REMINDERS (1 hour before — fed by the reminder scheduler)
+// ============================================================================
+
+/**
+ * Appointments due for a 1-hour reminder: scheduled within the next 60 minutes,
+ * not cancelled/completed, and not already reminded. Joins the names/addresses the
+ * email needs. The DB session runs on the app's fixed SAST offset, so NOW() agrees
+ * with the app clock.
+ */
+export async function getDueReminders() {
+  const sql = `
+    SELECT
+      a.AppointmentID, a.Time, a.StudentNumber,
+      s.FirstName AS StudentFirstName, s.LastName AS StudentLastName,
+      n.FirstName AS NurseFirstName, n.LastName AS NurseLastName
+    FROM Consultation a
+    INNER JOIN Student s ON a.StudentNumber = s.StudentNumber
+    INNER JOIN Nurse n ON a.StaffNumber = n.StaffNumber
+    WHERE a.ReminderSentAt IS NULL
+      AND a.Status NOT IN ('Cancelled', 'Completed')
+      AND a.Time BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 60 MINUTE)
+  `;
+  return await query(sql);
+}
+
+/**
+ * Stamp an appointment as reminded so it is never resent (survives restarts and
+ * repeated scheduler ticks). Only called after a successful send.
+ */
+export async function markReminderSent(appointmentId) {
+  const sql = 'UPDATE Consultation SET ReminderSentAt = NOW() WHERE AppointmentID = ?';
+  return await query(sql, [appointmentId]);
+}

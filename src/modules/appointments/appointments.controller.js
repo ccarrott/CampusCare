@@ -9,6 +9,8 @@ import * as RoomService from './room.service.js';
 import { catchAsync } from '../../utils/catchAsync.js';
 import { AppError } from '../../utils/AppError.js';
 import { getUpcomingWeekDays } from '../../utils/dates.js';
+import { sendConsultationEmail, studentEmailFor } from '../../utils/mailer.js';
+import { APP_TIMEZONE } from '../../config/timezone.js';
 import { APPOINTMENT_TYPE, APPOINTMENT_STATUS, ROLES } from '../../constants.js';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -131,6 +133,26 @@ export const handleBooking = catchAsync(async (req, res) => {
     return res.status(409).render('consultations/book', {
       user: req.session.user, nurses, error: 'This time slot has already been booked. Please select a different slot.'
     });
+  }
+
+  // Best-effort booking-confirmation email. A mail failure must never break or delay
+  // the booking (it is already committed), so this is fire-and-forget with its own guard.
+  try {
+    const booked = await AppointmentsModel.getAppointmentWithNurse(appointmentId, studentNumber);
+    if (booked) {
+      const when = new Date(booked.Time);
+      await sendConsultationEmail({
+        type: 'confirmation',
+        to: studentEmailFor(studentNumber),
+        studentName: req.session.user.name,
+        nurseName: `Nurse ${booked.NurseFirstName} ${booked.NurseLastName}`.trim(),
+        appointmentDate: when.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric', timeZone: APP_TIMEZONE }),
+        appointmentTime: when.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', timeZone: APP_TIMEZONE }),
+        actionUrl: `${process.env.APP_BASE_URL || ''}/consultations/my-appointments`
+      });
+    }
+  } catch (mailErr) {
+    console.error('[Mail] booking confirmation failed:', mailErr.message);
   }
 
   res.redirect('/consultations/confirmed/' + appointmentId);

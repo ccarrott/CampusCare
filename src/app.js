@@ -40,6 +40,7 @@ import { handleDailyWebhook } from './modules/appointments/webhook.controller.js
 import * as AppointmentsModel from './modules/appointments/appointments.model.js';
 import { exportAppointmentsCSV, exportTrendsCSV } from './modules/export/export.controller.js';
 import statesApi from './config/states/states-api.js';
+import { startReminderScheduler } from './modules/notifications/reminder.scheduler.js';
 
 // ============================================================================
 // BOOTSTRAP
@@ -291,6 +292,11 @@ async function startServer() {
     const server = app.listen(PORT, () => {
       console.log(`[Server] CampusCare running on port ${PORT}`);
     });
+
+    // Background poller: send meeting-reminder emails ~1h before each consultation.
+    // No-ops when SMTP isn't configured. Runs only in the serving process (below the
+    // --bootstrap-only early-exit above), never in the CLI seed scripts.
+    startReminderScheduler();
 
     // Hosts (Render/Railway) send SIGTERM on deploy/scale-down. Stop accepting new
     // connections, then close the MySQL pool so in-flight queries finish cleanly.

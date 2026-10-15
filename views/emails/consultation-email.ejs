@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+</head>
+<body style="margin: 0; padding: 40px 15px; background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+  <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 440px; background-color: #ffffff; border-radius: 26px; overflow: hidden; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); border-collapse: separate;">
+
+    <!-- Dark Navy Header -->
+    <tr>
+      <td align="center" style="background-color: #03152d; padding: 28px 20px;">
+        <img src="<%= logoUrl %>" alt="CampusCare Logo" width="95" height="95" style="display: block; border-radius: 50%; object-fit: contain;" />
+      </td>
+    </tr>
+
+    <!-- Card Body -->
+    <tr>
+      <td style="padding: 35px 40px 45px 40px;">
+
+        <h1 style="margin: 0 0 28px 0; font-size: 32px; font-weight: 800; color: #0b253c; text-align: center; letter-spacing: -0.5px;">
+          <%= heading %>
+        </h1>
+
+        <p style="margin: 0 0 14px 0; font-size: 21px; font-weight: 500; color: #264358;">
+          Hello <%= studentName %>
+        </p>
+
+        <p style="margin: 0 0 24px 0; font-size: 16.5px; line-height: 1.45; color: #355267;">
+          <%= introLine %><br>
+          <%= nurseName %>
+        </p>
+
+        <!-- Date & Time -->
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 35px;">
+          <tr>
+            <td width="28" valign="middle" style="padding-bottom: 6px; font-size: 16px;">
+              &#128197;
+            </td>
+            <td valign="middle" style="padding-bottom: 6px; font-size: 16.5px; color: #355267;">
+              Date: <%= appointmentDate %>
+            </td>
+          </tr>
+          <tr>
+            <td width="28" valign="middle" style="font-size: 16px;">
+              &#128348;
+            </td>
+            <td valign="middle" style="font-size: 16.5px; color: #355267;">
+              Time: <%= appointmentTime %>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Button -->
+        <table border="0" cellpadding="0" cellspacing="0" width="100%">
+          <tr>
+            <td align="center">
+              <a href="<%= actionUrl %>" target="_blank" style="display: inline-block; width: 260px; padding: 13px 24px; background-color: #ffffff; color: #0b253c; font-size: 20px; font-weight: 700; text-align: center; text-decoration: none; border: 2px solid #0b253c; border-radius: 50px; box-sizing: border-box;">
+                Take me there
+              </a>
+            </td>
+          </tr>
+        </table>
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
