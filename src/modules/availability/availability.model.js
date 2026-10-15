@@ -81,7 +81,7 @@ export async function saveFullAvailability(staffNumber, slots) {
 export async function getBookedAppointmentsForDate(staffNumber, date) {
   const sql = `
     SELECT TIME_FORMAT(a.Time, '%H:%i') AS BookedTime, a.AppointmentID, s.FirstName, s.LastName
-    FROM Appointment a
+    FROM Consultation a
     INNER JOIN Student s ON a.StudentNumber = s.StudentNumber
     WHERE a.StaffNumber = ? AND DATE(a.Time) = ? AND a.Status != 'Cancelled'
   `;

@@ -1,6 +1,6 @@
 // src/modules/appointments/webhook.controller.js
 // Phase 28: Daily.co webhook auditor.
-// Receives room events and records attendance + duration in ConsultationSession.
+// Receives room events and records attendance + duration in OnlineConsultationSession.
 //
 // SECURITY: this endpoint is public (Daily calls it), so it is NOT session/CSRF
 // protected. Instead it is gated by a shared secret. We accept either:

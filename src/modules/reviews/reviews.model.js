@@ -71,7 +71,7 @@ export async function getAllRatings() {
            a.StaffNumber, n.FirstName AS NurseFirstName, n.LastName AS NurseLastName,
            s.FirstName AS StudentFirstName, s.LastName AS StudentLastName
     FROM Rating r
-    INNER JOIN Appointment a ON r.AppointmentID = a.AppointmentID
+    INNER JOIN Consultation a ON r.AppointmentID = a.AppointmentID
     INNER JOIN Nurse n ON a.StaffNumber = n.StaffNumber
     INNER JOIN Student s ON a.StudentNumber = s.StudentNumber
     ORDER BY r.CreatedAt DESC
@@ -86,7 +86,7 @@ export async function getAverageRatingForNurse(staffNumber) {
   const sql = `
     SELECT AVG(r.Score) AS average, COUNT(*) AS count
     FROM Rating r
-    INNER JOIN Appointment a ON r.AppointmentID = a.AppointmentID
+    INNER JOIN Consultation a ON r.AppointmentID = a.AppointmentID
     WHERE a.StaffNumber = ?
   `;
   const results = await query(sql, [staffNumber]);
@@ -129,7 +129,7 @@ export async function getAllNurseAverages() {
            AVG(r.Score) AS Average,
            COUNT(r.RatingID) AS TotalCount
     FROM Nurse n
-    LEFT JOIN Appointment a ON n.StaffNumber = a.StaffNumber
+    LEFT JOIN Consultation a ON n.StaffNumber = a.StaffNumber
     LEFT JOIN Rating r ON a.AppointmentID = r.AppointmentID
     GROUP BY n.StaffNumber, n.FirstName, n.LastName
     ORDER BY Average DESC
@@ -143,7 +143,7 @@ export async function getAllNurseAverages() {
 export async function getAppointmentForReview(appointmentId, studentNumber) {
   const sql = `
     SELECT a.*, n.FirstName AS NurseFirstName, n.LastName AS NurseLastName
-    FROM Appointment a
+    FROM Consultation a
     INNER JOIN Nurse n ON a.StaffNumber = n.StaffNumber
     WHERE a.AppointmentID = ? AND a.StudentNumber = ?
   `;
@@ -158,7 +158,7 @@ export async function getAppointmentForReview(appointmentId, studentNumber) {
 export async function getReviewableNursesForStudent(studentNumber) {
   const sql = `
     SELECT DISTINCT n.StaffNumber, n.FirstName, n.LastName
-    FROM Appointment a
+    FROM Consultation a
     INNER JOIN Nurse n ON a.StaffNumber = n.StaffNumber
     WHERE a.StudentNumber = ? AND a.Status = 'Completed'
       AND n.StaffNumber NOT IN (
@@ -183,7 +183,7 @@ export async function hasReviewedNurse(studentNumber, staffNumber) {
  */
 export async function getMostRecentCompletedAppointment(studentNumber, staffNumber) {
   const sql = `
-    SELECT AppointmentID FROM Appointment
+    SELECT AppointmentID FROM Consultation
     WHERE StudentNumber = ? AND StaffNumber = ? AND Status = 'Completed'
     ORDER BY Time DESC LIMIT 1
   `;

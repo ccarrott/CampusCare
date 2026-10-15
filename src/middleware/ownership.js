@@ -13,7 +13,7 @@ export function requireAppointmentOwner(req, res, next) {
 
   if (!appointmentId) return next(new AppError('Appointment ID required', 400));
 
-  query('SELECT StudentNumber FROM Appointment WHERE AppointmentID = ?', [appointmentId])
+  query('SELECT StudentNumber FROM Consultation WHERE AppointmentID = ?', [appointmentId])
     .then(rows => {
       if (!rows[0]) return next(new AppError('Appointment not found', 404));
       if (rows[0].StudentNumber !== userId) return next(new AppError('Access denied', 403));
@@ -31,7 +31,7 @@ export function requireAssignedNurse(req, res, next) {
 
   if (!appointmentId) return next(new AppError('Appointment ID required', 400));
 
-  query('SELECT StaffNumber FROM Appointment WHERE AppointmentID = ?', [appointmentId])
+  query('SELECT StaffNumber FROM Consultation WHERE AppointmentID = ?', [appointmentId])
     .then(rows => {
       if (!rows[0]) return next(new AppError('Appointment not found', 404));
       if (rows[0].StaffNumber !== staffNumber) return next(new AppError('Access denied', 403));
@@ -50,7 +50,7 @@ export function requirePatientRelationship(req, res, next) {
   if (!patientId) return next(new AppError('Patient ID required', 400));
 
   query(
-    'SELECT AppointmentID FROM Appointment WHERE StaffNumber = ? AND StudentNumber = ? LIMIT 1',
+    'SELECT AppointmentID FROM Consultation WHERE StaffNumber = ? AND StudentNumber = ? LIMIT 1',
     [staffNumber, patientId]
   )
     .then(rows => {

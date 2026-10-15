@@ -10,12 +10,16 @@ import { DEMO_PASSWORDS } from './demo-credentials.js';
 export async function loadNakedState() {
   console.log('[State: Naked] Wiping all dynamic data...');
 
-  // Clear dynamic tables (order matters for FKs)
+  // Clear dynamic tables. FKs are enforced now, so disable the checks for the
+  // duration of the wipe — this keeps the DELETEs order-independent and immune to
+  // future FK additions (adapter maps SET FOREIGN_KEY_CHECKS -> PRAGMA on SQLite).
+  await query('SET FOREIGN_KEY_CHECKS = 0');
   await query('DELETE FROM SymptomLogEntry');
   await query('DELETE FROM SymptomLog');
   await query('DELETE FROM NurseReviews');
   await query('DELETE FROM Rating');
-  await query('DELETE FROM Appointment');
+  await query('DELETE FROM OnlineConsultationSession');
+  await query('DELETE FROM Consultation');
   await query('DELETE FROM NurseAvailability');
   await query('DELETE FROM StudentZone');
   await query('DELETE FROM Student');
@@ -23,6 +27,7 @@ export async function loadNakedState() {
   await query('DELETE FROM Admin');
   await query('DELETE FROM Nurse');
   await query('DELETE FROM Clinic');
+  await query('SET FOREIGN_KEY_CHECKS = 1');
 
   // Sessions live in MySQL (see config/session.js), so a full reset should sign
   // everyone out too. The table is created by the app on first boot — tolerate it

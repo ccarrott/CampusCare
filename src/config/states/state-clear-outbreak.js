@@ -10,7 +10,7 @@ export async function clearOutbreak() {
 
   const logResult = await query("DELETE FROM SymptomLogEntry WHERE LogID LIKE 'SH-OUT-%'");
   const symResult = await query("DELETE FROM SymptomLog WHERE LogID LIKE 'SH-OUT-%'");
-  const aptResult = await query("DELETE FROM Appointment WHERE AppointmentID LIKE 'APT-OUT-%'");
+  const aptResult = await query("DELETE FROM Consultation WHERE AppointmentID LIKE 'APT-OUT-%'");
 
   const msg = `Cleared: ${symResult.affectedRows} symptom logs, ${logResult.affectedRows} log entries, ${aptResult.affectedRows} appointments.`;
   console.log('[State: Clear Outbreak] ' + msg);
