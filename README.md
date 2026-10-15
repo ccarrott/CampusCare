@@ -38,8 +38,7 @@
 [Tech stack](#tech-stack) · [Architecture](#architecture) ·
 [Engineering decisions worth noting](#engineering-decisions-worth-noting) ·
 [Security](#security) · [Project structure](#project-structure) ·
-[Environment variables](#environment-variables) · [Database & demo data](#database--demo-data) ·
-[Troubleshooting](#troubleshooting) · [Team](#team)
+[Environment variables](#environment-variables) · [Database & demo data](#database--demo-data) · [Team](#team)
 
 ---
 
