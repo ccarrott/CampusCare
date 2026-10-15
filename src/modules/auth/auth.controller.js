@@ -1,15 +1,12 @@
 // src/modules/auth/auth.controller.js
 // Handles login, registration, logout, and password reset flows.
 
-import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import * as AuthModel from './auth.model.js';
 import { catchAsync } from '../../utils/catchAsync.js';
 import { sanitize } from '../../utils/sanitize.js';
 import { isValidStudentNumber, isValidPassword } from '../../middleware/validate.js';
 import { ROLES } from '../../constants.js';
-
-const SALT_ROUNDS = 10;
 
 /**
  * Regenerates the session ID before attaching the user, then persists it.
@@ -78,7 +75,8 @@ export const handleLogin = catchAsync(async (req, res) => {
     return res.render('auth/login', { error: 'Invalid username or password.', idNumber });
   }
 
-  const isMatch = await bcrypt.compare(password, user.Password);
+  // SECURITY DOWNGRADE (LOCAL/DEMO ONLY — DO NOT SHIP): plaintext compare, bcrypt disabled.
+  const isMatch = password === user.Password;
   if (!isMatch) {
     return res.render('auth/login', { error: 'Invalid username or password.', idNumber });
   }
@@ -133,22 +131,18 @@ export const handleRegister = catchAsync(async (req, res) => {
     return res.render('auth/register', { error: 'An account with this Student Number already exists.' });
   }
 
-  const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+  // SECURITY DOWNGRADE (LOCAL/DEMO ONLY — DO NOT SHIP): passwords are stored in
+  // plaintext while bcrypt is disabled for marking/demo convenience.
+  const storedPassword = password;
 
   await AuthModel.createStudent({
-    studentNumber, firstName, lastName, medicalHistory, password: hashedPassword
+    studentNumber, firstName, lastName, medicalHistory, password: storedPassword
   });
 
-  // Auto-login the new student and redirect to pin-drop location page
-  await startAuthenticatedSession(req, {
-    id: studentNumber,
-    name: `${firstName} ${lastName}`,
-    firstName,
-    lastName,
-    role: ROLES.STUDENT
-  });
-
-  res.redirect('/profile/location');
+  // No auto-login after registration: send the new student to the sign-in page with
+  // a success message (same pattern as handleResetPassword). The pin-drop location
+  // page stays reachable later from the profile section.
+  res.render('auth/login', { error: null, success: 'Registration successful. Please sign in.' });
 });
 
 // ============================================================================
@@ -242,8 +236,9 @@ export const handleResetPassword = catchAsync(async (req, res) => {
     return res.render('auth/reset-password', { error: 'Invalid or expired reset link.', token: null });
   }
 
-  const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-  await AuthModel.updatePassword(resetRecord.UserID, resetRecord.UserType, hashedPassword);
+  // SECURITY DOWNGRADE (LOCAL/DEMO ONLY — DO NOT SHIP): store reset password in plaintext, bcrypt disabled.
+  const storedPassword = password;
+  await AuthModel.updatePassword(resetRecord.UserID, resetRecord.UserType, storedPassword);
   await AuthModel.markTokenUsed(token);
 
   res.render('auth/login', { error: null, success: 'Password reset successful. You can now sign in.' });

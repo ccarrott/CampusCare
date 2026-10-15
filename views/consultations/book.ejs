@@ -293,7 +293,8 @@
 
     gridHeader.innerHTML = '<th class="time-col">Session</th>';
     weekDays.forEach(function(wd) {
-      gridHeader.innerHTML += '<th><div class="day-name">' + wd.dayName + '</div><div class="day-date">(' + wd.date.slice(5).replace('-', '/') + ')</div></th>';
+      var dateLabel = new Date(wd.date).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' });
+      gridHeader.innerHTML += '<th><div class="day-name">' + wd.dayName + '</div><div class="day-date">' + dateLabel + '</div></th>';
     });
 
     gridBody.innerHTML = '';

@@ -1,5 +1,4 @@
 import { query } from '../database.js';
-import bcrypt from 'bcrypt';
 import { DEMO_PASSWORDS } from './demo-credentials.js';
 
 /**
@@ -59,12 +58,13 @@ export async function loadNakedState() {
     ['CLN002', 'North Campus Clinic', 'North Campus, Summerstrand, Gqeberha, 6019', '041 504 1149', 'StudentHealth@mandela.ac.za']
   );
 
+  // SECURITY DOWNGRADE (LOCAL/DEMO ONLY — DO NOT SHIP): seed passwords in plaintext, bcrypt disabled.
   // Seed admin
-  const adminPw = await bcrypt.hash(DEMO_PASSWORDS.admin, 10);
+  const adminPw = DEMO_PASSWORDS.admin;
   await query("INSERT INTO Admin (StaffNumber, Name, Password) VALUES ('ADM001', 'System Administrator', ?)", [adminPw]);
 
   // Seed 3 nurses (with Campus — Phase 29A)
-  const nursePw = await bcrypt.hash(DEMO_PASSWORDS.nurse, 10);
+  const nursePw = DEMO_PASSWORDS.nurse;
   await query("INSERT INTO Nurse (StaffNumber, FirstName, LastName, PhoneNumber, Password, Email, ClinicID, Campus, Bio, YearsExperience) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ['NUR001', 'Sarah', 'Jenkins', '0821234567', nursePw, 'sarah.jenkins@mandela.ac.za', 'CLN001', 'South Campus', 'Experienced campus nurse specialising in student wellness and primary care.', 8]);
   await query("INSERT INTO Nurse (StaffNumber, FirstName, LastName, PhoneNumber, Password, Email, ClinicID, Campus, Bio, YearsExperience) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",

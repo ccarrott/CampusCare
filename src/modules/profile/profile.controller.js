@@ -1,7 +1,6 @@
 // src/modules/profile/profile.controller.js
 // Handles profile viewing, editing, password changes, and account deletion.
 
-import bcrypt from 'bcrypt';
 import * as ProfileModel from './profile.model.js';
 import { catchAsync } from '../../utils/catchAsync.js';
 import { sanitize } from '../../utils/sanitize.js';
@@ -87,11 +86,13 @@ export const changePassword = catchAsync(async (req, res) => {
 
   if (!user || !user.Password) return fail('Could not verify your account. Please sign in again.');
 
-  const isMatch = await bcrypt.compare(currentPassword, user.Password);
+  // SECURITY DOWNGRADE (LOCAL/DEMO ONLY — DO NOT SHIP): plaintext compare, bcrypt disabled.
+  const isMatch = currentPassword === user.Password;
   if (!isMatch) return fail('Your current password is incorrect.');
 
-  const hashedPassword = await bcrypt.hash(newPassword, 10);
-  await ProfileModel.updatePassword(id, role, hashedPassword);
+  // SECURITY DOWNGRADE (LOCAL/DEMO ONLY — DO NOT SHIP): store new password in plaintext, bcrypt disabled.
+  const storedPassword = newPassword;
+  await ProfileModel.updatePassword(id, role, storedPassword);
 
   res.redirect('/profile?toast=' + encodeURIComponent('Password changed successfully.'));
 });

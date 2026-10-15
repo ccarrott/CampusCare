@@ -2,9 +2,6 @@
 // Database queries for admin operations: reports, student CRUD, nurse CRUD (merged from adminReportModel + adminCrudModel).
 
 import { query } from '../../config/database.js';
-import bcrypt from 'bcrypt';
-
-const SALT_ROUNDS = 10;
 
 // ============================================================================
 // OPERATIONAL REPORTS
@@ -151,12 +148,13 @@ export async function getNurseById(staffNumber) {
 }
 
 export async function createNurse({ staffNumber, firstName, lastName, email, phoneNumber, campus, clinicId, password }) {
-  const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+  // SECURITY DOWNGRADE (LOCAL/DEMO ONLY — DO NOT SHIP): store password in plaintext, bcrypt disabled.
+  const storedPassword = password;
   const sql = `
     INSERT INTO Nurse (StaffNumber, FirstName, LastName, Email, PhoneNumber, Campus, ClinicID, Password)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
-  return await query(sql, [staffNumber, firstName, lastName, email || '', phoneNumber || '', campus || null, clinicId || null, hashedPassword]);
+  return await query(sql, [staffNumber, firstName, lastName, email || '', phoneNumber || '', campus || null, clinicId || null, storedPassword]);
 }
 
 // Admin nurse edit is restricted to Campus + Assigned Clinic only (Plan 3 Item 18).

@@ -111,6 +111,8 @@
   const tokenbar = document.getElementById('symptomTokenbar');
   const search = document.getElementById('symptomSearch');
   const suggBox = document.getElementById('symptomSuggestions');
+  // The card wrapping the token bar — lifted above sibling cards while suggestions show.
+  const tokenCard = tokenbar.closest('.content-card');
   const submitSection = document.getElementById('submitSection');
   const otherText = document.getElementById('otherText');
   const allTags = Array.prototype.slice.call(document.querySelectorAll('.symptom-tag'));
@@ -165,7 +167,7 @@
     allTags.forEach(function(tag) {
       tag.style.display = (!q || tag.getAttribute('data-name').indexOf(q) !== -1) ? '' : 'none';
     });
-    if (!q) { suggBox.style.display = 'none'; suggBox.innerHTML = ''; return; }
+    if (!q) { suggBox.style.display = 'none'; suggBox.innerHTML = ''; if (tokenCard) tokenCard.classList.remove('tokenbar-open'); return; }
     const matches = allTags
       .filter(t => !t.querySelector('input').checked && t.getAttribute('data-name').indexOf(q) !== -1)
       .slice(0, 6);
@@ -178,11 +180,13 @@
       }).join('');
     }
     suggBox.style.display = 'block';
+    if (tokenCard) tokenCard.classList.add('tokenbar-open');
   }
   function commit(id) {
     selectTagById(id);           // becomes a pill in the bar
     search.value = '';
     suggBox.style.display = 'none';
+    if (tokenCard) tokenCard.classList.remove('tokenbar-open');
     allTags.forEach(t => t.style.display = '');
     search.focus();              // caret stays right after the new pill
   }
@@ -216,7 +220,10 @@
   });
   // Hide suggestions when clicking away.
   document.addEventListener('click', function(e) {
-    if (!e.target.closest('#symptomTokenbar')) suggBox.style.display = 'none';
+    if (!e.target.closest('#symptomTokenbar')) {
+      suggBox.style.display = 'none';
+      if (tokenCard) tokenCard.classList.remove('tokenbar-open');
+    }
   });
 
   // ---- "My symptom isn't listed" ----

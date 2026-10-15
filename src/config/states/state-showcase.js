@@ -1,5 +1,4 @@
 import { query, pool } from '../database.js';
-import bcrypt from 'bcrypt';
 import { DEMO_PASSWORDS } from './demo-credentials.js';
 import crypto from 'crypto';
 import { getZoneForPoint } from '../../utils/geo.js';
@@ -97,7 +96,8 @@ export async function loadShowcaseState() {
   // non-existent symptom and violate the SymptomLogEntry -> Symptom FK now that
   // FKs are enforced.
   const SYMPTOM_IDS = (await query('SELECT SymptomID FROM Symptom')).map(r => r.SymptomID);
-  const pw = await bcrypt.hash(DEMO_PASSWORDS.student, 10);
+  // SECURITY DOWNGRADE (LOCAL/DEMO ONLY — DO NOT SHIP): seed student passwords in plaintext, bcrypt disabled.
+  const pw = DEMO_PASSWORDS.student;
 
   // 2. STUDENTS (batch)
   console.log('  [2/7] Seeding 19 students + zone assignments...');

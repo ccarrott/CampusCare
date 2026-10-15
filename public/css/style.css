@@ -989,6 +989,12 @@ body.immersive-page .site-footer { display: none; }
           mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
           mask-composite: exclude;
 }
+/* While the symptom autocomplete is open, lift the whole "Your Symptoms" card
+   above its sibling cards. Each .content-card is its own stacking context
+   (isolation: isolate), so the dropdown's own z-index can't escape — raising the
+   card is what lets the suggestions paint over the next card. */
+.content-card.tokenbar-open { z-index: 60; }
+
 .glass-strong, .content-card.content-card--strong {
   background: var(--glass-bg-strong);
   -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
@@ -1651,6 +1657,7 @@ textarea.form-control {
 .auth-brand {
   font-size: 1.5rem;
   font-weight: 700;
+  line-height: 1.25;
   color: var(--primary-navy);
   margin-bottom: 4px;
 }
