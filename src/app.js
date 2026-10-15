@@ -218,29 +218,43 @@ app.use(globalErrorHandler);
 const PORT = process.env.PORT || process.env.APP_PORT || 3000;
 
 /**
- * LOCAL SQLite auto-bootstrap: when running on local.db and the schema/data is
- * missing, build it from scratch (migrate → symptoms → zones → showcase) so
- * `npm run start:local` works out-of-the-box with a rich, freshly-seeded DB.
- * No-op in MySQL mode and when the local DB is already populated.
+ * LOCAL SQLite auto-bootstrap: build local.db from scratch
+ * (migrate → symptoms → zones → showcase).
+ *
+ * Two modes:
+ *   - Conditional (ordinary `npm run start:local`, force=false): only bootstraps
+ *     when the DB is missing/unseeded, so a normal boot never clobbers existing
+ *     local data.
+ *   - Forced (`npm run setup:local` → `--bootstrap-only`, force=true): ALWAYS runs
+ *     the full chain. migrate is now a DESTRUCTIVE drop-then-create rebuild, so
+ *     setup:local must apply the current schema even over an already-seeded DB —
+ *     otherwise applying this refactor to an existing local.db would require
+ *     manually deleting local.db/-wal/-shm first. Chaining migrate→seeds here keeps
+ *     the destructive drop paired with a reseed (Decision 3).
+ *
+ * No-op in MySQL mode.
  */
-async function bootstrapLocalDbIfNeeded() {
+async function bootstrapLocalDbIfNeeded({ force = false } = {}) {
   if (!USE_LOCAL_DB) return;
 
-  // Is the schema present AND seeded? (Nurse rows are created by state-naked.)
-  let seeded = false;
-  try {
-    const tbl = await query(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name='Nurse'"
-    );
-    if (tbl.length) {
-      const [{ c }] = await query('SELECT COUNT(*) AS c FROM Nurse');
-      seeded = c > 0;
-    }
-  } catch { /* fresh/empty db — treat as not seeded */ }
+  if (!force) {
+    // Is the schema present AND seeded? (Nurse rows are created by state-naked.)
+    let seeded = false;
+    try {
+      const tbl = await query(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='Nurse'"
+      );
+      if (tbl.length) {
+        const [{ c }] = await query('SELECT COUNT(*) AS c FROM Nurse');
+        seeded = c > 0;
+      }
+    } catch { /* fresh/empty db — treat as not seeded */ }
 
-  if (seeded) return;
-
-  console.log('[LocalDB] Fresh local.db detected — bootstrapping schema + showcase data...');
+    if (seeded) return;
+    console.log('[LocalDB] Fresh local.db detected — bootstrapping schema + showcase data...');
+  } else {
+    console.log('[LocalDB] --bootstrap-only: forcing full rebuild (migrate -> symptoms -> zones -> showcase)...');
+  }
   const { runMigrations } = await import('./config/migrate.js');
   await runMigrations({ exitOnDone: false });
 
@@ -258,14 +272,17 @@ async function bootstrapLocalDbIfNeeded() {
 
 async function startServer() {
   try {
-    await bootstrapLocalDbIfNeeded();
+    // `--bootstrap-only` (npm run setup:local) forces a full destructive rebuild;
+    // a normal boot only bootstraps a missing/unseeded local DB.
+    const bootstrapOnly = process.argv.includes('--bootstrap-only');
+    await bootstrapLocalDbIfNeeded({ force: bootstrapOnly });
 
     await query('SELECT 1');
     console.log('[Database] Connection pool verified.');
 
     // `--bootstrap-only` (npm run setup:local): prepare the local DB and exit,
     // without starting the HTTP server. Handy for CI / first-run setup.
-    if (process.argv.includes('--bootstrap-only')) {
+    if (bootstrapOnly) {
       console.log('[LocalDB] --bootstrap-only: database ready, exiting without serving.');
       try { await pool.end(); } catch { /* ignore */ }
       process.exit(0);

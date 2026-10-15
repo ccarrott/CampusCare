@@ -16,8 +16,12 @@ export async function updateStudentProfile(studentNumber, { medicalHistory }) {
 }
 
 export async function deleteStudentAccount(studentNumber) {
-  const sql = 'DELETE FROM Student WHERE StudentNumber = ?';
-  return await query(sql, [studentNumber]);
+  // Child rows (Consultation, Rating, NurseReviews, SymptomLog -> SymptomLogEntry,
+  // StudentZone) cascade automatically via ON DELETE CASCADE from Student. But
+  // PasswordResetToken is polymorphic (UserID has NO FK), so its rows would be
+  // orphaned — clear them by hand first, matching admin.deleteStudent.
+  await query("DELETE FROM PasswordResetToken WHERE UserID = ? AND UserType = 'student'", [studentNumber]);
+  return await query('DELETE FROM Student WHERE StudentNumber = ?', [studentNumber]);
 }
 
 export async function getAllZones() {

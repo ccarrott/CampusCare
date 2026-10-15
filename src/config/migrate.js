@@ -44,21 +44,30 @@ import { query } from './database.js';
  *       FK via ALTER); both engines accept inline FK clauses.
  *   (d) `DEFAULT CURRENT_TIMESTAMP` accepted by both.
  *
- * NOTE on `SET FOREIGN_KEY_CHECKS`/`PRAGMA foreign_keys` + transactions: SQLite
- * ignores a `PRAGMA foreign_keys` change issued inside an open transaction. Every
- * statement here runs via `query()` OUTSIDE any explicit transaction, so the
- * toggle takes effect — verified on local at implementation time (no "cannot
- * change foreign keys within a transaction" error).
+ * DROP ORDERING (why there is no `SET FOREIGN_KEY_CHECKS` toggle here):
+ * the drop phase removes tables in strict REVERSE dependency order (children
+ * before parents) and uses `DROP TABLE IF EXISTS`, so by the time any parent is
+ * dropped nothing still references it — the drop succeeds on BOTH engines without
+ * suppressing FK enforcement. We deliberately do NOT toggle `FOREIGN_KEY_CHECKS`:
+ * on MySQL that setting is CONNECTION-scoped and `query()` borrows an arbitrary
+ * pooled connection per call, so a disable on one connection and re-enable on
+ * another can leave a pooled connection with checks off (it could then later
+ * accept orphan writes). Correct reverse-order drops make the toggle unnecessary.
+ * The retired pre-rename names are ordered child-before-parent too (the renamed
+ * children — Rating/NurseReviews — are dropped above; ConsultationSession is
+ * dropped before Appointment).
  */
 
 // ---------------------------------------------------------------------------
-// DROP-ALL PHASE — reverse dependency order, FK checks OFF.
+// DROP-ALL PHASE — strict REVERSE dependency order (children before parents).
 // ---------------------------------------------------------------------------
-// Drops children before parents (belt-and-braces alongside FK-checks-off), then
-// also drops the RETIRED pre-rename names so rebuilding on an OLD database that
-// still has `Appointment`/`ConsultationSession`/`MedicalFacility` is clean.
+// Each DROP removes a table whose children are already gone, so no FK still
+// references it — this works on both engines WITHOUT disabling FK enforcement
+// (see the header note on why we don't toggle FOREIGN_KEY_CHECKS). The RETIRED
+// pre-rename names are dropped last (ConsultationSession before Appointment) so
+// rebuilding on an OLD database that still has
+// `Appointment`/`ConsultationSession`/`MedicalFacility` is clean.
 const dropPhase = [
-  { name: 'Disable FK checks (drop phase)', sql: `SET FOREIGN_KEY_CHECKS = 0` },
   { name: 'Drop PasswordResetToken', sql: `DROP TABLE IF EXISTS PasswordResetToken` },
   { name: 'Drop OnlineConsultationSession', sql: `DROP TABLE IF EXISTS OnlineConsultationSession` },
   { name: 'Drop NurseReviews', sql: `DROP TABLE IF EXISTS NurseReviews` },
@@ -79,8 +88,7 @@ const dropPhase = [
   // Retired pre-rename / pre-cleanup names — drop so an OLD db rebuilds clean.
   { name: 'Drop retired ConsultationSession', sql: `DROP TABLE IF EXISTS ConsultationSession` },
   { name: 'Drop retired Appointment', sql: `DROP TABLE IF EXISTS Appointment` },
-  { name: 'Drop retired MedicalFacility', sql: `DROP TABLE IF EXISTS MedicalFacility` },
-  { name: 'Re-enable FK checks (drop phase)', sql: `SET FOREIGN_KEY_CHECKS = 1` }
+  { name: 'Drop retired MedicalFacility', sql: `DROP TABLE IF EXISTS MedicalFacility` }
 ];
 
 // ---------------------------------------------------------------------------

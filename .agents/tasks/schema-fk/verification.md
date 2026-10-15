@@ -111,3 +111,77 @@ survives zone reseeds.
   `setup`/`setup:local`/app auto-bootstrap. Documented in `migrate.js` header (Decision 3).
 - `PasswordResetToken.UserID` is intentionally left WITHOUT a FK (polymorphic). `deleteStudent` still
   deletes its tokens by hand; the rest now cascades.
+
+> **Superseded by the fix iteration below:** §3 above describes the ORIGINAL
+> behavior where seed-zones wiped under FK-checks-off (leaving `logsWithZone=100`).
+> Review finding #4 flagged that as a bug — it suppressed the intended
+> `ON DELETE SET NULL`. The toggle has since been removed; see §FIX for the
+> corrected evidence (`logsWithZone` now goes 100 → 0, logs survive nulled).
+
+---
+
+## FIX ITERATION — review findings addressed (`review.json` CHANGES_REQUESTED)
+
+Engine verified: **local SQLite** (`node:sqlite`, Node per `node -v` in this env). `SESSION_SEED`/`NODE_ENV`
+supplied inline for the run only; no secret written to any file. Temporary probe scripts
+(`.agents/tasks/schema-fk/*-probe.mjs`) were removed after the run.
+
+### Finding #1 (HIGH) — Aiven `setup` omitted core reseeding → FIXED
+`package.json` `setup` now chains showcase:
+`migrate && seed-symptoms && seed-zones-v2 && state-showcase`.
+Evidence — ran the four scripts as separate processes (mirrors the `&&` chain), then counted rows:
+```
+Clinic 2 · Admin 1 · Nurse 3 · Student 19 · Consultation 50 · Rating 20 · NurseReviews 6
+SymptomLog 100 · SymptomLogEntry 279 · NurseAvailability 405 · CampusZone 35 · Symptom 47
+Medication 27 · SymptomMedicationMap 66 · StudentZone 19
+→ PASS: all core tables populated (0 empty)
+```
+
+### Finding #2 (HIGH) — `SET FOREIGN_KEY_CHECKS` toggles not connection-scoped / failure-safe → FIXED
+Removed the `SET FOREIGN_KEY_CHECKS = 0/1` toggles from `migrate.js` (drop phase),
+`state-naked.js`, and `seed-symptoms.js`. Rationale (per reviewers' preferred option): the deletes/drops
+are already in strict child-first / reverse-dependency order, so enforced FKs are satisfied WITHOUT
+suppression — removing the toggle eliminates the MySQL pooled-connection leak (disable on one connection,
+re-enable on another) and the "checks left off if a wipe throws" failure mode (no try/finally needed).
+Header/inline comments updated to explain why. Verified: full rebuild + seed chain completes with
+`56 applied, 0 failed` and 0 FK violations (migrate no longer emits the 2 toggle steps → 56 vs the prior 58).
+
+### Finding #4 (MEDIUM) — zone reseed bypassed `ON DELETE SET NULL` → FIXED
+Removed the toggle from `seed-zones-v2.js`; `DELETE FROM StudentZone` then `DELETE FROM CampusZone` now
+run with enforcement ON, so `fk_slog_zone ON DELETE SET NULL` fires. Standalone-reseed probe:
+```
+logs total     before=100 after=100  (survive: true)
+logs WITH zone before=100 after=0    nulled now=100
+→ PASS: zone reseed SET-NULLed all logs, none deleted
+```
+This is the direct inversion of the pre-fix `logsWithZone=100` evidence the reviewers cited.
+
+### Finding #3 (MEDIUM) — existing local DB skipped the rebuild → FIXED
+`src/app.js` `bootstrapLocalDbIfNeeded({ force })`: `--bootstrap-only` (`setup:local`) now passes
+`force: true` and ALWAYS runs migrate → symptoms → zones → showcase, even over an already-seeded
+`local.db` (no manual `local.db*` deletion needed). Ordinary `start:local` keeps the conditional
+"only if unseeded" guard. Verified: ran `node src/app.js --local --bootstrap-only` TWICE in a row
+(DB already seeded on the 2nd run) — the 2nd run still performed the full destructive rebuild +
+reseed and exited 0.
+
+### Finding #6 (LOW) — reset-token orphan on student self-delete → FIXED
+`profile.deleteStudentAccount` now deletes the student's polymorphic `PasswordResetToken` rows before
+`DELETE FROM Student` (symmetry with `admin.deleteStudent`). Behavior-preserving: account deletion still
+succeeds; it only additionally clears that student's own single-use/expiring reset tokens.
+
+### FK-enforcement re-probe (post-fix rebuild) — all PASS
+```
+PRAGMA foreign_keys = ON  ({"foreign_keys":1})
+Orphan Consultation insert (non-existent student)              → REJECTED
+Student s999000001 delete BEFORE {consult:3,rating:2,review:0,slog:6,sle:15,sz:1}
+                           AFTER  {consult:0,rating:0,review:0,slog:0,sle:0,sz:0}  → CASCADE ✓
+Zone ZONE01 delete: logsInZone 17→0, totalLogs 94→94, nulled=17                   → SET NULL ✓
+→ ALL PROBES PASSED
+```
+
+### Findings #5 & #7 (LOW) — no code change (by design)
+- #5 (Aiven MySQL rebuild + HTTP E2E role flows / booking smoke test): deferred to the orchestrator's
+  post-merge step per plan §6.5 — needs live `.env`/credentials + a running server. MySQL DDL remains
+  valid by inspection (unique constraint/index names, matching FK column types, JSON/DECIMAL/tinyint on 8.0).
+- #7 (possible redundant explicit indexes on MySQL FK columns): harmless and plan-sanctioned (§5.4);
+  the explicit indexes are required for SQLite parity (SQLite does not auto-index FK columns). No change.

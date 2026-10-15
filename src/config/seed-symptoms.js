@@ -199,17 +199,17 @@ export async function seedSymptoms({ exitOnDone = true } = {}) {
   console.log('╚══════════════════════════════════════════════════╝');
 
   console.log('  [1/4] Clearing old data...');
-  // FKs are enforced now. Disable the checks for the wipe so the four DELETEs are
-  // order-independent (adapter maps SET FOREIGN_KEY_CHECKS -> PRAGMA on SQLite).
-  // NOTE: clearing Symptom/Medication cascades to SymptomMedicationMap and
-  // SymptomLogEntry — reseeding the symptom catalog is a reset, matching prior
-  // behavior (any showcase symptom entries are rebuilt by the showcase reseed).
-  await query('SET FOREIGN_KEY_CHECKS = 0');
+  // Clear in child-first order so enforced FKs are satisfied WITHOUT toggling
+  // FOREIGN_KEY_CHECKS (that setting is connection-scoped on MySQL and query()
+  // uses an arbitrary pooled connection, so a disable/enable pair can leak checks
+  // off onto a pooled connection). The join/entry tables (children of
+  // Symptom/Medication) go first, then the parents. NOTE: clearing the symptom
+  // catalog is a reset — any showcase symptom entries are rebuilt by the showcase
+  // reseed, matching prior behavior.
   await query('DELETE FROM SymptomMedicationMap');
   await query('DELETE FROM SymptomLogEntry');
   await query('DELETE FROM Symptom');
   await query('DELETE FROM Medication');
-  await query('SET FOREIGN_KEY_CHECKS = 1');
 
   console.log('  [2/4] Seeding ' + SYMPTOMS.length + ' symptoms...');
   const symPlaceholders = SYMPTOMS.map(() => '(?, ?, ?, ?, ?)').join(',');

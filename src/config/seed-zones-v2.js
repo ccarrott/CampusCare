@@ -75,15 +75,15 @@ export async function seedZones({ exitOnDone = true } = {}) {
   const cells = voronoiCells(ZONES, BOUNDS);
 
   console.log('  [1/2] Clearing old zones...');
-  // FKs are enforced now. Disable the checks for the wipe so a standalone reseed
-  // never trips on ordering (adapter maps SET FOREIGN_KEY_CHECKS -> PRAGMA on
-  // SQLite). StudentZone -> CampusZone is CASCADE (assignments are safe to clear);
-  // SymptomLog -> CampusZone is SET NULL, so existing health logs SURVIVE a zone
-  // reseed with their ZoneID nulled (Decision 2) rather than being deleted.
-  await query('SET FOREIGN_KEY_CHECKS = 0');
+  // Clear with FK enforcement ON (no FOREIGN_KEY_CHECKS toggle) so the declared
+  // ON DELETE actions actually fire. StudentZone -> CampusZone is CASCADE, so we
+  // delete StudentZone first (its own rows), then CampusZone. Deleting CampusZone
+  // triggers SymptomLog.ZoneID ON DELETE SET NULL (Decision 2): existing health
+  // logs SURVIVE a zone reseed with their ZoneID nulled rather than being deleted.
+  // Suppressing checks here (as a prior version did) would skip the SET NULL and
+  // leave logs pointing at stale/removed zone IDs if the suburb set ever changes.
   await query('DELETE FROM StudentZone');
   await query('DELETE FROM CampusZone');
-  await query('SET FOREIGN_KEY_CHECKS = 1');
 
   console.log('  [2/2] Seeding ' + cells.length + ' Voronoi suburb cells (gap-free)...');
   const rows = cells
