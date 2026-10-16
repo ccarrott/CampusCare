@@ -144,6 +144,12 @@
       <% } %>
       <a href="/consultations/book" class="btn btn-primary" style="margin-top: 8px; display: inline-block;">Book Consultation Now</a>
     </div>
+  <% } else { %>
+    <div class="alert alert-success">
+      <h2 style="margin:0 0 6px; font-size:1.1rem;">Tier 1 — Self-Care</h2>
+      Your symptoms can likely be managed with over-the-counter care. See the recommended
+      medications below, and book a nurse consultation if things persist or get worse.
+    </div>
   <% } %>
 
   <!-- Selected Symptoms Summary -->
@@ -151,11 +157,7 @@
     <h2>Symptoms Reported</h2>
     <div style="display: flex; flex-wrap: wrap; gap: 6px;">
       <% selectedSymptoms.forEach(function(sym) { %>
-        <span class="symptom-summary-tag">
-          <%= sym.Name %>
-          <% if (sym.Tier === 2) { %><span class="tier-dot tier-dot-2"></span><% } %>
-          <% if (sym.Tier >= 3) { %><span class="tier-dot tier-dot-3"></span><% } %>
-        </span>
+        <span class="symptom-summary-tag"><%= sym.Name %><% if (sym.Tier === 2) { %><span class="tier-dot tier-dot-2"></span><% } %><% if (sym.Tier >= 3) { %><span class="tier-dot tier-dot-3"></span><% } %></span>
       <% }); %>
     </div>
     <p class="text-muted mt-2">Severity: <strong><%= severity %></strong></p>

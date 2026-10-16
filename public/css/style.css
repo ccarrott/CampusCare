@@ -2923,11 +2923,14 @@ textarea.form-control {
   font-size: 0.82rem;
   font-weight: 600;
 }
+/* Tighter right padding when the tag has a removable X, so the circle doesn't
+   leave a big dead gap on the right of the pill. */
+.symptom-summary-tag:has(.remove) { padding-right: 6px; }
 
 .symptom-summary-tag .remove {
   cursor: pointer;
   opacity: 0.7;
-  font-size: 1rem;
+  font-size: 0.95rem;
   line-height: 1;
   width: 18px;
   height: 18px;
@@ -2936,6 +2939,9 @@ textarea.form-control {
   justify-content: center;
   border-radius: 50%;
   flex-shrink: 0;
+  /* Nudge the × glyph to true optical centre (it renders slightly high). */
+  padding-bottom: 1px;
+  box-sizing: border-box;
   transition: opacity 0.15s, background 0.15s;
 }
 
