@@ -31,7 +31,7 @@
 
 ## Contents
 
- · [Marker's quick tour](#markers-quick-tour) 
+ [Marker's quick tour](#markers-quick-tour) 
  · [Quick start](#quick-start) 
  · [Demo accounts](#demo-accounts) 
  · [The problem & the three-tier solution](#the-problem--the-three-tier-solution) 
