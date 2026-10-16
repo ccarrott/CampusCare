@@ -72,24 +72,23 @@ A five-minute path through the headline features:
 
 ## Quick start
 
-You need **Node 22.x** (the local-database mode uses the built-in `node:sqlite`, which requires
-Node ≥ 22.5).
+You need **Node 22.x or higher** and an **internet connection** (the app connects to a hosted
+database).
 
-**The `.env` file is supplied with this submission.** It is pre-configured to connect to our hosted
-Aiven MySQL database, which is already seeded with the full demo dataset — so there is nothing to
-fill in and no database to provision.
+**The submitted project is ready to run as-is.** Its configuration (`.env`) is already included and
+pre-configured to connect to our hosted MySQL database, which is already seeded with the full demo
+dataset — so there is nothing to set up, fill in, or seed.
 
 ```bash
 cd CampusCare
-npm install
-# place the supplied .env in the project root (next to package.json)
-npm start                     # → http://localhost:3000
+npm install          # may be skippable if node_modules is included
+npm start            # → http://localhost:3000
 ```
 
 Then sign in with any of the [demo accounts](#demo-accounts) below.
 
-> **Markers:** that is the whole setup — `npm install`, drop in the `.env`, `npm start`. The hosted
-> database is already populated, so you do **not** need to run any seed or setup command.
+> **Markers:** that is the whole setup — `npm install`, then `npm start`. The hosted database is
+> already populated, so you do **not** need to run any seed or setup command.
 
 <details>
 <summary>Running against your own database instead (optional)</summary>
@@ -429,7 +428,7 @@ The same four are available to a signed-in admin from the browser console:
 
 | Symptom | Cause and fix |
 |---------|---------------|
-| App won't start / `Missing required environment variables` | The supplied `.env` isn't in the project root (it must sit next to `package.json`). |
+| App won't start / `Missing required environment variables` | The `.env` file must be in the project root (next to `package.json`). It ships with the project — if it was moved, put it back there. |
 | `Database connection failed` | The network is blocking the outbound connection to the hosted Aiven MySQL. Try another network, or switch to local SQLite (`USE_LOCAL_DB=true` in `.env`, then `npm run setup:local` + `npm run start:local`). |
 | `node:sqlite` not found / errors | You are on Node < 22.5. This project needs Node **22.x**. |
 | Map is blank | Confirm `api.maptiler.com` is reachable (not blocked by the network). |
