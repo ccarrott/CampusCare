@@ -31,15 +31,17 @@
 
 ## Contents
 
-[Marker's quick tour](#markers-quick-tour) · [Quick start](#quick-start) · [Demo accounts](#demo-accounts) ·
-[The problem & the three-tier solution](#the-problem--the-three-tier-solution) ·
-[What each role can do](#what-each-role-can-do) · [Feature walkthrough](#feature-walkthrough) ·
-[The showpiece: the health heat map](#the-showpiece-the-campus-health-heat-map) ·
-[Tech stack](#tech-stack) · [Architecture](#architecture) ·
-[Engineering decisions worth noting](#engineering-decisions-worth-noting) ·
-[Security](#security) · [Project structure](#project-structure) ·
-[Environment variables](#environment-variables) · [Database & demo data](#database--demo-data) ·
-[Troubleshooting](#troubleshooting) · [Team](#team)
+ [Marker's quick tour](#markers-quick-tour) 
+ · [Quick start](#quick-start) 
+ · [Demo accounts](#demo-accounts) 
+ · [The problem & the three-tier solution](#the-problem--the-three-tier-solution) 
+ · [What each role can do](#what-each-role-can-do) · [Feature walkthrough](#feature-walkthrough) 
+ · [The showpiece: the health heat map](#the-showpiece-the-campus-health-heat-map) 
+ · [Tech stack](#tech-stack) · [Architecture](#architecture) 
+ · [Engineering decisions worth noting](#engineering-decisions-worth-noting) 
+ · [Security](#security) · [Project structure](#project-structure) 
+ · [Environment variables](#environment-variables) · [Database & demo data](#database--demo-data) 
+ · [Troubleshooting](#troubleshooting) · [Team](#team)
 
 ---
 
