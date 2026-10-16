@@ -280,11 +280,11 @@
         // Surface WHY it failed (status + any server message) instead of a blind
         // generic alert — e.g. 401/403 = session expired, 500 = DB/server error.
         let detail = '';
-        try { detail = (await resp.json()).error || ''; } catch (_) { /* non-JSON error page */ }
+        try { const j = await resp.json(); detail = j.detail || j.error || ''; } catch (_) { /* non-JSON error page */ }
         console.error('[Booking] nurse-grid API failed:', resp.status, resp.statusText, detail);
         alert('Could not load availability (error ' + resp.status + ').' +
-              (detail ? ' ' + detail : '') +
-              (resp.status === 401 || resp.status === 403 ? ' Please sign in again.' : ''));
+              (detail ? '\n\n' + detail : '') +
+              (resp.status === 401 || resp.status === 403 ? '\n\nPlease sign in again.' : ''));
         gridBody.innerHTML = '';
         return;
       }

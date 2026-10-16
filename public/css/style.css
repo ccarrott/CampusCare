@@ -1486,6 +1486,14 @@ textarea.form-control {
   -webkit-mask-image: linear-gradient(to right, transparent 0, #000 3%, #000 97%, transparent 100%);
           mask-image: linear-gradient(to right, transparent 0, #000 3%, #000 97%, transparent 100%);
 }
+/* A mask clips ALL descendants to the table box, which cuts off a row's kebab
+   dropdown at the table's bottom edge. The consultation-history table carries
+   row action menus, so it opts out of the edge-fade mask to let the dropdown
+   escape. */
+.consult-history-card .data-table {
+  -webkit-mask-image: none;
+          mask-image: none;
+}
 /* Remove hard side cell padding-edges so highlights dissolve, not cut */
 .data-table th:first-child, .data-table td:first-child { padding-left: 18px; }
 .data-table th:last-child,  .data-table td:last-child  { padding-right: 18px; }
