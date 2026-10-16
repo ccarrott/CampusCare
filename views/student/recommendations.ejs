@@ -92,7 +92,7 @@
         if (detected) {
           document.getElementById('locationStatus').innerHTML = 'Based on your current location';
         } else {
-          document.getElementById('locationStatus').innerHTML = 'Location unavailable — showing hospitals nearest to NMU campus. <br>Call <strong>10177</strong> (national ambulance) if unsure where to go. <button type="button" id="retryLocation" class="btn btn-secondary" style="margin-top:8px; padding:4px 12px; font-size:0.85rem;">Retry location</button>';
+          document.getElementById('locationStatus').innerHTML = '<div style="display:flex; flex-direction:column; align-items:flex-start; gap:8px;"><span>Location unavailable — showing hospitals nearest to NMU campus. Call <strong>10177</strong> (national ambulance) if unsure where to go.</span><button type="button" id="retryLocation" class="btn btn-secondary" style="padding:4px 12px; font-size:0.85rem;">Retry location</button></div>';
           var retry = document.getElementById('retryLocation');
           if (retry) retry.addEventListener('click', requestLocation);
         }
