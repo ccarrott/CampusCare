@@ -6,11 +6,15 @@
   "type": "module",
   "scripts": {
     "start": "node src/app.js",
+    "start:local": "node src/app.js --local",
+    "start:aiven": "node src/app.js --aiven",
+    "setup:local": "node src/app.js --local --bootstrap-only",
     "db": "node src/config/test_database.js",
     "migrate": "node src/config/migrate.js",
     "seed:symptoms": "node src/config/seed-symptoms.js",
     "seed:zones": "node src/config/seed-zones-v2.js",
-    "setup": "node src/config/migrate.js && node src/config/seed-symptoms.js && node src/config/seed-zones-v2.js",
+    "test:email": "node src/config/test-email.js",
+    "setup": "node src/config/migrate.js && node src/config/seed-symptoms.js && node src/config/seed-zones-v2.js && node src/config/states/state-showcase.js",
     "state:naked": "node src/config/states/state-naked.js",
     "state:showcase": "node src/config/states/state-showcase.js",
     "state:outbreak": "node src/config/states/state-outbreak.js",
@@ -32,7 +36,6 @@
   },
   "homepage": "https://github.com/ccarrott/CampusCare#readme",
   "dependencies": {
-    "bcrypt": "^6.0.0",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.4.2",
@@ -40,7 +43,8 @@
     "express": "^5.2.1",
     "express-mysql-session": "^3.0.3",
     "express-session": "^1.19.0",
-    "mysql2": "^3.24.3"
+    "mysql2": "^3.24.3",
+    "nodemailer": "^10.1.1"
   },
   "overrides": {
     "mysql2": "$mysql2"

@@ -92,7 +92,7 @@
         if (detected) {
           document.getElementById('locationStatus').innerHTML = 'Based on your current location';
         } else {
-          document.getElementById('locationStatus').innerHTML = 'Location unavailable — showing hospitals nearest to NMU campus. <br>Call <strong>10177</strong> (national ambulance) if unsure where to go. <button type="button" id="retryLocation" class="btn btn-secondary" style="margin-top:8px; padding:4px 12px; font-size:0.85rem;">Retry location</button>';
+          document.getElementById('locationStatus').innerHTML = '<div style="display:flex; flex-direction:column; align-items:flex-start; gap:8px;"><span>Location unavailable — showing hospitals nearest to NMU campus. Call <strong>10177</strong> (national ambulance) if unsure where to go.</span><button type="button" id="retryLocation" class="btn btn-secondary" style="padding:4px 12px; font-size:0.85rem;">Retry location</button></div>';
           var retry = document.getElementById('retryLocation');
           if (retry) retry.addEventListener('click', requestLocation);
         }
@@ -131,6 +131,7 @@
     </script>
   <% } else if (maxTier >= 2) { %>
     <div class="alert alert-warning">
+      <h2 style="margin:0 0 6px; font-size:1.1rem;">Advanced to Tier 2</h2>
       <strong>You need to book a nurse consultation.</strong><br>
       One or more of your symptoms requires professional assessment. OTC medication alone is not appropriate for these symptoms.
       <% if (typeof escalationReasons !== 'undefined' && escalationReasons && escalationReasons.length > 0) { %>
@@ -143,6 +144,12 @@
       <% } %>
       <a href="/consultations/book" class="btn btn-primary" style="margin-top: 8px; display: inline-block;">Book Consultation Now</a>
     </div>
+  <% } else { %>
+    <div class="alert alert-success">
+      <h2 style="margin:0 0 6px; font-size:1.1rem;">Tier 1 — Self-Care</h2>
+      Your symptoms can likely be managed with over-the-counter care. See the recommended
+      medications below, and book a nurse consultation if things persist or get worse.
+    </div>
   <% } %>
 
   <!-- Selected Symptoms Summary -->
@@ -150,11 +157,7 @@
     <h2>Symptoms Reported</h2>
     <div style="display: flex; flex-wrap: wrap; gap: 6px;">
       <% selectedSymptoms.forEach(function(sym) { %>
-        <span class="symptom-summary-tag">
-          <%= sym.Name %>
-          <% if (sym.Tier === 2) { %><span class="tier-dot tier-dot-2"></span><% } %>
-          <% if (sym.Tier >= 3) { %><span class="tier-dot tier-dot-3"></span><% } %>
-        </span>
+        <span class="symptom-summary-tag"><%= sym.Name %><% if (sym.Tier === 2) { %><span class="tier-dot tier-dot-2"></span><% } %><% if (sym.Tier >= 3) { %><span class="tier-dot tier-dot-3"></span><% } %></span>
       <% }); %>
     </div>
     <p class="text-muted mt-2">Severity: <strong><%= severity %></strong></p>
@@ -208,7 +211,7 @@
 
   <!-- Actions -->
   <div class="mt-3" style="display: flex; gap: 12px; flex-wrap: wrap;">
-    <a href="/symptoms" class="btn btn-primary">Check Again</a>
+    <a href="/" class="btn btn-primary">Done</a>
     <a href="/symptoms/history" class="btn btn-secondary">View History</a>
     <% if (maxTier >= 2) { %>
       <a href="/consultations/book" class="btn btn-success">Book Consultation Now</a>

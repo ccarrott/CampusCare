@@ -1,9 +1,11 @@
 # Plan 2 — Student Portal, Triage & Reviews
 
 ## Problem Statement
-Eight student-facing fixes: the Tier-2 escalation heading, booking CTA wording, the progress-bar
+Student-facing fixes: the Tier-2 escalation heading, booking CTA wording, the progress-bar
 "Starting soon" label, the consultation-history action label, a kebab-menu clipping bug, review
-eligibility, star-rating validation, and surfacing review rejection to the student.
+eligibility, star-rating validation, surfacing review rejection to the student, plus a small
+batch of follow-up polish (review wording, removing the Anxiety symptom, and the symptom-checker
+"Done" button).
 
 ## Global Constraints
 - **UI-only terminology rename:** only EJS visible text/labels — never the `Appointment` table,
@@ -230,9 +232,84 @@ but nothing surfaces this to the student. `getReviewsByStudent` already exposes 
 
 ---
 
+## Item 15 — "Rate your consultation" → "Review your consultation" (wording)
+
+**Target files**
+- `views/consultations/index.ejs` — the page subtitle ("View, manage, and rate your
+  consultations.", ~line 9) and the rating-modal title. (Note: Plan 1's terminology sweep
+  already renamed the modal title to "Review Your Nurse"; this item re-points the *consultation*
+  wording so "rate" becomes "review" consistently.)
+
+**Context**
+Per the request, user-facing "rate your consultation" wording should read "review your
+consultation". The kebab action is already "Review nurse" (Item 10) and the modal title is
+"Review Your Nurse" (Plan 1). This item aligns the remaining copy.
+
+**Implementation Steps**
+1. Change the subtitle to "View, manage, and review your consultations."
+2. Set the rating-modal title to "Review Your Consultation" (replacing the Plan 1 "Review Your
+   Nurse" so the modal, kebab, and subtitle all speak of reviewing the consultation).
+3. Leave the POST route (`/consultations/rate`), hidden inputs, and JS (`openRatingModal`)
+   untouched — text only.
+
+**Verification**
+- The My Consultations subtitle and modal title read "review"/"Review Your Consultation".
+- Opening the modal and submitting still works.
+
+---
+
+## Item 16 — Remove "Anxiety" as a symptom
+
+**Target files**
+- `src/config/seed-symptoms.js` — remove the `SYM38` Anxiety entry from the `SYMPTOMS` array
+  (~line 55, category Mental, tier 1).
+
+**Context**
+`SYM38` (Anxiety) has **no** rows in the `MAPPING` array (no OTC medication maps to it), so
+removing it is clean — no mapping edits needed. `Panic attacks` (SYM39), `Insomnia` (SYM40),
+`Low mood` (SYM41), `Burnout` (SYM42) remain. The symptom seeder (`seedSymptoms()`) **wipes**
+`SymptomMedicationMap`, `SymptomLogEntry`, `Symptom`, `Medication` and re-inserts from the
+arrays, so removing the array entry + reseeding fully removes Anxiety from the DB.
+
+**Implementation Steps**
+1. Delete the `SYM38` Anxiety object from the `SYMPTOMS` array. Do **not** renumber the other
+   `SYM*` ids (keeping them stable avoids churn in logs/mappings).
+2. Confirm no `MAPPING` entry references `SYM38` (verified: none do).
+3. Re-run `npm run seed:symptoms` to apply. **Caveat:** reseeding wipes `SymptomLogEntry`, so
+   existing symptom-log → symptom links are cleared (acceptable on the current demo dataset;
+   flag before running against anything that must be preserved).
+
+**Verification**
+- The symptom checker no longer lists "Anxiety"; "Panic attacks" and other Mental symptoms
+  remain selectable.
+- Seeding completes without error (symptom/med/mapping counts update accordingly).
+
+---
+
+## Item 17 — Symptom-checker "Check Again" → "Done" (wording)
+
+**Target files**
+- `views/student/recommendations.ejs` — the action button "Check Again" (~line 211).
+
+**Context**
+On the recommendations (end-of-flow) page the primary action currently reads "Check Again" and
+links to `/symptoms`. The request is to label it "Done".
+
+**Implementation Steps**
+1. Change the button text "Check Again" → "Done". Keep the `href="/symptoms"` link and classes
+   (it returns the student to the symptom checker start, which is a reasonable "done" landing).
+   If a different destination is wanted for "Done" (e.g. home `/`), confirm — default is to keep
+   the existing link and only change the label.
+
+**Verification**
+- The recommendations page shows a "Done" button; clicking it navigates as before.
+
+---
+
 ## Suggested Execution Order
-1. Items 7, 8, 10 (pure text/label edits — fast, isolated).
+1. Items 7, 8, 10, 15, 17 (pure text/label edits — fast, isolated).
 2. Item 11 (CSS clipping fix).
 3. Item 9 (progress-bar logic + label).
 4. Items 12 + 13 (reviews controller — related, do together).
 5. Item 14 (reviews page badge).
+6. Item 16 (remove Anxiety symptom + reseed).

@@ -1,6 +1,6 @@
 > ⚠️ **SUPERSEDED (Phase 30 UI Haul).** This blueprint describes the *old* UI: solid navy sidebar, topbar with user info, two-column card grid, Leaflet-in-a-box map. The UI Haul replaces this with a floating glass shell (no topbar), layout archetypes, a breathing-gradient background, and a MapLibre immersive map.
 >
-> **Authoritative design doc now:** `.kiro/steering/ui-design.md`. Map: `.kiro/specs/next-phase/phase-30G-map-plan.md`. Kept below for historical reference only.
+> **Authoritative design doc now:** `.kiro/steering/ui-design.md`. Map: `.kiro/plans/phases/phase-30G-map-plan.md`. Kept below for historical reference only.
 
 ---
 

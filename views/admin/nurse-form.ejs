@@ -6,7 +6,7 @@
 
   <header class="page-header">
     <h1><%= isEdit ? 'Edit Nurse' : 'Add New Nurse' %></h1>
-    <p class="subtitle"><%= isEdit ? 'Update nurse staff details.' : 'Register a new nurse to the system.' %></p>
+    <p class="subtitle"><%= isEdit ? 'You can update a nurse\'s Campus and Assigned Clinic. Other details are read-only.' : 'Register a new nurse to the system.' %></p>
   </header>
 
   <%- include('../partials/back-button') %>
@@ -28,12 +28,12 @@
       <div class="form-row">
         <div class="form-group">
           <label for="firstName">First Name</label>
-          <input type="text" id="firstName" name="firstName" class="form-control" required
+          <input type="text" id="firstName" name="firstName" class="form-control" <%= isEdit ? 'readonly' : 'required' %>
             value="<%= nurse ? nurse.FirstName || nurse.firstName || '' : '' %>">
         </div>
         <div class="form-group">
           <label for="lastName">Last Name</label>
-          <input type="text" id="lastName" name="lastName" class="form-control" required
+          <input type="text" id="lastName" name="lastName" class="form-control" <%= isEdit ? 'readonly' : 'required' %>
             value="<%= nurse ? nurse.LastName || nurse.lastName || '' : '' %>">
         </div>
       </div>
@@ -41,12 +41,12 @@
       <div class="form-row">
         <div class="form-group">
           <label for="email">Email</label>
-          <input type="email" id="email" name="email" class="form-control"
+          <input type="email" id="email" name="email" class="form-control" <%= isEdit ? 'readonly' : '' %>
             value="<%= nurse ? nurse.Email || nurse.email || '' : '' %>" placeholder="name@mandela.ac.za">
         </div>
         <div class="form-group">
           <label for="phoneNumber">Phone Number</label>
-          <input type="tel" id="phoneNumber" name="phoneNumber" class="form-control"
+          <input type="tel" id="phoneNumber" name="phoneNumber" class="form-control" <%= isEdit ? 'readonly' : '' %>
             value="<%= nurse ? nurse.PhoneNumber || nurse.phoneNumber || '' : '' %>" placeholder="0821234567">
         </div>
       </div>

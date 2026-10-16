@@ -25,11 +25,11 @@ export const exportAppointmentsCSV = catchAsync(async (req, res) => {
     SELECT a.AppointmentID, a.AppointmentType, a.Time, a.Status,
            s.StudentNumber, s.FirstName AS StudentFirst, s.LastName AS StudentLast,
            n.StaffNumber, n.FirstName AS NurseFirst, n.LastName AS NurseLast,
-           cs.DurationSeconds, cs.NurseJoinedAt, cs.StudentJoinedAt
-    FROM Appointment a
+           cs.Duration AS DurationSeconds, cs.NurseJoinedAt, cs.StudentJoinedAt
+    FROM Consultation a
     INNER JOIN Student s ON a.StudentNumber = s.StudentNumber
     INNER JOIN Nurse n ON a.StaffNumber = n.StaffNumber
-    LEFT JOIN ConsultationSession cs ON cs.AppointmentID = a.AppointmentID
+    LEFT JOIN OnlineConsultationSession cs ON cs.AppointmentID = a.AppointmentID
     ORDER BY a.Time DESC
   `);
 

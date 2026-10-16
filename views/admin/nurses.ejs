@@ -4,14 +4,57 @@
 <main class="container page-wrapper">
   <%- include('../partials/alerts') %>
 
-  <% if (typeof success !== 'undefined' && success) { %>
-    <div class="alert alert-success"><%= success %></div>
-  <% } %>
-
   <header class="page-header">
     <h1>Manage Nurses</h1>
     <p class="subtitle">View, add, edit, or remove nurse staff accounts.</p>
   </header>
+
+  <!-- Pending Nurse Reviews Moderation Queue (relocated from the report page) -->
+  <% if (typeof pendingNurseReviews !== 'undefined' && pendingNurseReviews.length > 0) { %>
+    <section class="content-card reveal mb-3">
+      <h2>Pending Nurse Reviews (<%= pendingNurseReviews.length %>)</h2>
+      <p class="text-muted mb-2">These nurse reviews need approval before they appear on "Meet Our Staff".</p>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nurse</th>
+            <th>Score</th>
+            <th>Review</th>
+            <th>Student</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% pendingNurseReviews.forEach(function(r) { %>
+            <tr>
+              <td><%= r.NurseFirstName %> <%= r.NurseLastName %></td>
+              <td>
+                <span class="star-rating-static">
+                  <% for (let i = 1; i <= 5; i++) { %><% if (i <= r.Rating) { %><span>&#9733;</span><% } else { %><span class="star-empty">&#9734;</span><% } %><% } %>
+                </span>
+              </td>
+              <td><%= r.ReviewText %></td>
+              <td><%= r.StudentFirstName %> <%= r.StudentLastName %></td>
+              <td>
+                <div class="action-btns">
+                  <form action="/management/admin/review/approve" method="POST" style="display:inline;">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <input type="hidden" name="reviewId" value="<%= r.ReviewID %>">
+                    <button type="submit" class="action-btn action-btn-complete">Approve</button>
+                  </form>
+                  <form action="/management/admin/review/reject" method="POST" style="display:inline;" onsubmit="return confirm('Reject this review?');">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <input type="hidden" name="reviewId" value="<%= r.ReviewID %>">
+                    <button type="submit" class="action-btn action-btn-cancel">Reject</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </section>
+  <% } %>
 
   <section class="content-card reveal">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">

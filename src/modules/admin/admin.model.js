@@ -2,9 +2,6 @@
 // Database queries for admin operations: reports, student CRUD, nurse CRUD (merged from adminReportModel + adminCrudModel).
 
 import { query } from '../../config/database.js';
-import bcrypt from 'bcrypt';
-
-const SALT_ROUNDS = 10;
 
 // ============================================================================
 // OPERATIONAL REPORTS
@@ -14,7 +11,7 @@ export async function getOperationalReportData() {
   const sql = `
     SELECT
       (SELECT COUNT(*) FROM Student) AS TotalStudents,
-      (SELECT COUNT(*) FROM Appointment) AS TotalAppointments,
+      (SELECT COUNT(*) FROM Consultation) AS TotalAppointments,
       (SELECT COUNT(*) FROM Nurse) AS TotalNurses,
       (SELECT AVG(Score) FROM Rating) AS AverageNurseRating
   `;
@@ -23,24 +20,24 @@ export async function getOperationalReportData() {
 }
 
 export async function getAppointmentsByType() {
-  const sql = 'SELECT AppointmentType, COUNT(*) AS Count FROM Appointment GROUP BY AppointmentType';
+  const sql = 'SELECT AppointmentType, COUNT(*) AS Count FROM Consultation GROUP BY AppointmentType';
   return await query(sql);
 }
 
 /**
- * Phase 28: video consultation analytics from webhook-logged ConsultationSession rows.
+ * Phase 28: video consultation analytics from webhook-logged OnlineConsultationSession rows.
  * Returns completed count, average duration (minutes), and a no-show count.
  */
 export async function getVideoConsultationStats() {
   const sql = `
     SELECT
-      (SELECT COUNT(*) FROM ConsultationSession WHERE EndedAt IS NOT NULL) AS CompletedSessions,
-      (SELECT ROUND(AVG(DurationSeconds) / 60, 1) FROM ConsultationSession WHERE DurationSeconds IS NOT NULL) AS AvgDurationMin,
-      (SELECT COUNT(*) FROM Appointment a
+      (SELECT COUNT(*) FROM OnlineConsultationSession WHERE EndedAt IS NOT NULL) AS CompletedSessions,
+      (SELECT ROUND(AVG(Duration) / 60, 1) FROM OnlineConsultationSession WHERE Duration IS NOT NULL) AS AvgDurationMin,
+      (SELECT COUNT(*) FROM Consultation a
          WHERE a.AppointmentType = 'Online' AND a.Status = 'Confirmed'
            AND a.Time < NOW()
            AND NOT EXISTS (
-             SELECT 1 FROM ConsultationSession cs
+             SELECT 1 FROM OnlineConsultationSession cs
              WHERE cs.AppointmentID = a.AppointmentID AND cs.StudentJoinedAt IS NOT NULL
            )
       ) AS NoShowCount
@@ -54,7 +51,7 @@ export async function getAllRatings() {
     SELECT r.RatingID, r.Score, r.RatingDescription, r.AppointmentID,
            a.StaffNumber, n.FirstName AS NurseFirstName, n.LastName AS NurseLastName
     FROM Rating r
-    INNER JOIN Appointment a ON r.AppointmentID = a.AppointmentID
+    INNER JOIN Consultation a ON r.AppointmentID = a.AppointmentID
     INNER JOIN Nurse n ON a.StaffNumber = n.StaffNumber
     ORDER BY r.Score DESC
   `;
@@ -64,7 +61,7 @@ export async function getAllRatings() {
 export async function getDailyAppointmentCounts(days = 14) {
   const sql = `
     SELECT DATE(Time) AS day, COUNT(*) AS count
-    FROM Appointment
+    FROM Consultation
     WHERE Time >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
     GROUP BY DATE(Time)
     ORDER BY day ASC
@@ -85,15 +82,6 @@ export async function getStudentById(studentNumber) {
   return results[0];
 }
 
-export async function createStudent({ studentNumber, firstName, lastName, medicalHistory, password }) {
-  const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-  const sql = `
-    INSERT INTO Student (StudentNumber, FirstName, LastName, MedicalHistory, Password)
-    VALUES (?, ?, ?, ?, ?)
-  `;
-  return await query(sql, [studentNumber, firstName, lastName, medicalHistory || '', hashedPassword]);
-}
-
 export async function updateStudent(studentNumber, { firstName, lastName, medicalHistory }) {
   const sql = `
     UPDATE Student SET FirstName = ?, LastName = ?, MedicalHistory = ?
@@ -103,19 +91,10 @@ export async function updateStudent(studentNumber, { firstName, lastName, medica
 }
 
 export async function deleteStudent(studentNumber) {
-  // Child rows first, deepest first. SymptomLogEntry hangs off SymptomLog by LogID,
-  // so it has to go before the parent logs — otherwise its rows are orphaned and keep
-  // inflating the trend rollups after the student is gone. NurseReviews and any
-  // outstanding reset tokens were likewise being left behind.
-  await query(
-    'DELETE FROM SymptomLogEntry WHERE LogID IN (SELECT LogID FROM SymptomLog WHERE StudentNumber = ?)',
-    [studentNumber]
-  );
-  await query('DELETE FROM SymptomLog WHERE StudentNumber = ?', [studentNumber]);
-  await query('DELETE FROM StudentZone WHERE StudentNumber = ?', [studentNumber]);
-  await query('DELETE FROM NurseReviews WHERE StudentNumber = ?', [studentNumber]);
-  await query('DELETE FROM Rating WHERE StudentNumber = ?', [studentNumber]);
-  await query('DELETE FROM Appointment WHERE StudentNumber = ?', [studentNumber]);
+  // Child rows (Consultation, Rating, NurseReviews, SymptomLog -> SymptomLogEntry,
+  // StudentZone) now cascade automatically via ON DELETE CASCADE from Student.
+  // PasswordResetToken is polymorphic (UserID has NO FK), so its rows must still
+  // be cleared by hand before the student goes.
   await query("DELETE FROM PasswordResetToken WHERE UserID = ? AND UserType = 'student'", [studentNumber]);
   await query('DELETE FROM Student WHERE StudentNumber = ?', [studentNumber]);
 }
@@ -169,28 +148,30 @@ export async function getNurseById(staffNumber) {
 }
 
 export async function createNurse({ staffNumber, firstName, lastName, email, phoneNumber, campus, clinicId, password }) {
-  const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+  // SECURITY DOWNGRADE (LOCAL/DEMO ONLY — DO NOT SHIP): store password in plaintext, bcrypt disabled.
+  const storedPassword = password;
   const sql = `
     INSERT INTO Nurse (StaffNumber, FirstName, LastName, Email, PhoneNumber, Campus, ClinicID, Password)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
-  return await query(sql, [staffNumber, firstName, lastName, email || '', phoneNumber || '', campus || null, clinicId || null, hashedPassword]);
+  return await query(sql, [staffNumber, firstName, lastName, email || '', phoneNumber || '', campus || null, clinicId || null, storedPassword]);
 }
 
-export async function updateNurse(staffNumber, { firstName, lastName, email, phoneNumber, campus, clinicId }) {
+// Admin nurse edit is restricted to Campus + Assigned Clinic only (Plan 3 Item 18).
+// Name/email/phone are set at creation and not editable by an admin thereafter.
+export async function updateNurse(staffNumber, { campus, clinicId }) {
   const sql = `
-    UPDATE Nurse SET FirstName = ?, LastName = ?, Email = ?, PhoneNumber = ?, Campus = ?, ClinicID = ?
+    UPDATE Nurse SET Campus = ?, ClinicID = ?
     WHERE StaffNumber = ?
   `;
-  return await query(sql, [firstName, lastName, email || '', phoneNumber || '', campus || null, clinicId || null, staffNumber]);
+  return await query(sql, [campus || null, clinicId || null, staffNumber]);
 }
 
 export async function deleteNurse(staffNumber) {
-  const appointments = await query('SELECT COUNT(*) AS c FROM Appointment WHERE StaffNumber = ?', [staffNumber]);
-  if (appointments[0].c > 0) {
-    throw new Error('Cannot delete nurse with existing appointments. Reassign or cancel them first.');
-  }
-  await query('DELETE FROM NurseAvailability WHERE StaffNumber = ?', [staffNumber]);
+  // Decision 1 (FULL CASCADE): removing a nurse wipes their Consultations and,
+  // onward via ON DELETE CASCADE, the Ratings / NurseReviews / OnlineConsultationSession
+  // tied to those consultations, plus the nurse's NurseAvailability. No application-level
+  // guard — the DB cascade handles everything.
   await query('DELETE FROM Nurse WHERE StaffNumber = ?', [staffNumber]);
 }
 

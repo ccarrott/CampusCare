@@ -67,7 +67,7 @@ const ZONES = SUBURBS.map(([name, lat, lon], i) => ({
   name, lat, lon
 }));
 
-async function seedZones() {
+export async function seedZones({ exitOnDone = true } = {}) {
   console.log('╔══════════════════════════════════════════════════╗');
   console.log('║  CampusCare — Zone Seed v5 (Voronoi suburbs)    ║');
   console.log('╚══════════════════════════════════════════════════╝');
@@ -75,6 +75,13 @@ async function seedZones() {
   const cells = voronoiCells(ZONES, BOUNDS);
 
   console.log('  [1/2] Clearing old zones...');
+  // Clear with FK enforcement ON (no FOREIGN_KEY_CHECKS toggle) so the declared
+  // ON DELETE actions actually fire. StudentZone -> CampusZone is CASCADE, so we
+  // delete StudentZone first (its own rows), then CampusZone. Deleting CampusZone
+  // triggers SymptomLog.ZoneID ON DELETE SET NULL (Decision 2): existing health
+  // logs SURVIVE a zone reseed with their ZoneID nulled rather than being deleted.
+  // Suppressing checks here (as a prior version did) would skip the SET NULL and
+  // leave logs pointing at stale/removed zone IDs if the suburb set ever changes.
   await query('DELETE FROM StudentZone');
   await query('DELETE FROM CampusZone');
 
@@ -86,7 +93,8 @@ async function seedZones() {
   await query('INSERT INTO CampusZone (ZoneID, Name, Latitude, Longitude, Radius, Boundary) VALUES ' + placeholders, rows.flat());
 
   console.log('  ✓ Done. ' + rows.length + ' Voronoi zones — every point maps to its nearest suburb.');
-  process.exit(0);
+  if (exitOnDone) process.exit(0);
+  return { success: true };
 }
 
 if (process.argv[1]?.includes('seed-zones')) {

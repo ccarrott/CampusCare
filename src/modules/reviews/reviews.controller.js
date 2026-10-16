@@ -7,6 +7,7 @@ import { catchAsync } from '../../utils/catchAsync.js';
 import { sanitize } from '../../utils/sanitize.js';
 import { isValidScore } from '../../middleware/validate.js';
 import { AppError } from '../../utils/AppError.js';
+import { APPOINTMENT_STATUS } from '../../constants.js';
 
 // ============================================================================
 // RATING SUBMISSION (from appointment history)
@@ -15,13 +16,18 @@ import { AppError } from '../../utils/AppError.js';
 export const handleRatingSubmission = catchAsync(async (req, res) => {
   const { appointmentId, score, ratingDescription } = req.body;
 
-  if (!appointmentId || !score || !isValidScore(score)) {
+  if (!appointmentId) {
     return res.redirect('/consultations/my-appointments');
+  }
+  // A star rating is mandatory — tell the student instead of silently bouncing.
+  if (!score || !isValidScore(score)) {
+    return res.redirect('/consultations/my-appointments?toast=' +
+      encodeURIComponent('Please select a star rating.') + '&toastType=error');
   }
 
   // Verify appointment exists, belongs to student, and is Completed
   const apt = await ReviewsModel.getAppointmentForReview(appointmentId, req.session.user.id);
-  if (!apt || apt.Status !== 'Completed') {
+  if (!apt || apt.Status !== APPOINTMENT_STATUS.COMPLETED) {
     return res.redirect('/consultations/my-appointments');
   }
 
@@ -57,20 +63,38 @@ export const showReviewPage = catchAsync(async (req, res) => {
     return res.redirect('/consultations/my-appointments');
   }
 
+  // Only attended/completed consultations can be reviewed. A past consultation still
+  // sitting in Pending (or Cancelled) must not reach the review form.
+  if (appointment.Status !== APPOINTMENT_STATUS.COMPLETED) {
+    return res.redirect('/consultations/my-appointments?toast=' +
+      encodeURIComponent('You can only review a completed consultation.') + '&toastType=error');
+  }
+
   res.render('consultations/review', { user: req.session.user, appointment, error: null });
 });
 
 export const handleReviewSubmission = catchAsync(async (req, res) => {
-  const { staffNumber, rating, reviewText } = req.body;
+  const { appointmentId, staffNumber, rating, reviewText } = req.body;
   const studentNumber = req.session.user.id;
 
-  // Comment is optional — only staffNumber + a valid rating are required.
-  if (!staffNumber || !rating) {
+  if (!staffNumber) {
     return res.redirect('/consultations/nurse-reviews');
   }
 
-  if (!isValidScore(rating)) {
-    return res.redirect('/consultations/nurse-reviews');
+  // A star rating is mandatory — comment stays optional. Surface a clear error.
+  if (!rating || !isValidScore(rating)) {
+    return res.redirect('/consultations/nurse-reviews?toast=' +
+      encodeURIComponent('Please select a star rating.') + '&toastType=error');
+  }
+
+  // The consultation being reviewed must actually be completed. The form carries the
+  // appointmentId it was opened for; verify ownership + Completed status before accepting.
+  if (appointmentId) {
+    const reviewed = await ReviewsModel.getAppointmentForReview(appointmentId, studentNumber);
+    if (!reviewed || reviewed.Status !== APPOINTMENT_STATUS.COMPLETED) {
+      return res.redirect('/consultations/my-appointments?toast=' +
+        encodeURIComponent('You can only review a completed consultation.') + '&toastType=error');
+    }
   }
 
   // One review per nurse per student

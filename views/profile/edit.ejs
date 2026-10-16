@@ -54,57 +54,21 @@
 
 </main>
 
-<link rel="stylesheet" href="/vendor/leaflet/leaflet.css?v=<%= typeof assetV !== 'undefined' ? assetV : '1' %>" />
-<script src="/vendor/leaflet/leaflet.js?v=<%= typeof assetV !== 'undefined' ? assetV : '1' %>"></script>
+<link rel="stylesheet" href="/vendor/maplibre/maplibre-gl.css?v=<%= typeof assetV !== 'undefined' ? assetV : '1' %>" />
+<script src="/vendor/maplibre/maplibre-gl.js?v=<%= typeof assetV !== 'undefined' ? assetV : '1' %>"></script>
 <script>
-(function() {
-  // Leaflet is loaded from a CDN. If it can't be reached, show a message instead
-  // of letting the whole block throw and leaving an unexplained blank box.
-  if (typeof L === 'undefined') {
-    var box = document.getElementById('editMap');
-    if (box) box.innerHTML = '<div class="map-fallback">Map library failed to load. Check your connection and refresh.</div>';
-    return;
-  }
-  const map = L.map('editMap').setView([-33.9855, 25.6600], 13);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors', maxZoom: 18
-  }).addTo(map);
-
-  const zones = <%- JSON.stringify(zones) %>;
-
-  let marker = null;
-  const latInput = document.getElementById('editLatInput');
-  const lonInput = document.getElementById('editLonInput');
-  const saveBtn = document.getElementById('editSavePin');
-  const info = document.getElementById('editLocationInfo');
-  const zoneLabel = document.getElementById('editZoneName');
-
-  <% if (profile.Latitude && profile.Longitude) { %>
-    marker = L.marker([<%= profile.Latitude %>, <%= profile.Longitude %>], { draggable: true }).addTo(map);
-    latInput.value = '<%= profile.Latitude %>';
-    lonInput.value = '<%= profile.Longitude %>';
-    saveBtn.disabled = false;
-    info.style.display = 'block';
-    zoneLabel.textContent = detectZone(<%= profile.Latitude %>, <%= profile.Longitude %>);
-    marker.on('dragend', onMove);
-  <% } %>
-
-  map.on('click', function(e) {
-    if (marker) marker.setLatLng(e.latlng);
-    else { marker = L.marker(e.latlng, { draggable: true }).addTo(map); marker.on('dragend', onMove); }
-    update(e.latlng.lat, e.latlng.lng);
-  });
-
-  function onMove(e) { const p = e.target.getLatLng(); update(p.lat, p.lng); }
-
-  function update(lat, lon) {
-    latInput.value = lat.toFixed(7);
-    lonInput.value = lon.toFixed(7);
-    saveBtn.disabled = false;
-    info.style.display = 'block';
-    zoneLabel.textContent = 'Location set';
-  }
-})();
+  window.__pinConfig = {
+    maptilerKey: '<%= maptilerKey %>',
+    container: 'editMap',
+    latInput: 'editLatInput',
+    lonInput: 'editLonInput',
+    saveBtn: 'editSavePin',
+    infoBox: 'editLocationInfo',
+    zoneLabel: 'editZoneName',
+    currentLat: <%= profile.Latitude ? profile.Latitude : 'null' %>,
+    currentLon: <%= profile.Longitude ? profile.Longitude : 'null' %>
+  };
 </script>
+<script src="/js/pin-picker.js?v=<%= typeof assetV !== 'undefined' ? assetV : '1' %>"></script>
 
 <%- include('../partials/footer') %>

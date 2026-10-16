@@ -1,5 +1,4 @@
 import { query, pool } from '../database.js';
-import bcrypt from 'bcrypt';
 import { DEMO_PASSWORDS } from './demo-credentials.js';
 import crypto from 'crypto';
 import { getZoneForPoint } from '../../utils/geo.js';
@@ -65,7 +64,6 @@ const STUDENTS = [
 ];
 
 const NURSES = ['NUR001', 'NUR002', 'NUR003'];
-const SYMPTOM_IDS = Array.from({length: 48}, (_, i) => 'SYM' + String(i + 1).padStart(2, '0'));
 const COMMENTS = [
   'Excellent care, very thorough.', 'Quick and professional.', 'Felt heard and supported.',
   'Helpful advice, short wait.', 'Very knowledgeable nurse.', 'Great experience overall.',
@@ -92,7 +90,14 @@ export async function loadShowcaseState() {
   await loadNakedState();
 
   const zones = await query('SELECT ZoneID, Name, Latitude, Longitude, Boundary FROM CampusZone');
-  const pw = await bcrypt.hash(DEMO_PASSWORDS.student, 10);
+  // Source symptom IDs from what the catalog ACTUALLY seeded (seed-symptoms runs
+  // before showcase). The catalog is not perfectly contiguous (e.g. SYM38 is
+  // intentionally absent), so a hardcoded SYM01..SYM48 range would reference a
+  // non-existent symptom and violate the SymptomLogEntry -> Symptom FK now that
+  // FKs are enforced.
+  const SYMPTOM_IDS = (await query('SELECT SymptomID FROM Symptom')).map(r => r.SymptomID);
+  // SECURITY DOWNGRADE (LOCAL/DEMO ONLY — DO NOT SHIP): seed student passwords in plaintext, bcrypt disabled.
+  const pw = DEMO_PASSWORDS.student;
 
   // 2. STUDENTS (batch)
   console.log('  [2/7] Seeding 19 students + zone assignments...');
@@ -116,7 +121,7 @@ export async function loadShowcaseState() {
     const type = i % 3 === 0 ? 'Online' : 'Physical';
     aptRows.push(['APT-SH-' + String(i+1).padStart(3,'0'), type, formatDT(date), STUDENTS[i%19].id, NURSES[i%3], status]);
   }
-  await batchInsert('Appointment', ['AppointmentID', 'AppointmentType', 'Time', 'StudentNumber', 'StaffNumber', 'Status'], aptRows);
+  await batchInsert('Consultation', ['AppointmentID', 'AppointmentType', 'Time', 'StudentNumber', 'StaffNumber', 'Status'], aptRows);
 
   // 4. RATINGS (batch)
   console.log('  [4/7] Seeding 20 ratings...');

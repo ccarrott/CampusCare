@@ -1,9 +1,10 @@
 # Plan 4 — Nurse Portal
 
 ## Problem Statement
-Three nurse-portal fixes: lock the "Years of Experience" field, restrict the editable nurse
-profile fields to Bio / Last Name / Password, and surface a student's logged symptoms to the
-nurse (with readable symptom names, not raw IDs).
+Nurse-portal fixes: lock the "Years of Experience" field, restrict the editable nurse profile
+fields to Bio / Last Name / Password, surface a student's logged symptoms to the nurse (with
+readable symptom names, not raw IDs), show month + year on the availability schedule, and fix a
+duplicate success alert after saving availability.
 
 ## Global Constraints
 - **UI-only terminology rename:** only EJS visible text/labels — never the `Appointment` table,
@@ -142,7 +143,62 @@ through the readable-name join.
 
 ---
 
+## Item 26 — Show month + year on the availability schedule
+
+**Target files**
+- `views/nurse/availability.ejs` — the day-header date cell (`<div class="day-date">`, ~line 48,
+  currently `(<%= wd.date.slice(5).replace('-', '/') %>)` → renders `(MM/DD)` only).
+- `src/utils/dates.js` (`getUpcomingWeekDays`) — confirm the shape of each `wd` (it already
+  provides `date` as `YYYY-MM-DD` and `dayName`); no change expected unless a preformatted
+  month/year label is preferred.
+
+**Context**
+The weekly grid headers show day name + `(MM/DD)` with no month name or year, so a nurse can't
+tell which actual week/month they're editing. Add a readable month + year.
+
+**Implementation Steps**
+1. In the day header, render a human-readable date including month and year — e.g. build a
+   `Date` from `wd.date` and format it (`toLocaleDateString('en-ZA', { day: 'numeric',
+   month: 'short', year: 'numeric' })`) to show something like `Mon 20 Jan 2025`. Keep it inside
+   the existing `.day-name` / `.day-date` structure so styling holds.
+2. Optionally add a small caption above/beside the grid naming the week's month/year once (e.g.
+   "Week of 20 Jan 2025") if per-column year is too noisy — confirm preference; default is to put
+   month + year on each column's date line.
+3. Parse `wd.date` safely (append `T00:00:00` or split on `-`) to avoid timezone off-by-one.
+
+**Verification**
+- Each schedule column header shows the day name plus a date including month and year.
+- The grid still aligns; booked/available cells and drag-paint behaviour unaffected; light/dark OK.
+
+---
+
+## Item 27 — Fix duplicate success alert after saving availability
+
+**Target files**
+- `views/nurse/availability.ejs` — the inline `<% if (success) %>` block (~lines 7–9) that
+  duplicates the shared `alerts` partial included at ~line 5.
+- (No controller change needed — `saveAvailability` legitimately passes a single `success`
+  message.)
+
+**Context**
+Same double-render pattern as the admin pages (Plan 3 Item 17): `availability.ejs` includes
+`../partials/alerts` (which renders `success`) **and** has its own inline
+`<div class="alert alert-success"><%= success %></div>` block. Since `saveAvailability` passes
+`success`, both render → two success alerts after saving.
+
+**Implementation Steps**
+1. Remove the inline `<% if (success) %>` success block from `availability.ejs`, keeping the
+   shared `alerts` partial include. (The partial already renders both `error` and `success`.)
+2. Leave the separate `conflicts` warning block as-is — it is distinct from the success alert.
+
+**Verification**
+- Saving availability shows exactly **one** success alert.
+- A save that produces conflicts still shows the single success alert plus the conflicts warning.
+
+---
+
 ## Suggested Execution Order
 1. Items 23 + 24 together (same form in `view.ejs`, same controller `updateNurseBio`, same model
    `updateNurseProfile` query — one coordinated change: drop YearsExperience, add LastName).
 2. Item 25 (symptom-name join + view update + entry-link check).
+3. Items 26 + 27 (both in `availability.ejs` — do together).

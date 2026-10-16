@@ -18,7 +18,7 @@ export const getUpcomingAppointmentsAPI = catchAsync(async (req, res) => {
     sql = `
       SELECT a.AppointmentID, a.AppointmentType, a.Time, a.Status, a.RoomName,
              n.FirstName AS NurseFirstName, n.LastName AS NurseLastName
-      FROM Appointment a
+      FROM Consultation a
       INNER JOIN Nurse n ON a.StaffNumber = n.StaffNumber
       WHERE a.StudentNumber = ?
         AND a.Time >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)
@@ -30,7 +30,7 @@ export const getUpcomingAppointmentsAPI = catchAsync(async (req, res) => {
     sql = `
       SELECT a.AppointmentID, a.AppointmentType, a.Time, a.Status, a.RoomName,
              s.FirstName AS StudentFirstName, s.LastName AS StudentLastName
-      FROM Appointment a
+      FROM Consultation a
       INNER JOIN Student s ON a.StudentNumber = s.StudentNumber
       WHERE a.StaffNumber = ?
         AND a.Time >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)

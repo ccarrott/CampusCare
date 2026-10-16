@@ -38,7 +38,7 @@ export async function atomicBookSlot({ appointmentId, appointmentType, time, tea
 
     // Lock: check if any non-cancelled appointment exists for this nurse+time
     const [existing] = await conn.execute(
-      `SELECT AppointmentID FROM Appointment
+      `SELECT AppointmentID FROM Consultation
        WHERE StaffNumber = ? AND Time = ? AND Status != 'Cancelled'
        FOR UPDATE`,
       [staffNumber, time]
@@ -51,7 +51,7 @@ export async function atomicBookSlot({ appointmentId, appointmentType, time, tea
 
     // Insert the appointment
     await conn.execute(
-      `INSERT INTO Appointment (AppointmentID, AppointmentType, Time, TeamsID, StudentNumber, StaffNumber, Campus, PreferredLanguage)
+      `INSERT INTO Consultation (AppointmentID, AppointmentType, Time, TeamsID, StudentNumber, StaffNumber, Campus, PreferredLanguage)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [appointmentId, appointmentType, time, teamsId || null, studentNumber, staffNumber, campus || null, preferredLanguage || null]
     );
@@ -71,7 +71,7 @@ export async function atomicBookSlot({ appointmentId, appointmentType, time, tea
 // ============================================================================
 
 export async function getAppointmentById(appointmentId) {
-  const sql = 'SELECT * FROM Appointment WHERE AppointmentID = ?';
+  const sql = 'SELECT * FROM Consultation WHERE AppointmentID = ?';
   const results = await query(sql, [appointmentId]);
   return results[0];
 }
@@ -79,7 +79,7 @@ export async function getAppointmentById(appointmentId) {
 export async function getAppointmentWithNurse(appointmentId, studentNumber) {
   const sql = `
     SELECT a.*, n.FirstName AS NurseFirstName, n.LastName AS NurseLastName
-    FROM Appointment a
+    FROM Consultation a
     INNER JOIN Nurse n ON a.StaffNumber = n.StaffNumber
     WHERE a.AppointmentID = ? AND a.StudentNumber = ?
   `;
@@ -93,7 +93,7 @@ export async function getAppointmentsByStudentWithStatus(studentNumber) {
       a.AppointmentID, a.AppointmentType, a.Time, a.TeamsID,
       a.Status, a.Notes, a.StaffNumber,
       n.FirstName AS NurseFirstName, n.LastName AS NurseLastName
-    FROM Appointment a
+    FROM Consultation a
     INNER JOIN Nurse n ON a.StaffNumber = n.StaffNumber
     WHERE a.StudentNumber = ?
     ORDER BY a.Time DESC
@@ -107,7 +107,7 @@ export async function getAppointmentsForNurseWithStatus(staffNumber) {
       a.AppointmentID, a.AppointmentType, a.Time, a.TeamsID, a.RoomName, a.RoomExp,
       a.Status, a.Notes, a.StudentNumber,
       s.FirstName AS StudentFirstName, s.LastName AS StudentLastName, s.MedicalHistory
-    FROM Appointment a
+    FROM Consultation a
     INNER JOIN Student s ON a.StudentNumber = s.StudentNumber
     WHERE a.StaffNumber = ?
     ORDER BY a.Time DESC
@@ -121,7 +121,7 @@ export async function getAppointmentsForNurseWithStatus(staffNumber) {
  */
 export async function hasRecentBooking(studentNumber, days = 7) {
   const rows = await query(
-    `SELECT AppointmentID FROM Appointment
+    `SELECT AppointmentID FROM Consultation
      WHERE StudentNumber = ? AND Status != 'Cancelled'
        AND CreatedAt >= DATE_SUB(NOW(), INTERVAL ? DAY) LIMIT 1`,
     [studentNumber, days]
@@ -134,7 +134,7 @@ export async function hasRecentBooking(studentNumber, days = 7) {
  * Used by the booking grid to grey out taken slots.
  */
 export async function getBookedTimesForNurse(staffNumber, date) {
-  const sql = `SELECT TIME_FORMAT(Time, '%H:%i') AS BookedTime FROM Appointment WHERE StaffNumber = ? AND DATE(Time) = ? AND Status != 'Cancelled'`;
+  const sql = `SELECT TIME_FORMAT(Time, '%H:%i') AS BookedTime FROM Consultation WHERE StaffNumber = ? AND DATE(Time) = ? AND Status != 'Cancelled'`;
   return await query(sql, [staffNumber, date]);
 }
 
@@ -144,7 +144,7 @@ export async function getBookedTimesForNurse(staffNumber, date) {
 export async function getRatedAppointmentIds(studentNumber) {
   const sql = `
     SELECT r.AppointmentID FROM Rating r
-    INNER JOIN Appointment a ON r.AppointmentID = a.AppointmentID
+    INNER JOIN Consultation a ON r.AppointmentID = a.AppointmentID
     WHERE a.StudentNumber = ?
   `;
   const rows = await query(sql, [studentNumber]);
@@ -161,14 +161,14 @@ export async function getRatedAppointmentIds(studentNumber) {
  */
 export async function expirePastAppointments() {
   const sql = `
-    UPDATE Appointment SET Status = 'Cancelled'
+    UPDATE Consultation SET Status = 'Cancelled'
     WHERE Time < NOW() AND Status IN ('Pending', 'Confirmed')
   `;
   return await query(sql);
 }
 
 export async function updateAppointmentStatus(appointmentId, status) {
-  const sql = 'UPDATE Appointment SET Status = ? WHERE AppointmentID = ?';
+  const sql = 'UPDATE Consultation SET Status = ? WHERE AppointmentID = ?';
   return await query(sql, [status, appointmentId]);
 }
 
@@ -177,7 +177,7 @@ export async function cancelAppointment(appointmentId) {
 }
 
 export async function rescheduleAppointment(appointmentId, newTime) {
-  const sql = 'UPDATE Appointment SET Time = ? WHERE AppointmentID = ?';
+  const sql = 'UPDATE Consultation SET Time = ? WHERE AppointmentID = ?';
   return await query(sql, [newTime, appointmentId]);
 }
 
@@ -185,13 +185,13 @@ export async function rescheduleAppointment(appointmentId, newTime) {
  * Checks if a slot is available (no non-cancelled appointment at that nurse+time).
  */
 export async function checkSlotAvailable(staffNumber, time) {
-  const sql = "SELECT AppointmentID FROM Appointment WHERE StaffNumber = ? AND Time = ? AND Status != 'Cancelled'";
+  const sql = "SELECT AppointmentID FROM Consultation WHERE StaffNumber = ? AND Time = ? AND Status != 'Cancelled'";
   const rows = await query(sql, [staffNumber, time]);
   return rows.length === 0;
 }
 
 export async function updateAppointmentNotes(appointmentId, notes) {
-  const sql = 'UPDATE Appointment SET Notes = ? WHERE AppointmentID = ?';
+  const sql = 'UPDATE Consultation SET Notes = ? WHERE AppointmentID = ?';
   return await query(sql, [notes, appointmentId]);
 }
 
@@ -205,26 +205,26 @@ export async function updateAppointmentNotes(appointmentId, notes) {
  * roomExp is stored as a JS Date / SQL datetime.
  */
 export async function setAppointmentRoom(appointmentId, { roomName, roomUrl, roomExp }) {
-  const sql = 'UPDATE Appointment SET RoomName = ?, RoomUrl = ?, RoomExp = ? WHERE AppointmentID = ?';
+  const sql = 'UPDATE Consultation SET RoomName = ?, RoomUrl = ?, RoomExp = ? WHERE AppointmentID = ?';
   return await query(sql, [roomName, roomUrl, roomExp, appointmentId]);
 }
 
 /** Clears room details (on cancel/complete/expire teardown). */
 export async function clearAppointmentRoom(appointmentId) {
-  const sql = 'UPDATE Appointment SET RoomName = NULL, RoomUrl = NULL, RoomExp = NULL WHERE AppointmentID = ?';
+  const sql = 'UPDATE Consultation SET RoomName = NULL, RoomUrl = NULL, RoomExp = NULL WHERE AppointmentID = ?';
   return await query(sql, [appointmentId]);
 }
 
 /** Demo appointments (APT-DEMO-*) for a nurse — used by the demo cleanup button. */
 export async function getDemoAppointmentsForNurse(staffNumber) {
-  const sql = `SELECT AppointmentID, RoomName FROM Appointment
+  const sql = `SELECT AppointmentID, RoomName FROM Consultation
                WHERE StaffNumber = ? AND AppointmentID LIKE 'APT-DEMO-%'`;
   return await query(sql, [staffNumber]);
 }
 
 /** Deletes all demo appointments (APT-DEMO-*) for a nurse. Returns affected row count. */
 export async function deleteDemoAppointmentsForNurse(staffNumber) {
-  const sql = `DELETE FROM Appointment
+  const sql = `DELETE FROM Consultation
                WHERE StaffNumber = ? AND AppointmentID LIKE 'APT-DEMO-%'`;
   const result = await query(sql, [staffNumber]);
   return result.affectedRows || 0;
@@ -232,14 +232,14 @@ export async function deleteDemoAppointmentsForNurse(staffNumber) {
 
 /** Finds an appointment by its Daily room name (used by the webhook auditor). */
 export async function getAppointmentByRoomName(roomName) {
-  const sql = 'SELECT * FROM Appointment WHERE RoomName = ?';
+  const sql = 'SELECT * FROM Consultation WHERE RoomName = ?';
   const rows = await query(sql, [roomName]);
   return rows[0];
 }
 
 /** Online appointments that are past their room expiry but still hold a room (cleanup sweep). */
 export async function getExpiredRoomAppointments() {
-  const sql = `SELECT AppointmentID, RoomName FROM Appointment
+  const sql = `SELECT AppointmentID, RoomName FROM Consultation
                WHERE RoomName IS NOT NULL AND RoomExp IS NOT NULL AND RoomExp < NOW()`;
   return await query(sql);
 }
@@ -250,24 +250,59 @@ export async function getExpiredRoomAppointments() {
 
 /** Upserts a session row for a room, creating it on first event. */
 export async function upsertConsultationSession(sessionId, appointmentId, roomName) {
-  const sql = `INSERT INTO ConsultationSession (SessionID, AppointmentID, RoomName)
+  const sql = `INSERT INTO OnlineConsultationSession (SessionID, AppointmentID, RoomName)
                VALUES (?, ?, ?)
                ON DUPLICATE KEY UPDATE AppointmentID = VALUES(AppointmentID)`;
   return await query(sql, [sessionId, appointmentId, roomName]);
 }
 
 export async function markSessionStarted(sessionId, startedAt) {
-  const sql = 'UPDATE ConsultationSession SET StartedAt = ? WHERE SessionID = ?';
+  const sql = 'UPDATE OnlineConsultationSession SET StartedAt = ? WHERE SessionID = ?';
   return await query(sql, [startedAt, sessionId]);
 }
 
 export async function markParticipantJoined(sessionId, column, joinedAt) {
   // column is one of 'NurseJoinedAt' | 'StudentJoinedAt' — validated by caller against a whitelist.
-  const sql = `UPDATE ConsultationSession SET ${column} = COALESCE(${column}, ?) WHERE SessionID = ?`;
+  const sql = `UPDATE OnlineConsultationSession SET ${column} = COALESCE(${column}, ?) WHERE SessionID = ?`;
   return await query(sql, [joinedAt, sessionId]);
 }
 
 export async function markSessionEnded(sessionId, endedAt, durationSeconds) {
-  const sql = 'UPDATE ConsultationSession SET EndedAt = ?, DurationSeconds = ? WHERE SessionID = ?';
+  const sql = 'UPDATE OnlineConsultationSession SET EndedAt = ?, Duration = ? WHERE SessionID = ?';
   return await query(sql, [endedAt, durationSeconds, sessionId]);
+}
+
+// ============================================================================
+// MEETING REMINDERS (1 hour before — fed by the reminder scheduler)
+// ============================================================================
+
+/**
+ * Appointments due for a 1-hour reminder: scheduled within the next 60 minutes,
+ * not cancelled/completed, and not already reminded. Joins the names/addresses the
+ * email needs. The DB session runs on the app's fixed SAST offset, so NOW() agrees
+ * with the app clock.
+ */
+export async function getDueReminders() {
+  const sql = `
+    SELECT
+      a.AppointmentID, a.Time, a.StudentNumber,
+      s.FirstName AS StudentFirstName, s.LastName AS StudentLastName,
+      n.FirstName AS NurseFirstName, n.LastName AS NurseLastName
+    FROM Consultation a
+    INNER JOIN Student s ON a.StudentNumber = s.StudentNumber
+    INNER JOIN Nurse n ON a.StaffNumber = n.StaffNumber
+    WHERE a.ReminderSentAt IS NULL
+      AND a.Status NOT IN ('Cancelled', 'Completed')
+      AND a.Time BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 60 MINUTE)
+  `;
+  return await query(sql);
+}
+
+/**
+ * Stamp an appointment as reminded so it is never resent (survives restarts and
+ * repeated scheduler ticks). Only called after a successful send.
+ */
+export async function markReminderSent(appointmentId) {
+  const sql = 'UPDATE Consultation SET ReminderSentAt = NOW() WHERE AppointmentID = ?';
+  return await query(sql, [appointmentId]);
 }

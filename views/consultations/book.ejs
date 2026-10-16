@@ -276,15 +276,24 @@
 
     try {
       const resp = await fetch('/consultations/api/nurse-grid/' + staffNumber);
-      const data = await resp.json();
-
-      if (data.error) {
-        alert(data.error);
+      if (!resp.ok) {
+        // Surface WHY it failed (status + any server message) instead of a blind
+        // generic alert — e.g. 401/403 = session expired, 500 = DB/server error.
+        let detail = '';
+        try { const j = await resp.json(); detail = j.detail || j.error || ''; } catch (_) { /* non-JSON error page */ }
+        console.error('[Booking] nurse-grid API failed:', resp.status, resp.statusText, detail);
+        alert('Could not load availability (error ' + resp.status + ').' +
+              (detail ? '\n\n' + detail : '') +
+              (resp.status === 401 || resp.status === 403 ? '\n\nPlease sign in again.' : ''));
+        gridBody.innerHTML = '';
         return;
       }
+      const data = await resp.json();
+      if (data.error) { alert(data.error); return; }
       renderGrid(data);
     } catch (err) {
-      alert('Failed to load nurse availability.');
+      console.error('[Booking] nurse-grid fetch error:', err);
+      alert('Failed to load nurse availability (network error). Check your connection and try again.');
     }
   }
 
@@ -293,7 +302,8 @@
 
     gridHeader.innerHTML = '<th class="time-col">Session</th>';
     weekDays.forEach(function(wd) {
-      gridHeader.innerHTML += '<th><div class="day-name">' + wd.dayName + '</div><div class="day-date">(' + wd.date.slice(5).replace('-', '/') + ')</div></th>';
+      var dateLabel = new Date(wd.date).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' });
+      gridHeader.innerHTML += '<th><div class="day-name">' + wd.dayName + '</div><div class="day-date">' + dateLabel + '</div></th>';
     });
 
     gridBody.innerHTML = '';

@@ -28,6 +28,9 @@ router.post('/change-password', requireAuth, ProfileController.changePassword);
 router.get('/location', requireRole(ROLES.STUDENT), ProfileController.showLocationPicker);
 router.post('/location', requireRole(ROLES.STUDENT), ProfileController.saveLocation);
 
+// Resolve a dropped-pin coordinate to its suburb/zone (students only; read-only JSON)
+router.get('/zone-at', requireRole(ROLES.STUDENT), ProfileController.zoneAt);
+
 // Update nurse bio (nurses only)
 router.post('/update-bio', requireRole(ROLES.NURSE), ProfileController.updateNurseBio);
 

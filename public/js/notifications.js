@@ -112,6 +112,15 @@
         joinUrl
       );
     }
+    // 30 minutes before (29 to 31 min) — aligns with the "Starting soon" progress stage
+    else if (mins >= 29 && mins <= 31) {
+      sendNotification(
+        'Consultation starting soon',
+        typeLabel + ' with ' + withPerson + ' at ' + timeStr + '. Starting in about 30 minutes.',
+        '30min_' + apt.id,
+        joinUrl
+      );
+    }
   }
 
   // ========================================================================

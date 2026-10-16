@@ -1,7 +1,6 @@
 // src/modules/profile/profile.controller.js
 // Handles profile viewing, editing, password changes, and account deletion.
 
-import bcrypt from 'bcrypt';
 import * as ProfileModel from './profile.model.js';
 import { catchAsync } from '../../utils/catchAsync.js';
 import { sanitize } from '../../utils/sanitize.js';
@@ -36,12 +35,13 @@ export const showProfile = catchAsync(async (req, res) => {
 export const showEditProfile = catchAsync(async (req, res) => {
   const profile = await ProfileModel.findStudentById(req.session.user.id);
   const zones = await ProfileModel.getAllZones();
+  const maptilerKey = process.env.MAPTILER_KEY || '';
 
   if (!profile) {
-    return res.status(404).render('profile/edit', { user: req.session.user, profile: {}, zones: [], error: 'Profile not found.' });
+    return res.status(404).render('profile/edit', { user: req.session.user, profile: {}, zones: [], maptilerKey, error: 'Profile not found.' });
   }
 
-  res.render('profile/edit', { user: req.session.user, profile, zones, error: null });
+  res.render('profile/edit', { user: req.session.user, profile, zones, maptilerKey, error: null });
 });
 
 export const updateProfile = catchAsync(async (req, res) => {
@@ -86,11 +86,13 @@ export const changePassword = catchAsync(async (req, res) => {
 
   if (!user || !user.Password) return fail('Could not verify your account. Please sign in again.');
 
-  const isMatch = await bcrypt.compare(currentPassword, user.Password);
+  // SECURITY DOWNGRADE (LOCAL/DEMO ONLY — DO NOT SHIP): plaintext compare, bcrypt disabled.
+  const isMatch = currentPassword === user.Password;
   if (!isMatch) return fail('Your current password is incorrect.');
 
-  const hashedPassword = await bcrypt.hash(newPassword, 10);
-  await ProfileModel.updatePassword(id, role, hashedPassword);
+  // SECURITY DOWNGRADE (LOCAL/DEMO ONLY — DO NOT SHIP): store new password in plaintext, bcrypt disabled.
+  const storedPassword = newPassword;
+  await ProfileModel.updatePassword(id, role, storedPassword);
 
   res.redirect('/profile?toast=' + encodeURIComponent('Password changed successfully.'));
 });
@@ -106,6 +108,7 @@ export const showLocationPicker = catchAsync(async (req, res) => {
   res.render('profile/location', {
     user: req.session.user,
     zones,
+    maptilerKey: process.env.MAPTILER_KEY || '',
     currentLat: student?.Latitude || null,
     currentLon: student?.Longitude || null,
     success: null
@@ -119,7 +122,8 @@ export const saveLocation = catchAsync(async (req, res) => {
   if (!latitude || !longitude) {
     const zones = await query('SELECT ZoneID, Name, Latitude, Longitude, Boundary FROM CampusZone');
     return res.render('profile/location', {
-      user: req.session.user, zones, currentLat: null, currentLon: null,
+      user: req.session.user, zones, maptilerKey: process.env.MAPTILER_KEY || '',
+      currentLat: null, currentLon: null,
       success: null, error: 'Please drop a pin on the map.'
     });
   }
@@ -144,14 +148,49 @@ export const saveLocation = catchAsync(async (req, res) => {
 });
 
 // ============================================================================
+// ZONE LOOKUP (client pin → suburb name)
+// ============================================================================
+
+/**
+ * Resolves a dropped-pin coordinate to its CampusZone, so the pin picker can
+ * show the real suburb instead of a generic "Location set". Reuses the single
+ * source of truth (getZoneForPoint) — no zoning math is duplicated in the browser.
+ * GET + read-only, so no CSRF; behind requireAuth. Returns {zoneId, name} or nulls.
+ */
+export const zoneAt = catchAsync(async (req, res) => {
+  const lat = parseFloat(req.query.lat);
+  const lon = parseFloat(req.query.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    return res.status(400).json({ zoneId: null, name: null, error: 'Invalid coordinates.' });
+  }
+
+  const zones = await query('SELECT ZoneID, Name, Latitude, Longitude, Boundary FROM CampusZone');
+  const zoneId = getZoneForPoint(lat, lon, zones);
+  const zone = zoneId ? zones.find(z => z.ZoneID === zoneId) : null;
+
+  res.json({ zoneId: zoneId || null, name: zone ? zone.Name : null });
+});
+
+// ============================================================================
 // NURSE BIO UPDATE (from profile page)
 // ============================================================================
 
 export const updateNurseBio = catchAsync(async (req, res) => {
   const staffNumber = req.session.user.id;
   const bio = sanitize(req.body.bio).substring(0, 300);
-  const yearsExperience = Math.max(0, Math.min(50, parseInt(req.body.yearsExperience) || 0));
+  const lastName = sanitize(req.body.lastName).substring(0, 50);
 
-  await NurseModel.updateNurseProfile(staffNumber, { bio, yearsExperience });
+  // A nurse may only change their last name and bio here (and password elsewhere).
+  // Years of experience is admin-managed and intentionally not accepted.
+  if (!lastName) {
+    return res.redirect('/profile?toast=' + encodeURIComponent('Last name cannot be empty.') + '&toastType=error');
+  }
+
+  await NurseModel.updateNurseProfile(staffNumber, { bio, lastName });
+
+  // Keep the session (identity chip, greeting) in step with the new last name.
+  req.session.user.lastName = lastName;
+  req.session.user.name = `${req.session.user.firstName || ''} ${lastName}`.trim();
+
   res.redirect('/profile?toast=Public+profile+updated');
 });

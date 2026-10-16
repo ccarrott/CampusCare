@@ -1,5 +1,4 @@
 import { query } from '../database.js';
-import bcrypt from 'bcrypt';
 import { DEMO_PASSWORDS } from './demo-credentials.js';
 
 /**
@@ -10,12 +9,20 @@ import { DEMO_PASSWORDS } from './demo-credentials.js';
 export async function loadNakedState() {
   console.log('[State: Naked] Wiping all dynamic data...');
 
-  // Clear dynamic tables (order matters for FKs)
+  // Clear dynamic tables in strict REVERSE dependency order (children before
+  // parents). With FKs enforced this order satisfies every constraint on its own,
+  // so we do NOT toggle FOREIGN_KEY_CHECKS: that setting is connection-scoped on
+  // MySQL and query() borrows an arbitrary pooled connection per call, so a
+  // disable/enable pair can land on different connections and leave a pooled one
+  // with checks off. Ordered deletes keep enforcement on throughout and need no
+  // try/finally cleanup. (OnlineConsultationSession/Rating/NurseReviews are also
+  // ON DELETE CASCADE children of Consultation; deleting them first is harmless.)
   await query('DELETE FROM SymptomLogEntry');
   await query('DELETE FROM SymptomLog');
   await query('DELETE FROM NurseReviews');
   await query('DELETE FROM Rating');
-  await query('DELETE FROM Appointment');
+  await query('DELETE FROM OnlineConsultationSession');
+  await query('DELETE FROM Consultation');
   await query('DELETE FROM NurseAvailability');
   await query('DELETE FROM StudentZone');
   await query('DELETE FROM Student');
@@ -30,7 +37,12 @@ export async function loadNakedState() {
   try {
     await query('DELETE FROM sessions');
   } catch (err) {
-    if (err.code !== 'ER_NO_SUCH_TABLE') throw err;
+    // MySQL raises ER_NO_SUCH_TABLE; node:sqlite (local mode) throws a message like
+    // "no such table: sessions". Tolerate both — the sessions table only exists in
+    // MySQL mode (local mode uses an in-memory session store), so its absence is fine.
+    const missing = err.code === 'ER_NO_SUCH_TABLE'
+      || /no such table/i.test(err.message || '');
+    if (!missing) throw err;
   }
 
   // Seed clinics — real NMU Student Health Services facilities (Gqeberha).
@@ -46,12 +58,13 @@ export async function loadNakedState() {
     ['CLN002', 'North Campus Clinic', 'North Campus, Summerstrand, Gqeberha, 6019', '041 504 1149', 'StudentHealth@mandela.ac.za']
   );
 
+  // SECURITY DOWNGRADE (LOCAL/DEMO ONLY — DO NOT SHIP): seed passwords in plaintext, bcrypt disabled.
   // Seed admin
-  const adminPw = await bcrypt.hash(DEMO_PASSWORDS.admin, 10);
+  const adminPw = DEMO_PASSWORDS.admin;
   await query("INSERT INTO Admin (StaffNumber, Name, Password) VALUES ('ADM001', 'System Administrator', ?)", [adminPw]);
 
   // Seed 3 nurses (with Campus — Phase 29A)
-  const nursePw = await bcrypt.hash(DEMO_PASSWORDS.nurse, 10);
+  const nursePw = DEMO_PASSWORDS.nurse;
   await query("INSERT INTO Nurse (StaffNumber, FirstName, LastName, PhoneNumber, Password, Email, ClinicID, Campus, Bio, YearsExperience) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ['NUR001', 'Sarah', 'Jenkins', '0821234567', nursePw, 'sarah.jenkins@mandela.ac.za', 'CLN001', 'South Campus', 'Experienced campus nurse specialising in student wellness and primary care.', 8]);
   await query("INSERT INTO Nurse (StaffNumber, FirstName, LastName, PhoneNumber, Password, Email, ClinicID, Campus, Bio, YearsExperience) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",

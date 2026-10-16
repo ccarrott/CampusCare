@@ -24,10 +24,9 @@
     <div class="welcome-card" id="welcomeCard" style="display:none;">
       <button class="welcome-dismiss" id="welcomeDismiss" aria-label="Dismiss welcome message">&times;</button>
       <h2>Welcome to Campus Care, <%= user.firstName || user.name %>!</h2>
-      <p>Here are 3 things you can do right now:</p>
+      <p>Here are 2 things you can do right now:</p>
       <div class="welcome-actions">
         <a href="/symptoms" class="btn">Check Symptoms</a>
-        <a href="/consultations/book" class="btn">Book a Consultation</a>
         <a href="/trends" class="btn">Explore Health Trends</a>
       </div>
     </div>
@@ -78,8 +77,7 @@
       <span class="card-watermark" aria-hidden="true"><%- include('./partials/icon', { name: 'clinical' }) %></span>
       <h2>Tier 3 — Clinical &amp; Admin</h2>
       <p class="text-muted">
-        When a case needs more, nurses manage schedules and patient progress while admins handle
-        moderation, operational reporting, and nearest-clinic guidance.
+        When symptoms are urgent, you're guided to your nearest emergency room with directions.
       </p>
     </section>
   </div>

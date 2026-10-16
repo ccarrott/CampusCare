@@ -1,31 +1,104 @@
-import { query } from './database.js';
+import { query, getConnection } from './database.js';
 
 /**
- * CampusCare - Database Schema Migration Script
- * 
- * Run with: node src/config/migrate.js
- * 
- * This script applies all pending ALTER TABLE statements to bring the
- * database schema up to the required state for full application functionality.
- * 
- * Safe to run multiple times — uses IF NOT EXISTS and MODIFY where possible.
+ * CampusCare - Database Schema Migration Script (Formal Relational Constraints)
+ *
+ * Run with: node src/config/migrate.js            (Aiven MySQL)
+ *           node src/config/migrate.js --local     (local SQLite)
+ *
+ * ---------------------------------------------------------------------------
+ * DESTRUCTIVE REBUILD (Decision 3 / plan §5.3)
+ * ---------------------------------------------------------------------------
+ * This script is now a DROP-THEN-CREATE rebuild. SQLite cannot `ALTER TABLE
+ * ADD CONSTRAINT`, so the only way to introduce real PRIMARY/FOREIGN KEY
+ * constraints on BOTH engines from one DDL set is to recreate every table with
+ * the constraints baked into the `CREATE TABLE`. As a result:
+ *
+ *   **Running migrate ALONE WIPES THE DATABASE** — it drops every table and
+ *   recreates them EMPTY. It MUST always be chained with the seeds. The npm
+ *   scripts (`setup` / `setup:local`) and the app auto-bootstrap in app.js all
+ *   do this: migrate -> seed-symptoms -> seed-zones -> showcase.
+ *
+ * The historical base-schema + ALTER chain + rename pre-migrations are collapsed
+ * into the single authoritative, FK-constrained `CREATE TABLE` set below. The
+ * renames `Appointment -> Consultation`, `ConsultationSession ->
+ * OnlineConsultationSession`, and the column `DurationSeconds -> Duration` are
+ * absorbed here (the final names are what the rebuilt schema uses).
+ *
+ * ---------------------------------------------------------------------------
+ * CROSS-ENGINE DDL NOTES (what the adapter normalizes — do NOT hand-branch)
+ * ---------------------------------------------------------------------------
+ * The single DDL set parses on both MySQL and SQLite because
+ * `database.js#translateSql` converts the MySQL-isms we use:
+ *   - `ENUM(...)`                         -> `varchar(20)`
+ *   - `ALTER TABLE t ADD INDEX name (..)` -> `CREATE INDEX IF NOT EXISTS name ON t (..)`
+ *   - backtick identifiers                -> double-quoted
+ *   - `SET FOREIGN_KEY_CHECKS = 0/1`      -> `PRAGMA foreign_keys = OFF/ON`
+ *
+ * Things kept cross-engine-safe by hand:
+ *   (a) NO `AUTO_INCREMENT` — every PK is an app-supplied varchar.
+ *   (b) `datetime`/`DECIMAL(10,7)`/`text`/`int`/`varchar`/`JSON`/`tinyint(1)`
+ *       all accept on SQLite (dynamic typing) and MySQL.
+ *   (c) Named `CONSTRAINT fk_... FOREIGN KEY (..) REFERENCES .. ON DELETE ..
+ *       ON UPDATE ..` is kept INLINE in the `CREATE TABLE` (SQLite cannot add a
+ *       FK via ALTER); both engines accept inline FK clauses.
+ *   (d) `DEFAULT CURRENT_TIMESTAMP` accepted by both.
+ *
+ * DROP ORDERING (why there is no `SET FOREIGN_KEY_CHECKS` toggle here):
+ * the drop phase removes tables in strict REVERSE dependency order (children
+ * before parents) and uses `DROP TABLE IF EXISTS`, so by the time any parent is
+ * dropped nothing still references it — the drop succeeds on BOTH engines without
+ * suppressing FK enforcement. We deliberately do NOT toggle `FOREIGN_KEY_CHECKS`:
+ * on MySQL that setting is CONNECTION-scoped and `query()` borrows an arbitrary
+ * pooled connection per call, so a disable on one connection and re-enable on
+ * another can leave a pooled connection with checks off (it could then later
+ * accept orphan writes). Correct reverse-order drops make the toggle unnecessary.
+ * The retired pre-rename names are ordered child-before-parent too (the renamed
+ * children — Rating/NurseReviews — are dropped above; ConsultationSession is
+ * dropped before Appointment).
  */
 
 // ---------------------------------------------------------------------------
-// BASE SCHEMA
+// DROP-ALL PHASE — strict REVERSE dependency order (children before parents).
 // ---------------------------------------------------------------------------
-// The ALTER chain below assumes the core tables already exist. On the original
-// development database they did (created by hand), but a FRESH deployment target —
-// a brand-new managed MySQL instance — has nothing, and every ALTER would fail with
-// "table doesn't exist", leaving `npm run setup` unable to initialise anything.
-//
-// These statements create the core tables in their ORIGINAL shape, so the migration
-// chain that follows replays exactly as it did historically and ends at the same
-// final schema. On an existing database every one is a no-op (IF NOT EXISTS).
-const baseSchema = [
+// Each DROP removes a table whose children are already gone, so no FK still
+// references it — this works on both engines WITHOUT disabling FK enforcement
+// (see the header note on why we don't toggle FOREIGN_KEY_CHECKS). The RETIRED
+// pre-rename names are dropped last (ConsultationSession before Appointment) so
+// rebuilding on an OLD database that still has
+// `Appointment`/`ConsultationSession`/`MedicalFacility` is clean.
+const dropPhase = [
+  { name: 'Drop PasswordResetToken', sql: `DROP TABLE IF EXISTS PasswordResetToken` },
+  { name: 'Drop OnlineConsultationSession', sql: `DROP TABLE IF EXISTS OnlineConsultationSession` },
+  { name: 'Drop NurseReviews', sql: `DROP TABLE IF EXISTS NurseReviews` },
+  { name: 'Drop Rating', sql: `DROP TABLE IF EXISTS Rating` },
+  { name: 'Drop SymptomLogEntry', sql: `DROP TABLE IF EXISTS SymptomLogEntry` },
+  { name: 'Drop SymptomLog', sql: `DROP TABLE IF EXISTS SymptomLog` },
+  { name: 'Drop SymptomMedicationMap', sql: `DROP TABLE IF EXISTS SymptomMedicationMap` },
+  { name: 'Drop StudentZone', sql: `DROP TABLE IF EXISTS StudentZone` },
+  { name: 'Drop NurseAvailability', sql: `DROP TABLE IF EXISTS NurseAvailability` },
+  { name: 'Drop Consultation', sql: `DROP TABLE IF EXISTS Consultation` },
+  { name: 'Drop Admin', sql: `DROP TABLE IF EXISTS Admin` },
+  { name: 'Drop Nurse', sql: `DROP TABLE IF EXISTS Nurse` },
+  { name: 'Drop Symptom', sql: `DROP TABLE IF EXISTS Symptom` },
+  { name: 'Drop Medication', sql: `DROP TABLE IF EXISTS Medication` },
+  { name: 'Drop CampusZone', sql: `DROP TABLE IF EXISTS CampusZone` },
+  { name: 'Drop Student', sql: `DROP TABLE IF EXISTS Student` },
+  { name: 'Drop Clinic', sql: `DROP TABLE IF EXISTS Clinic` },
+  // Retired pre-rename / pre-cleanup names — drop so an OLD db rebuilds clean.
+  { name: 'Drop retired ConsultationSession', sql: `DROP TABLE IF EXISTS ConsultationSession` },
+  { name: 'Drop retired Appointment', sql: `DROP TABLE IF EXISTS Appointment` },
+  { name: 'Drop retired MedicalFacility', sql: `DROP TABLE IF EXISTS MedicalFacility` }
+];
+
+// ---------------------------------------------------------------------------
+// CREATE PHASE — dependency order (parents first), FK clauses INLINE.
+// ---------------------------------------------------------------------------
+const createPhase = [
+  // ---- Level 0: no FK dependencies ----
   {
     name: 'Create Clinic table',
-    sql: `CREATE TABLE IF NOT EXISTS Clinic (
+    sql: `CREATE TABLE Clinic (
       RegNum varchar(50) PRIMARY KEY,
       Name varchar(100) NOT NULL,
       Address varchar(255) NULL,
@@ -35,93 +108,228 @@ const baseSchema = [
   },
   {
     name: 'Create Student table',
-    sql: `CREATE TABLE IF NOT EXISTS Student (
+    sql: `CREATE TABLE Student (
       StudentNumber varchar(20) PRIMARY KEY,
       FirstName varchar(50) NOT NULL,
       LastName varchar(50) NOT NULL,
-      Email varchar(100) NULL,
-      Address varchar(255) NULL,
       MedicalHistory text NULL,
-      Password varchar(100) NOT NULL DEFAULT ''
-    )`
-  },
-  {
-    name: 'Create Nurse table',
-    sql: `CREATE TABLE IF NOT EXISTS Nurse (
-      StaffNumber varchar(20) PRIMARY KEY,
-      FirstName varchar(50) NOT NULL,
-      LastName varchar(50) NOT NULL,
-      PhoneNumber varchar(30) NULL,
-      Address varchar(255) NULL
-    )`
-  },
-  {
-    name: 'Create Admin table',
-    sql: `CREATE TABLE IF NOT EXISTS Admin (
-      StaffNumber varchar(20) PRIMARY KEY,
-      Name varchar(100) NOT NULL
-    )`
-  },
-  {
-    name: 'Create Appointment table',
-    sql: `CREATE TABLE IF NOT EXISTS Appointment (
-      AppointmentID varchar(50) PRIMARY KEY,
-      AppointmentType varchar(20) NOT NULL,
-      Time datetime NOT NULL,
-      TeamsID varchar(255) NULL,
-      StudentNumber varchar(20) NOT NULL,
-      StaffNumber varchar(20) NOT NULL
-    )`
-  },
-  {
-    name: 'Create Rating table',
-    sql: `CREATE TABLE IF NOT EXISTS Rating (
-      RatingID varchar(50) PRIMARY KEY,
-      AppointmentID varchar(50) NOT NULL,
-      Score int NOT NULL,
-      RatingDescription text NULL
-    )`
-  },
-  {
-    name: 'Create Medication table',
-    sql: `CREATE TABLE IF NOT EXISTS Medication (
-      MedicationCode varchar(10) PRIMARY KEY,
-      Name varchar(100) NOT NULL,
-      Description text NULL,
-      SymptomsTreated text NULL
+      Password varchar(100) NOT NULL DEFAULT '',
+      Latitude DECIMAL(10,7) NULL,
+      Longitude DECIMAL(10,7) NULL
     )`
   },
   {
     name: 'Create CampusZone table',
-    sql: `CREATE TABLE IF NOT EXISTS CampusZone (
+    sql: `CREATE TABLE CampusZone (
       ZoneID varchar(20) PRIMARY KEY,
       Name varchar(100) NOT NULL,
       Latitude DECIMAL(10,7) NULL,
       Longitude DECIMAL(10,7) NULL,
-      Radius int NULL
+      Radius int NULL,
+      Boundary JSON NULL
     )`
   },
   {
-    name: 'Create StudentZone table',
-    sql: `CREATE TABLE IF NOT EXISTS StudentZone (
-      StudentNumber varchar(20) NOT NULL,
-      ZoneID varchar(20) NOT NULL,
-      PRIMARY KEY (StudentNumber, ZoneID)
+    name: 'Create Medication table',
+    sql: `CREATE TABLE Medication (
+      MedicationCode varchar(10) PRIMARY KEY,
+      Name varchar(100) NOT NULL,
+      Description text NULL
     )`
   },
+  {
+    name: 'Create Symptom table',
+    sql: `CREATE TABLE Symptom (
+      SymptomID varchar(10) PRIMARY KEY,
+      Name varchar(100) NOT NULL,
+      Category varchar(30) NOT NULL,
+      Tier int DEFAULT 1,
+      Description text NULL
+    )`
+  },
+  // ---- Level 1: children of level-0 ----
+  {
+    name: 'Create Nurse table',
+    sql: `CREATE TABLE Nurse (
+      StaffNumber varchar(20) PRIMARY KEY,
+      FirstName varchar(50) NOT NULL,
+      LastName varchar(50) NOT NULL,
+      PhoneNumber varchar(30) NULL,
+      Password varchar(100) NOT NULL DEFAULT 'changeme',
+      Email varchar(100) NULL,
+      ClinicID varchar(50) NULL,
+      Campus varchar(50) NULL,
+      Bio text NULL,
+      YearsExperience int DEFAULT 0,
+      CONSTRAINT fk_nurse_clinic FOREIGN KEY (ClinicID) REFERENCES Clinic(RegNum)
+        ON DELETE SET NULL ON UPDATE CASCADE
+    )`
+  },
+  {
+    name: 'Create Admin table',
+    sql: `CREATE TABLE Admin (
+      StaffNumber varchar(20) PRIMARY KEY,
+      Name varchar(100) NOT NULL,
+      Password varchar(100) NOT NULL DEFAULT 'changeme',
+      Email varchar(100) NULL
+    )`
+  },
+  // ---- Level 2: Consultation (renamed from Appointment; AppointmentID is the PK) ----
+  {
+    name: 'Create Consultation table',
+    sql: `CREATE TABLE Consultation (
+      AppointmentID varchar(50) PRIMARY KEY,
+      AppointmentType varchar(20) NOT NULL,
+      Time datetime NOT NULL,
+      TeamsID varchar(255) NULL,
+      Status varchar(20) DEFAULT 'Pending',
+      Notes text NULL,
+      CreatedAt datetime DEFAULT CURRENT_TIMESTAMP,
+      Campus varchar(50) NULL,
+      PreferredLanguage varchar(50) NULL,
+      RoomName varchar(80) NULL,
+      RoomUrl varchar(255) NULL,
+      RoomExp datetime NULL,
+      ReminderSentAt datetime NULL,
+      StudentNumber varchar(20) NOT NULL,
+      StaffNumber varchar(20) NOT NULL,
+      CONSTRAINT fk_consult_student FOREIGN KEY (StudentNumber) REFERENCES Student(StudentNumber)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT fk_consult_nurse FOREIGN KEY (StaffNumber) REFERENCES Nurse(StaffNumber)
+        ON DELETE CASCADE ON UPDATE CASCADE
+    )`
+  },
+  // ---- Level 2: other children of level-0/1 ----
   {
     name: 'Create NurseAvailability table',
-    sql: `CREATE TABLE IF NOT EXISTS NurseAvailability (
+    sql: `CREATE TABLE NurseAvailability (
       AvailabilityID varchar(50) PRIMARY KEY,
       StaffNumber varchar(20) NOT NULL,
       DayOfWeek varchar(20) NOT NULL,
       TimeSlot varchar(20) NOT NULL,
-      Status varchar(20) NOT NULL DEFAULT 'Available'
+      Status varchar(20) NOT NULL DEFAULT 'Available',
+      CONSTRAINT fk_avail_nurse FOREIGN KEY (StaffNumber) REFERENCES Nurse(StaffNumber)
+        ON DELETE CASCADE ON UPDATE CASCADE
     )`
   },
   {
+    name: 'Create StudentZone table',
+    sql: `CREATE TABLE StudentZone (
+      StudentNumber varchar(20) NOT NULL,
+      ZoneID varchar(20) NOT NULL,
+      PRIMARY KEY (StudentNumber, ZoneID),
+      CONSTRAINT fk_sz_student FOREIGN KEY (StudentNumber) REFERENCES Student(StudentNumber)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT fk_sz_zone FOREIGN KEY (ZoneID) REFERENCES CampusZone(ZoneID)
+        ON DELETE CASCADE ON UPDATE CASCADE
+    )`
+  },
+  {
+    name: 'Create SymptomMedicationMap table',
+    sql: `CREATE TABLE SymptomMedicationMap (
+      SymptomID varchar(10) NOT NULL,
+      MedicationCode varchar(10) NOT NULL,
+      PRIMARY KEY (SymptomID, MedicationCode),
+      CONSTRAINT fk_smm_symptom FOREIGN KEY (SymptomID) REFERENCES Symptom(SymptomID)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT fk_smm_med FOREIGN KEY (MedicationCode) REFERENCES Medication(MedicationCode)
+        ON DELETE CASCADE ON UPDATE CASCADE
+    )`
+  },
+  {
+    // Notes column retained NULLable for backward-compat; nothing writes it now,
+    // and seeding never sets it, so it stays harmless. (plan item 1b)
+    name: 'Create SymptomLog table',
+    sql: `CREATE TABLE SymptomLog (
+      LogID varchar(50) PRIMARY KEY,
+      StudentNumber varchar(20) NOT NULL,
+      SymptomName varchar(100) NOT NULL,
+      Severity varchar(20) NOT NULL,
+      LogDate datetime DEFAULT CURRENT_TIMESTAMP,
+      Notes text NULL,
+      Duration varchar(20) NULL,
+      Trajectory varchar(20) NULL,
+      OtherText varchar(255) NULL,
+      Latitude DECIMAL(10,7) NULL,
+      Longitude DECIMAL(10,7) NULL,
+      ZoneID varchar(20) NULL,
+      CONSTRAINT fk_slog_student FOREIGN KEY (StudentNumber) REFERENCES Student(StudentNumber)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT fk_slog_zone FOREIGN KEY (ZoneID) REFERENCES CampusZone(ZoneID)
+        ON DELETE SET NULL ON UPDATE CASCADE
+    )`
+  },
+  // ---- Level 3: children of Consultation / SymptomLog ----
+  {
+    name: 'Create SymptomLogEntry table',
+    sql: `CREATE TABLE SymptomLogEntry (
+      LogID varchar(50) NOT NULL,
+      SymptomID varchar(10) NOT NULL,
+      PRIMARY KEY (LogID, SymptomID),
+      CONSTRAINT fk_sle_log FOREIGN KEY (LogID) REFERENCES SymptomLog(LogID)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT fk_sle_symptom FOREIGN KEY (SymptomID) REFERENCES Symptom(SymptomID)
+        ON DELETE CASCADE ON UPDATE CASCADE
+    )`
+  },
+  {
+    name: 'Create Rating table',
+    sql: `CREATE TABLE Rating (
+      RatingID varchar(50) PRIMARY KEY,
+      AppointmentID varchar(50) NOT NULL,
+      Score int NOT NULL,
+      RatingDescription text NULL,
+      StudentNumber varchar(20) NULL,
+      CreatedAt datetime DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_rating_consult FOREIGN KEY (AppointmentID) REFERENCES Consultation(AppointmentID)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT fk_rating_student FOREIGN KEY (StudentNumber) REFERENCES Student(StudentNumber)
+        ON DELETE CASCADE ON UPDATE CASCADE
+    )`
+  },
+  {
+    name: 'Create NurseReviews table',
+    sql: `CREATE TABLE NurseReviews (
+      ReviewID varchar(50) PRIMARY KEY,
+      AppointmentID varchar(50) NOT NULL,
+      StudentNumber varchar(20) NOT NULL,
+      StaffNumber varchar(20) NOT NULL,
+      Rating int NOT NULL,
+      ReviewText text NOT NULL,
+      Verified varchar(20) DEFAULT 'Pending',
+      VerifiedAt datetime NULL,
+      CreatedAt datetime DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_review_consult FOREIGN KEY (AppointmentID) REFERENCES Consultation(AppointmentID)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT fk_review_student FOREIGN KEY (StudentNumber) REFERENCES Student(StudentNumber)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT fk_review_nurse FOREIGN KEY (StaffNumber) REFERENCES Nurse(StaffNumber)
+        ON DELETE CASCADE ON UPDATE CASCADE
+    )`
+  },
+  {
+    // Renamed from ConsultationSession; DurationSeconds column renamed to Duration.
+    name: 'Create OnlineConsultationSession table',
+    sql: `CREATE TABLE OnlineConsultationSession (
+      SessionID varchar(50) PRIMARY KEY,
+      AppointmentID varchar(50) NOT NULL,
+      RoomName varchar(80) NOT NULL,
+      StartedAt datetime NULL,
+      EndedAt datetime NULL,
+      Duration int NULL,
+      NurseJoinedAt datetime NULL,
+      StudentJoinedAt datetime NULL,
+      CreatedAt datetime DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_ocs_consult FOREIGN KEY (AppointmentID) REFERENCES Consultation(AppointmentID)
+        ON DELETE CASCADE ON UPDATE CASCADE
+    )`
+  },
+  // ---- Level 4: polymorphic, intentionally UNCONSTRAINED (Decision 5 / spec §5) ----
+  {
+    // UserID is polymorphic — it points at Student OR Nurse OR Admin via UserType,
+    // which a single FK cannot express. It is DELIBERATELY left without a FK.
     name: 'Create PasswordResetToken table',
-    sql: `CREATE TABLE IF NOT EXISTS PasswordResetToken (
+    sql: `CREATE TABLE PasswordResetToken (
       TokenID varchar(50) PRIMARY KEY,
       UserID varchar(20) NOT NULL,
       UserType varchar(20) NOT NULL,
@@ -132,227 +340,48 @@ const baseSchema = [
   }
 ];
 
-const migrations = [
-  {
-    name: 'Add Password to Nurse',
-    sql: `ALTER TABLE Nurse ADD COLUMN Password varchar(100) NOT NULL DEFAULT 'changeme'`
-  },
-  {
-    name: 'Add Email to Nurse',
-    sql: `ALTER TABLE Nurse ADD COLUMN Email varchar(100) NULL`
-  },
-  {
-    name: 'Add ClinicID to Nurse',
-    sql: `ALTER TABLE Nurse ADD COLUMN ClinicID varchar(50) NULL`
-  },
-  {
-    name: 'Add Password to Admin',
-    sql: `ALTER TABLE Admin ADD COLUMN Password varchar(100) NOT NULL DEFAULT 'changeme'`
-  },
-  {
-    name: 'Add Email to Admin',
-    sql: `ALTER TABLE Admin ADD COLUMN Email varchar(100) NULL`
-  },
-  {
-    name: 'Add Status to Appointment',
-    sql: `ALTER TABLE Appointment ADD COLUMN Status varchar(20) DEFAULT 'Pending'`
-  },
-  {
-    name: 'Add Notes to Appointment',
-    sql: `ALTER TABLE Appointment ADD COLUMN Notes text NULL`
-  },
-  {
-    name: 'Add CreatedAt to Appointment',
-    sql: `ALTER TABLE Appointment ADD COLUMN CreatedAt datetime DEFAULT CURRENT_TIMESTAMP`
-  },
-  {
-    name: 'Add StudentNumber to Rating',
-    sql: `ALTER TABLE Rating ADD COLUMN StudentNumber varchar(20) NULL`
-  },
-  {
-    name: 'Add CreatedAt to Rating',
-    sql: `ALTER TABLE Rating ADD COLUMN CreatedAt datetime DEFAULT CURRENT_TIMESTAMP`
-  },
-  {
-    name: 'Add FacilityID to Medication',
-    sql: `ALTER TABLE Medication ADD COLUMN FacilityID varchar(50) NULL`
-  },
-  {
-    name: 'Add ExpiryDate to Medication',
-    sql: `ALTER TABLE Medication ADD COLUMN ExpiryDate date NULL`
-  },
-  {
-    name: 'Add StockQuantity to Medication',
-    sql: `ALTER TABLE Medication ADD COLUMN StockQuantity int DEFAULT 0`
-  },
-  {
-    name: 'Create SymptomLog table',
-    sql: `CREATE TABLE IF NOT EXISTS SymptomLog (
-      LogID varchar(50) PRIMARY KEY,
-      StudentNumber varchar(20) NOT NULL,
-      SymptomName varchar(100) NOT NULL,
-      Severity varchar(20) NOT NULL,
-      LogDate datetime DEFAULT CURRENT_TIMESTAMP,
-      Notes text NULL
-    )`
-  },
-  {
-    name: 'Add Campus to Appointment',
-    sql: `ALTER TABLE Appointment ADD COLUMN Campus varchar(50) NULL`
-  },
-  {
-    name: 'Add PreferredLanguage to Appointment',
-    sql: `ALTER TABLE Appointment ADD COLUMN PreferredLanguage varchar(50) NULL`
-  },
-  {
-    name: 'Create NurseReviews table',
-    sql: `CREATE TABLE IF NOT EXISTS NurseReviews (
-      ReviewID varchar(50) PRIMARY KEY,
-      AppointmentID varchar(50) NOT NULL,
-      StudentNumber varchar(20) NOT NULL,
-      StaffNumber varchar(20) NOT NULL,
-      Rating int NOT NULL,
-      ReviewText text NOT NULL,
-      CreatedAt datetime DEFAULT CURRENT_TIMESTAMP
-    )`
-  },
-  // Phase 19: Review moderation + nurse profile fields
-  {
-    name: 'Add Bio to Nurse',
-    sql: `ALTER TABLE Nurse ADD COLUMN Bio text NULL`
-  },
-  {
-    name: 'Add YearsExperience to Nurse',
-    sql: `ALTER TABLE Nurse ADD COLUMN YearsExperience int DEFAULT 0`
-  },
-  {
-    name: 'Add Verified to NurseReviews',
-    sql: `ALTER TABLE NurseReviews ADD COLUMN Verified ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending'`
-  },
-  {
-    name: 'Add VerifiedAt to NurseReviews',
-    sql: `ALTER TABLE NurseReviews ADD COLUMN VerifiedAt datetime NULL`
-  },
-  // Phase 22: Symptom system overhaul + 3NF cleanup
-  {
-    name: 'Create Symptom table (atomic, tag-based)',
-    sql: `CREATE TABLE IF NOT EXISTS Symptom (
-      SymptomID varchar(10) PRIMARY KEY,
-      Name varchar(100) NOT NULL,
-      Category varchar(30) NOT NULL,
-      Tier int DEFAULT 1,
-      Description text NULL
-    )`
-  },
-  {
-    name: 'Create new SymptomMedicationMap (SymptomID ↔ MedicationCode)',
-    sql: `CREATE TABLE IF NOT EXISTS SymptomMedicationMap (
-      SymptomID varchar(10) NOT NULL,
-      MedicationCode varchar(10) NOT NULL,
-      PRIMARY KEY (SymptomID, MedicationCode)
-    )`
-  },
-  {
-    name: 'Create SymptomLogEntry join table (multi-select per log)',
-    sql: `CREATE TABLE IF NOT EXISTS SymptomLogEntry (
-      LogID varchar(50) NOT NULL,
-      SymptomID varchar(10) NOT NULL,
-      PRIMARY KEY (LogID, SymptomID)
-    )`
-  },
-  {
-    name: 'Drop Student.Email column',
-    sql: `ALTER TABLE Student DROP COLUMN Email`
-  },
-  {
-    name: 'Drop Medication.SymptomsTreated column',
-    sql: `ALTER TABLE Medication DROP COLUMN SymptomsTreated`
-  },
-  // Pre-Phase 23: Map & Location System Overhaul
-  {
-    name: 'Add Latitude to Student',
-    sql: `ALTER TABLE Student ADD COLUMN Latitude DECIMAL(10, 7) NULL`
-  },
-  {
-    name: 'Add Longitude to Student',
-    sql: `ALTER TABLE Student ADD COLUMN Longitude DECIMAL(10, 7) NULL`
-  },
-  {
-    name: 'Add Boundary JSON to CampusZone',
-    sql: `ALTER TABLE CampusZone ADD COLUMN Boundary JSON NULL`
-  },
-  {
-    name: 'Drop Student.Address column',
-    sql: `ALTER TABLE Student DROP COLUMN Address`
-  },
-  // Phase 28: Daily.co video consultations (replaces manual Teams links)
-  {
-    name: 'Add RoomName to Appointment',
-    sql: `ALTER TABLE Appointment ADD COLUMN RoomName varchar(80) NULL`
-  },
-  {
-    name: 'Add RoomUrl to Appointment',
-    sql: `ALTER TABLE Appointment ADD COLUMN RoomUrl varchar(255) NULL`
-  },
-  {
-    name: 'Add RoomExp to Appointment',
-    sql: `ALTER TABLE Appointment ADD COLUMN RoomExp datetime NULL`
-  },
-  {
-    name: 'Create ConsultationSession table',
-    sql: `CREATE TABLE IF NOT EXISTS ConsultationSession (
-      SessionID varchar(50) PRIMARY KEY,
-      AppointmentID varchar(50) NOT NULL,
-      RoomName varchar(80) NOT NULL,
-      StartedAt datetime NULL,
-      EndedAt datetime NULL,
-      DurationSeconds int NULL,
-      NurseJoinedAt datetime NULL,
-      StudentJoinedAt datetime NULL,
-      CreatedAt datetime DEFAULT CURRENT_TIMESTAMP
-    )`
-  },
-  // Phase 29A: nurse location becomes a campus (dropdown), replacing free-text Address
-  {
-    name: 'Add Campus to Nurse',
-    sql: `ALTER TABLE Nurse ADD COLUMN Campus varchar(50) NULL`
-  },
-  {
-    name: 'Drop Nurse.Address column',
-    sql: `ALTER TABLE Nurse DROP COLUMN Address`
-  },
-  {
-    name: 'Drop unused MedicalFacility table',
-    sql: `DROP TABLE IF EXISTS MedicalFacility`
-  },
-  { name: 'Drop unused Medication.FacilityID', sql: `ALTER TABLE Medication DROP COLUMN FacilityID` },
-  { name: 'Drop unused Medication.ExpiryDate', sql: `ALTER TABLE Medication DROP COLUMN ExpiryDate` },
-  { name: 'Drop unused Medication.StockQuantity', sql: `ALTER TABLE Medication DROP COLUMN StockQuantity` },
-  // Phase 29B: symptom-checker intelligence fields
-  { name: 'Add Duration to SymptomLog', sql: `ALTER TABLE SymptomLog ADD COLUMN Duration varchar(20) NULL` },
-  { name: 'Add Trajectory to SymptomLog', sql: `ALTER TABLE SymptomLog ADD COLUMN Trajectory varchar(20) NULL` },
-  { name: 'Add OtherText to SymptomLog', sql: `ALTER TABLE SymptomLog ADD COLUMN OtherText varchar(255) NULL` },
-  // Phase 30G: per-report location snapshot — powers the MapLibre density heatmap.
-  // We snapshot the reporting student's coordinates + resolved zone AT report time,
-  // so the map reflects where symptoms were actually reported (students move zones).
-  { name: 'Add Latitude to SymptomLog', sql: `ALTER TABLE SymptomLog ADD COLUMN Latitude DECIMAL(10,7) NULL` },
-  { name: 'Add Longitude to SymptomLog', sql: `ALTER TABLE SymptomLog ADD COLUMN Longitude DECIMAL(10,7) NULL` },
-  { name: 'Add ZoneID to SymptomLog', sql: `ALTER TABLE SymptomLog ADD COLUMN ZoneID varchar(20) NULL` },
+// ---------------------------------------------------------------------------
+// INDEX PHASE — preserve ALL existing performance indexes AND add an explicit
+// index on every FK column (Decision 4 / spec §5.4). SQLite does NOT auto-index
+// FK columns, so these are required there; on MySQL `ADD INDEX` is native and a
+// duplicate is caught by `isAlreadyApplied` (ER_DUP_KEYNAME). The adapter rewrites
+// `ALTER TABLE .. ADD INDEX` to `CREATE INDEX IF NOT EXISTS` for SQLite.
+//
+// FK-column indexes that would be a redundant left-prefix of a preserved perf
+// index are skipped (noted inline).
+const indexPhase = [
+  // -- Preserved performance indexes (renamed object -> Consultation) --
+  { name: 'Index Consultation (StaffNumber, Time)', sql: `ALTER TABLE Consultation ADD INDEX idx_consult_staff_time (StaffNumber, Time)` },
+  { name: 'Index Consultation StudentNumber', sql: `ALTER TABLE Consultation ADD INDEX idx_consult_student (StudentNumber)` },
+  { name: 'Index Consultation RoomName', sql: `ALTER TABLE Consultation ADD INDEX idx_consult_roomname (RoomName)` },
   { name: 'Index SymptomLog LogDate', sql: `ALTER TABLE SymptomLog ADD INDEX idx_symptomlog_logdate (LogDate)` },
-  // Indexes for the hot lookups: slot contention on booking, per-user history,
-  // trend rollups and reset-token validation all scan these columns today.
-  { name: 'Index Appointment (StaffNumber, Time)', sql: `ALTER TABLE Appointment ADD INDEX idx_appointment_staff_time (StaffNumber, Time)` },
-  { name: 'Index Appointment StudentNumber', sql: `ALTER TABLE Appointment ADD INDEX idx_appointment_student (StudentNumber)` },
-  { name: 'Index Appointment RoomName', sql: `ALTER TABLE Appointment ADD INDEX idx_appointment_roomname (RoomName)` },
   { name: 'Index SymptomLog StudentNumber', sql: `ALTER TABLE SymptomLog ADD INDEX idx_symptomlog_student (StudentNumber)` },
   { name: 'Index SymptomLogEntry SymptomID', sql: `ALTER TABLE SymptomLogEntry ADD INDEX idx_symptomlogentry_symptom (SymptomID)` },
   { name: 'Index NurseReviews StaffNumber', sql: `ALTER TABLE NurseReviews ADD INDEX idx_nursereviews_staff (StaffNumber)` },
-  { name: 'Index PasswordResetToken Token', sql: `ALTER TABLE PasswordResetToken ADD INDEX idx_resettoken_token (Token)` }
+  { name: 'Index PasswordResetToken Token', sql: `ALTER TABLE PasswordResetToken ADD INDEX idx_resettoken_token (Token)` },
+  // -- Explicit FK-column indexes (skip those a perf index already left-prefixes:
+  //    Consultation.StaffNumber -> idx_consult_staff_time, Consultation.StudentNumber
+  //    -> idx_consult_student, SymptomLog.StudentNumber -> idx_symptomlog_student,
+  //    SymptomLogEntry.SymptomID -> idx_symptomlogentry_symptom, NurseReviews.StaffNumber
+  //    -> idx_nursereviews_staff) --
+  { name: 'Index Nurse ClinicID (FK)', sql: `ALTER TABLE Nurse ADD INDEX idx_nurse_clinic (ClinicID)` },
+  { name: 'Index NurseAvailability StaffNumber (FK)', sql: `ALTER TABLE NurseAvailability ADD INDEX idx_avail_staff (StaffNumber)` },
+  { name: 'Index StudentZone ZoneID (FK)', sql: `ALTER TABLE StudentZone ADD INDEX idx_sz_zone (ZoneID)` },
+  { name: 'Index SymptomMedicationMap MedicationCode (FK)', sql: `ALTER TABLE SymptomMedicationMap ADD INDEX idx_smm_med (MedicationCode)` },
+  { name: 'Index SymptomLog ZoneID (FK)', sql: `ALTER TABLE SymptomLog ADD INDEX idx_slog_zone (ZoneID)` },
+  { name: 'Index SymptomLogEntry LogID (FK)', sql: `ALTER TABLE SymptomLogEntry ADD INDEX idx_sle_log (LogID)` },
+  { name: 'Index Rating AppointmentID (FK)', sql: `ALTER TABLE Rating ADD INDEX idx_rating_consult (AppointmentID)` },
+  { name: 'Index Rating StudentNumber (FK)', sql: `ALTER TABLE Rating ADD INDEX idx_rating_student (StudentNumber)` },
+  { name: 'Index NurseReviews AppointmentID (FK)', sql: `ALTER TABLE NurseReviews ADD INDEX idx_review_consult (AppointmentID)` },
+  { name: 'Index NurseReviews StudentNumber (FK)', sql: `ALTER TABLE NurseReviews ADD INDEX idx_review_student (StudentNumber)` },
+  { name: 'Index OnlineConsultationSession AppointmentID (FK)', sql: `ALTER TABLE OnlineConsultationSession ADD INDEX idx_ocs_consult (AppointmentID)` }
 ];
 
-// MySQL error codes that mean "this migration is already applied". Re-running the
-// script must be a no-op, not a failure — `npm run setup` chains migrate && seed,
-// so a non-zero exit here would stop the seeds from ever running.
+// MySQL error codes that mean "this step is already applied". Re-running the
+// script must be a no-op, not a failure — the setup scripts chain migrate && seed,
+// so a non-zero exit here would stop the seeds from ever running. (The drop phase
+// uses IF EXISTS and the create phase on a fresh DB never duplicates; these codes
+// cover a re-run that races a partially-created schema and the index phase.)
 const ALREADY_APPLIED = new Set([
   'ER_DUP_FIELDNAME',          // ADD COLUMN — column already there
   'ER_DUP_KEYNAME',            // ADD INDEX  — index already there
@@ -361,13 +390,25 @@ const ALREADY_APPLIED = new Set([
   'ER_BAD_FIELD_ERROR'         // referenced column already gone
 ]);
 
+// MySQL signals "already applied" via error codes; SQLite (node:sqlite) via
+// message text. Treat both as idempotent no-ops so a re-run is safe on either
+// engine.
+function isAlreadyApplied(error) {
+  if (ALREADY_APPLIED.has(error.code)) return true;
+  const m = (error.message || '').toLowerCase();
+  return m.includes('duplicate column name')   // ADD COLUMN already there
+      || m.includes('already exists')          // CREATE TABLE / CREATE INDEX
+      || m.includes('no such column')          // DROP COLUMN already gone
+      || m.includes('no such table');          // DROP on absent table
+}
+
 async function runStep(step) {
   try {
     await query(step.sql);
     console.log(`  [OK] ${step.name}`);
     return 'ok';
   } catch (error) {
-    if (ALREADY_APPLIED.has(error.code)) {
+    if (isAlreadyApplied(error)) {
       console.log(`  [SKIP] ${step.name} (already applied)`);
       return 'skip';
     }
@@ -376,25 +417,88 @@ async function runStep(step) {
   }
 }
 
-async function runMigrations() {
-  console.log('[Migration] Starting database schema migration...');
-  console.log(`[Migration] ${baseSchema.length} base tables + ${migrations.length} migrations to process.\n`);
+// Runs a step on a SPECIFIC connection (used by the drop phase so FK checks can
+// be disabled on exactly one borrowed connection — see runDropPhase).
+async function runStepOnConn(conn, step) {
+  try {
+    await conn.execute(step.sql);
+    console.log(`  [OK] ${step.name}`);
+    return 'ok';
+  } catch (error) {
+    if (isAlreadyApplied(error)) {
+      console.log(`  [SKIP] ${step.name} (already applied)`);
+      return 'skip';
+    }
+    console.error(`  [FAIL] ${step.name}: ${error.message}`);
+    return 'fail';
+  }
+}
+
+/**
+ * The drop phase must not depend on perfect reverse-dependency ordering: on MySQL,
+ * `DROP TABLE` is REFUSED while a FK still references the table, and a prior
+ * partially-created rebuild can leave the ordering unsound. The robust, correct
+ * approach is to disable FK enforcement FOR THE DROP ONLY.
+ *
+ * The earlier connection-pool concern (a `SET FOREIGN_KEY_CHECKS` on one pooled
+ * connection not affecting others, and leaking "off" back into the pool) is solved
+ * by borrowing ONE dedicated connection, toggling + dropping + re-enabling all on
+ * THAT SAME connection, then releasing it. The toggle never escapes to another
+ * connection, and `query()` (which borrows arbitrary pooled connections) is never
+ * used while checks are off. On SQLite the adapter translates
+ * `SET FOREIGN_KEY_CHECKS` -> `PRAGMA foreign_keys`, and getConnection() returns a
+ * single-handle connection, so the same code path is correct on both engines.
+ */
+async function runDropPhase() {
+  const conn = await getConnection();
+  let success = 0, skipped = 0, failed = 0;
+  try {
+    await conn.execute('SET FOREIGN_KEY_CHECKS = 0');
+    for (const step of dropPhase) {
+      const r = await runStepOnConn(conn, step);
+      if (r === 'ok') success++; else if (r === 'skip') skipped++; else failed++;
+    }
+  } finally {
+    // Re-enable on the SAME connection before it returns to the pool, so no
+    // connection is ever released with enforcement left off.
+    try { await conn.execute('SET FOREIGN_KEY_CHECKS = 1'); } catch { /* best effort */ }
+    if (typeof conn.release === 'function') conn.release();
+  }
+  return { success, skipped, failed };
+}
+
+// `exitOnDone` lets the CLI (`npm run migrate`) exit the process as before, while
+// the programmatic auto-bootstrap path in app.js can run migrations and keep going.
+export async function runMigrations({ exitOnDone = true } = {}) {
+  console.log('[Migration] Starting DESTRUCTIVE schema rebuild (drop -> create -> index)...');
+  console.log('[Migration] NOTE: this DROPS every table and recreates it EMPTY. Always chain with the seeds.');
+  console.log(`[Migration] ${dropPhase.length} drop steps + ${createPhase.length} create steps + ${indexPhase.length} index steps.\n`);
 
   let success = 0;
   let skipped = 0;
   let failed = 0;
 
-  console.log('  -- base schema --');
-  for (const step of [...baseSchema, ...migrations]) {
-    if (step === migrations[0]) console.log('\n  -- migrations --');
-    const result = await runStep(step);
+  const tally = (result) => {
     if (result === 'ok') success++;
     else if (result === 'skip') skipped++;
     else failed++;
-  }
+  };
+
+  console.log('  -- drop phase (single connection, FK checks disabled for drops only) --');
+  { const d = await runDropPhase(); success += d.success; skipped += d.skipped; failed += d.failed; }
+
+  console.log('\n  -- create phase (dependency order, FK clauses inline) --');
+  for (const step of createPhase) tally(await runStep(step));
+
+  console.log('\n  -- index phase (perf indexes + FK-column indexes) --');
+  for (const step of indexPhase) tally(await runStep(step));
 
   console.log(`\n[Migration] Complete. ${success} applied, ${skipped} already in place, ${failed} failed.`);
-  process.exit(failed > 0 ? 1 : 0);
+  if (exitOnDone) process.exit(failed > 0 ? 1 : 0);
+  return { success, skipped, failed };
 }
 
-runMigrations();
+// CLI entry point only — importing this module (auto-bootstrap) must NOT run or exit.
+if (process.argv[1]?.includes('migrate')) {
+  runMigrations();
+}

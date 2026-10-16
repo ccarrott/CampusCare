@@ -27,7 +27,7 @@
           <% logs.forEach(function(log) { %>
             <tr>
               <td><%= new Date(log.LogDate).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' }) %></td>
-              <td><%= log.SymptomName %></td>
+              <td><%= log.SymptomNames || '—' %></td>
               <td><span class="severity-badge severity-<%= log.Severity.toLowerCase() %>"><%= log.Severity %></span></td>
             </tr>
           <% }); %>

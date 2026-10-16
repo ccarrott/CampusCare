@@ -52,7 +52,6 @@ const SYMPTOMS = [
   { id: 'SYM36', name: 'Night sweats', category: 'General', tier: 2, desc: 'Waking up drenched in sweat. Nurse referral (possible TB screening).' },
   { id: 'SYM37', name: 'Swollen glands', category: 'General', tier: 2, desc: 'Lumps in neck, armpits, or groin. Requires nurse assessment.' },
   // Mental
-  { id: 'SYM38', name: 'Anxiety', category: 'Mental', tier: 1, desc: 'Racing thoughts, constant worry, restlessness' },
   { id: 'SYM39', name: 'Panic attacks', category: 'Mental', tier: 2, desc: 'Sudden overwhelming fear with physical symptoms' },
   { id: 'SYM40', name: 'Insomnia', category: 'Mental', tier: 1, desc: 'Cannot fall asleep or stay asleep' },
   { id: 'SYM41', name: 'Low mood', category: 'Mental', tier: 2, desc: 'Persistent sadness or hopelessness lasting 2+ weeks. Nurse referral.' },
@@ -194,12 +193,19 @@ const MAPPING = [
   { sym: 'SYM15', med: 'MED27' }, // Cold sores
 ];
 
-async function seedSymptoms() {
+export async function seedSymptoms({ exitOnDone = true } = {}) {
   console.log('╔══════════════════════════════════════════════════╗');
   console.log('║  CampusCare — Symptom & Med Seed (Verified)     ║');
   console.log('╚══════════════════════════════════════════════════╝');
 
   console.log('  [1/4] Clearing old data...');
+  // Clear in child-first order so enforced FKs are satisfied WITHOUT toggling
+  // FOREIGN_KEY_CHECKS (that setting is connection-scoped on MySQL and query()
+  // uses an arbitrary pooled connection, so a disable/enable pair can leak checks
+  // off onto a pooled connection). The join/entry tables (children of
+  // Symptom/Medication) go first, then the parents. NOTE: clearing the symptom
+  // catalog is a reset — any showcase symptom entries are rebuilt by the showcase
+  // reseed, matching prior behavior.
   await query('DELETE FROM SymptomMedicationMap');
   await query('DELETE FROM SymptomLogEntry');
   await query('DELETE FROM Symptom');
@@ -222,7 +228,11 @@ async function seedSymptoms() {
 
   console.log('');
   console.log('  ✓ Done. ' + SYMPTOMS.length + ' symptoms, ' + MEDICATIONS.length + ' meds, ' + MAPPING.length + ' mappings.');
-  process.exit(0);
+  if (exitOnDone) process.exit(0);
+  return { success: true };
 }
 
-seedSymptoms().catch(e => { console.error(e); process.exit(1); });
+// CLI entry point only — importing this module must NOT run or exit the process.
+if (process.argv[1]?.includes('seed-symptoms')) {
+  seedSymptoms().catch(e => { console.error(e); process.exit(1); });
+}

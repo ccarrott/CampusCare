@@ -7,7 +7,8 @@
 // below (set them in your host's dashboard, never in the repo) and re-run
 // `npm run state:naked` — or, better, change each password from inside the app.
 //
-// The values here are only ever fed through bcrypt; nothing stores them in plain text.
+// These demo passwords are stored and compared as plaintext — bcrypt has been
+// removed from the project (deliberate academic/demo simplification).
 
 export const DEMO_PASSWORDS = Object.freeze({
   admin: process.env.DEMO_ADMIN_PASSWORD || '123admin!',

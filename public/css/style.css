@@ -989,6 +989,14 @@ body.immersive-page .site-footer { display: none; }
           mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
           mask-composite: exclude;
 }
+/* While the symptom autocomplete is open, lift the whole "Your Symptoms" card
+   above its sibling cards AND let the dropdown spill past the card's rounded
+   edge. Each .content-card is its own stacking context (isolation: isolate) and
+   clips to its radius (overflow: hidden), so BOTH are needed: z-index to beat the
+   next card, overflow:visible so the suggestions aren't cut at this card's own
+   bottom edge. */
+.content-card.tokenbar-open { z-index: 60; overflow: visible; }
+
 .glass-strong, .content-card.content-card--strong {
   background: var(--glass-bg-strong);
   -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
@@ -1203,10 +1211,16 @@ textarea.form-control {
   display: inline-block;
   position: relative;
   overflow: hidden;
+  /* border-box so a border (e.g. .btn-secondary's 1px) is absorbed into the
+     declared size rather than added on top — keeps bordered and borderless
+     buttons the exact same height/width when sitting side by side. */
+  box-sizing: border-box;
   padding: 10px 20px;
   font-size: 0.95rem;
   font-weight: 600;
-  border: none;
+  /* Transparent 1px border on the base so every variant shares the same box
+     metrics; .btn-secondary just recolours it. Primary looks unchanged. */
+  border: 1px solid transparent;
   border-radius: var(--radius-md);
   cursor: pointer;
   text-align: center;
@@ -1472,6 +1486,14 @@ textarea.form-control {
   -webkit-mask-image: linear-gradient(to right, transparent 0, #000 3%, #000 97%, transparent 100%);
           mask-image: linear-gradient(to right, transparent 0, #000 3%, #000 97%, transparent 100%);
 }
+/* A mask clips ALL descendants to the table box, which cuts off a row's kebab
+   dropdown at the table's bottom edge. The consultation-history table carries
+   row action menus, so it opts out of the edge-fade mask to let the dropdown
+   escape. */
+.consult-history-card .data-table {
+  -webkit-mask-image: none;
+          mask-image: none;
+}
 /* Remove hard side cell padding-edges so highlights dissolve, not cut */
 .data-table th:first-child, .data-table td:first-child { padding-left: 18px; }
 .data-table th:last-child,  .data-table td:last-child  { padding-right: 18px; }
@@ -1645,6 +1667,7 @@ textarea.form-control {
 .auth-brand {
   font-size: 1.5rem;
   font-weight: 700;
+  line-height: 1.25;
   color: var(--primary-navy);
   margin-bottom: 4px;
 }
@@ -2204,7 +2227,8 @@ textarea.form-control {
 /* ---------- Print Stylesheet ---------- */
 @media print {
   .sidebar, .floating-controls, .theme-toggle, .session-toast,
-  .btn, .sidebar-toggle, nav, footer, .profile-actions { display: none !important; }
+  .btn, .sidebar-toggle, nav, footer, .profile-actions,
+  .action-btn, .action-btns, .report-actions, .identity-chip { display: none !important; }
   .main-content { margin-left: 0 !important; margin-top: 0 !important; padding-top: 0 !important; }
   .content-card { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
   #app-aurora { display: none !important; }
@@ -2679,6 +2703,25 @@ textarea.form-control {
   animation: modalSlideIn 0.15s ease;
 }
 
+/* Open upward when the row is near the bottom of the viewport/container,
+   so the last row's menu (View nurse / Review nurse) isn't clipped. */
+.kebab-menu--up {
+  top: auto;
+  bottom: 100%;
+}
+
+/* The base .content-card clips (overflow:hidden) for its rounded glass edge,
+   which would cut off the last row's kebab dropdown. Let the consultation-history
+   card overflow so the action menu can escape; the dropdown's own backdrop/blur
+   still render correctly. */
+.consult-history-card { overflow: visible; }
+/* While any row's kebab menu is open, lift the whole history card above the
+   sibling cards below it. The card is its own stacking context (isolation:
+   isolate), so without this the escaped dropdown paints BEHIND the next card.
+   :has() scopes the raise to exactly when a menu is open. */
+.consult-history-card:has(.kebab.open),
+.consult-history-card:has(.kebab-menu.open) { z-index: 60; position: relative; }
+
 .kebab-item-muted { color: var(--text-muted); cursor: default; }
 .kebab-item-muted:hover { background: none; }
 .kebab-item-danger { color: var(--status-danger); }
@@ -2880,11 +2923,14 @@ textarea.form-control {
   font-size: 0.82rem;
   font-weight: 600;
 }
+/* Tighter right padding when the tag has a removable X, so the circle doesn't
+   leave a big dead gap on the right of the pill. */
+.symptom-summary-tag:has(.remove) { padding-right: 6px; }
 
 .symptom-summary-tag .remove {
   cursor: pointer;
   opacity: 0.7;
-  font-size: 1rem;
+  font-size: 0.95rem;
   line-height: 1;
   width: 18px;
   height: 18px;
@@ -2893,6 +2939,9 @@ textarea.form-control {
   justify-content: center;
   border-radius: 50%;
   flex-shrink: 0;
+  /* Nudge the × glyph to true optical centre (it renders slightly high). */
+  padding-bottom: 1px;
+  box-sizing: border-box;
   transition: opacity 0.15s, background 0.15s;
 }
 
@@ -3338,6 +3387,24 @@ textarea.form-control {
   outline: none;
 }
 .trends-map-canvas .maplibregl-canvas { display: block; }
+
+/* "Use my location" control on the pin-picker (floating glass, top-right) */
+.map-locate-btn {
+  position: absolute; z-index: 6; top: var(--space-3); right: var(--space-3);
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: 999px; cursor: pointer;
+  font-size: 0.8rem; font-weight: 600; color: var(--text-dark);
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), var(--glass-rim);
+  transition: transform var(--motion-fast) var(--ease-soft), box-shadow var(--motion-fast) var(--ease-soft);
+}
+.map-locate-btn:hover { transform: translateY(-1px); }
+.map-locate-btn:active { transform: scale(0.98); }
+.map-locate-btn:focus-visible { outline: 2px solid var(--brand-yellow); outline-offset: 2px; }
+.map-locate-btn:disabled { opacity: 0.6; cursor: default; transform: none; }
 
 .map-fallback {
   position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center;

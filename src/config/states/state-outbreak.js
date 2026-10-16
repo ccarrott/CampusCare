@@ -78,7 +78,7 @@ export async function loadOutbreakState() {
     const dateStr = date.toISOString().slice(0, 19).replace('T', ' ');
     const aptId = 'APT-OUT-' + crypto.randomBytes(3).toString('hex').toUpperCase();
 
-    await query("INSERT INTO Appointment (AppointmentID, AppointmentType, Time, StudentNumber, StaffNumber, Status) VALUES (?, 'Physical', ?, ?, ?, 'Completed')",
+    await query("INSERT INTO Consultation (AppointmentID, AppointmentType, Time, StudentNumber, StaffNumber, Status) VALUES (?, 'Physical', ?, ?, ?, 'Completed')",
       [aptId, dateStr, student.StudentNumber, nurses[i % 3]]);
   }
 

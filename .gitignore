@@ -10,6 +10,13 @@ node_modules/
 # newlines and silently drops you to an unverified TLS connection).
 !ca.pem
 
+# Local SQLite database (auto-seeded on boot; never committed) + WAL side-cars
+local.db
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
 # Logs & scratch
 *.log
 t1.txt
